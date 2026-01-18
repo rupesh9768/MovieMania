@@ -9,6 +9,7 @@ import MovieDetails from './pages/MovieDetails';
 import ShowtimeSelection from './components/ShowtimeSelection'; 
 import Booking from './pages/Booking'; 
 import Movies from './pages/Movies';
+import AdminDashboard from './pages/AdminDashboard';
 
 // Import Layout Components
 import Navbar from './components/Navbar';
@@ -32,6 +33,7 @@ function App() {
             <Route path="/showtimes/:id" element={<ShowtimeSelection />} />
             <Route path="/seat-selection/:movieId/:showtimeId" element={<Booking />} />
             <Route path="/movies" element={<Movies />} />
+            <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
         </div>
 

@@ -266,3 +266,14 @@ a {
   background-color: #112211 !important; /* Slight green tint for selection */
   border: 2px solid var(--btn-green) !important;
 }
+
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}

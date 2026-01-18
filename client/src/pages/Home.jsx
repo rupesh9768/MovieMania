@@ -1,166 +1,138 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-// --- MOCK DATA (Simulating Admin & API Data) ---
-
-// 1. "Now Showing" - The Admin puts these here. They are ready to book.
-const nowShowingMovies = [
-  { id: 1, title: "Avengers: Doomsday", genre: "Action • Sci-Fi", rating: 4.8, image: "https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg" },
-  { id: 2, title: "Dune: Part Three", genre: "Sci-Fi • Adventure", rating: 4.6, image: "https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg" },
-  { id: 3, title: "Spider-Man: Beyond", genre: "Animation • Action", rating: 4.9, image: "https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg" },
-  { id: 4, title: "The Batman II", genre: "Crime • Drama", rating: 4.7, image: "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg" },
-];
-
-// 2. "Trending" - This will come from TMDB API later.
-const trendingMovies = [
-  { id: 101, title: "Oppenheimer", backdrop: "https://image.tmdb.org/t/p/original/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg", desc: "The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb." },
-  { id: 102, title: "Avatar: Fire and Ash", backdrop: "https://image.tmdb.org/t/p/original/vL5LR6WdxWPjXuFRUE5VTg75Txt.jpg", desc: "Jake Sully lives with his newfound family formed on the extrasolar moon Pandora." },
-  { id: 103, title: "Interstellar", backdrop: "https://image.tmdb.org/t/p/original/xJHokMbljvjADYdit5fK5VJhXEG.jpg", desc: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival." },
-];
+import { adminMovies } from '../data/adminMovies';
 
 const Home = () => {
   const navigate = useNavigate();
-  
-  // --- CAROUSEL LOGIC ---
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [globallyShowing, setGloballyShowing] = useState([]);
+  const [trendingMovies, setTrendingMovies] = useState([]);
+  const [randomMovies, setRandomMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const API_KEY = import.meta.env.VITE_TMDB_KEY;
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % trendingMovies.length);
-    }, 5000); // Change slide every 5 seconds
-    return () => clearInterval(timer);
-  }, []);
+    const fetchHomeData = async () => {
+      try {
+        // 1. Fetch "Now Playing" for Theater + Globally Showing
+        const nowPlayingRes = await fetch(`https://api.themoviedb.org/3/movie/now_playing?api_key=${API_KEY}&region=IN`);
+        const nowPlayingData = await nowPlayingRes.json();
+        
+        // Globally Showing (World hits)
+        setGloballyShowing(nowPlayingData.results.slice(0, 8));
+
+        // 2. Fetch Global Trending
+        const trendRes = await fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${API_KEY}`);
+        const trendData = await trendRes.json();
+        setTrendingMovies(trendData.results.slice(0, 10));
+
+        // 3. Fetch Random (Just 3 as requested)
+        const randomRes = await fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${API_KEY}&page=3`);
+        const randomData = await randomRes.json();
+        setRandomMovies(randomData.results.slice(0, 3));
+
+        setLoading(false);
+      } catch (error) {
+        console.error(error);
+        setLoading(false);
+      }
+    };
+    fetchHomeData();
+  }, [API_KEY]);
+
+  if (loading) return <div className="min-h-screen bg-[#0b1121] flex items-center justify-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-[#0b1121] text-white pb-20">
+    <div className="min-h-screen bg-[#0b1121] text-white pb-20 scale-[0.98] origin-top">
       
-      {/* 1. HERO SLIDESHOW (Carousel) */}
-      <div className="relative w-full h-[550px] overflow-hidden">
-        {trendingMovies.map((movie, index) => (
-          <div 
-            key={movie.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
-          >
-            {/* Background Image with Gradient Overlay */}
-            <div 
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url(${movie.backdrop})` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0b1121] via-[#0b1121]/40 to-transparent"></div>
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0b1121] via-transparent to-transparent"></div>
-            </div>
-
-            {/* Content Overlay */}
-            <div className="absolute bottom-0 left-0 p-8 md:p-16 max-w-2xl animate-fade-in-up">
-              <span className="bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded uppercase tracking-wider mb-3 inline-block">
-                Trending #1
-              </span>
-              <h1 className="text-4xl md:text-6xl font-black mb-4 leading-tight drop-shadow-lg">
-                {movie.title}
-              </h1>
-              <p className="text-slate-300 text-sm md:text-lg mb-8 line-clamp-3 drop-shadow-md">
-                {movie.desc}
-              </p>
-              
-              <div className="flex gap-4">
-                 {/* This button leads to details/discussion */}
-                <button 
-                  onClick={() => navigate(`/movie/${movie.id}`)}
-                  className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/30 text-white px-8 py-3 rounded-full font-bold transition-all"
-                >
-                  View Details
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Carousel Indicators */}
-        <div className="absolute bottom-6 right-8 flex gap-2">
-          {trendingMovies.map((_, idx) => (
-            <div 
-              key={idx} 
-              className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-8 bg-cyan-400' : 'w-2 bg-slate-600'}`}
-            ></div>
-          ))}
-        </div>
-      </div>
-
-
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-4">
         
-        {/* 2. NOW SHOWING (Admin Section) */}
-        <div className="mt-12 mb-16">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-white flex items-center gap-2">
-                <span className="w-2 h-8 bg-cyan-500 rounded-sm"></span>
-                Now Showing
-              </h2>
-              <p className="text-slate-400 text-sm mt-1 ml-4">Book tickets for latest releases</p>
-            </div>
+        {/* SECTION 1: THEATER EXCLUSIVE (Currently Airing in MY Theater) */}
+        <section className="pt-20">
+          <div className="flex items-center gap-3 mb-8">
+            <span className="w-2 h-8 bg-red-600 rounded-full shadow-[0_0_15px_rgba(220,38,38,0.5)]"></span>
+            <h2 className="text-2xl font-black uppercase tracking-tighter italic">Currently Airing in Theater</h2>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {nowShowingMovies.map((movie) => (
-              <div key={movie.id} className="group relative bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] hover:-translate-y-2">
-                
-                {/* Image Container */}
-                <div className="relative aspect-[2/3] overflow-hidden">
-                  <img src={movie.image} alt={movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                  
-                  {/* Hover Overlay with Primary Action */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3">
-                    <button 
-                      onClick={() => navigate(`/movie/${movie.id}`)}
-                      className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-3 px-8 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg shadow-cyan-500/20"
-                    >
-                      Book Ticket
-                    </button>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* We combine Admin Movies + top 3 from API as "Airing" */}
+            {[...adminMovies, ...globallyShowing.slice(0, 2)].map((movie) => (
+              <div 
+                key={movie.id} 
+                className="group relative cursor-pointer rounded-2xl overflow-hidden border border-slate-800 hover:border-red-600 transition-all duration-500"
+                onClick={() => navigate(`/movie/${movie.id}`, { state: { category: 'now_showing' } })}
+              >
+                <div className="aspect-video">
+                  <img 
+                    src={movie.image || `https://image.tmdb.org/t/p/w500${movie.backdrop_path}`} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                    alt="" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0b1121] via-transparent to-transparent"></div>
                 </div>
-
-                {/* Card Info */}
-                <div className="p-4">
-                  <h3 className="text-lg font-bold text-white mb-1 truncate">{movie.title}</h3>
-                  <div className="flex justify-between items-center text-sm text-slate-400">
-                    <span>{movie.genre}</span>
-                    <span className="flex items-center text-yellow-500 font-bold gap-1">
-                      ★ {movie.rating}
-                    </span>
-                  </div>
+                <div className="absolute bottom-5 left-5">
+                  <h3 className="text-lg font-bold mb-1">{movie.title}</h3>
+                  <p className="text-xs font-black text-red-500 uppercase flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
+                    Book Now
+                  </p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
+        {/* SECTION 2: GLOBALLY SHOWING (Horizontal) */}
+        <section className="mt-20">
+          <h2 className="text-sm font-black text-slate-500 mb-6 uppercase tracking-[0.3em]">Globally Showing</h2>
+          <div className="flex overflow-x-auto gap-5 pb-6 scrollbar-hide snap-x">
+            {globallyShowing.map(movie => (
+              <div 
+                key={movie.id} 
+                className="min-w-[150px] cursor-pointer snap-start" 
+                onClick={() => navigate(`/movie/${movie.id}`, { state: { category: 'other' } })}
+              >
+                <img src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`} className="rounded-xl shadow-lg hover:-translate-y-2 transition-transform duration-300" alt="" />
+                <h4 className="text-[11px] font-bold mt-3 truncate text-slate-400">{movie.title}</h4>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        {/* 3. TRENDING / COMING SOON (API Section) */}
-        <div className="mb-12">
-           <h2 className="text-2xl font-bold text-white flex items-center gap-2 mb-6 opacity-80">
-             <span className="w-2 h-6 bg-purple-500 rounded-sm"></span>
-             Trending Discussions
-           </h2>
-           
-           {/* Horizontal Scroll Container */}
-           <div className="flex overflow-x-auto gap-6 pb-6 scrollbar-hide">
-              {trendingMovies.map((movie) => (
-                <div key={movie.id} className="min-w-[280px] bg-slate-900/50 rounded-xl overflow-hidden border border-slate-800/50 hover:bg-slate-800 transition-colors cursor-pointer" onClick={() => navigate(`/movie/${movie.id}`)}>
-                    <div className="h-40 bg-cover bg-center" style={{ backgroundImage: `url(${movie.backdrop})` }}></div>
-                    <div className="p-4">
-                      <h4 className="font-bold text-white mb-2">{movie.title}</h4>
-                      <p className="text-xs text-slate-400 line-clamp-2">{movie.desc}</p>
-                      
-                      {/* Secondary Button Style */}
-                      <button className="mt-4 w-full py-2 border border-slate-700 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:border-slate-500 transition-all uppercase tracking-wider">
-                         View Details
-                      </button>
-                    </div>
+        {/* SECTION 3: GLOBAL TRENDING */}
+        <section className="mt-16">
+          <h2 className="text-sm font-black text-slate-500 mb-6 uppercase tracking-[0.3em]">Global Trending</h2>
+          <div className="flex overflow-x-auto gap-5 pb-6 scrollbar-hide snap-x">
+            {trendingMovies.map(movie => (
+              <div 
+                key={movie.id} 
+                className="min-w-[150px] cursor-pointer snap-start" 
+                onClick={() => navigate(`/movie/${movie.id}`, { state: { category: 'other' } })}
+              >
+                <img src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`} className="rounded-xl opacity-70 hover:opacity-100 transition-opacity" alt="" />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* SECTION 4: RANDOM PICKS (Just 3) */}
+        <section className="mt-16">
+          <h2 className="text-sm font-black text-slate-500 mb-8 uppercase tracking-[0.3em]">Random Picks</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {randomMovies.map(movie => (
+              <div 
+                key={movie.id} 
+                className="flex items-center gap-4 bg-slate-900/30 p-4 rounded-2xl border border-slate-800/50 hover:bg-slate-800 transition-colors cursor-pointer"
+                onClick={() => navigate(`/movie/${movie.id}`, { state: { category: 'other' } })}
+              >
+                <img src={`https://image.tmdb.org/t/p/w154${movie.poster_path}`} className="w-20 rounded-lg" alt="" />
+                <div>
+                  <h4 className="text-sm font-black leading-tight mb-1">{movie.title}</h4>
+                  <p className="text-[10px] text-slate-500">★ {movie.vote_average.toFixed(1)} Rating</p>
                 </div>
-              ))}
-           </div>
-        </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
       </div>
     </div>
