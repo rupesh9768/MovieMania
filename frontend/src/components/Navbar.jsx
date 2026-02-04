@@ -9,7 +9,7 @@ const Navbar = () => {
   const browseRef = useRef(null);
 
   const isActive = (path) => location.pathname === path;
-  const isBrowseActive = ['/browse', '/movies', '/tvshows', '/animations'].includes(location.pathname);
+  const isBrowseActive = ['/browse', '/movies', '/tvshows', '/animations', '/anime'].includes(location.pathname);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -35,7 +35,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-[#0b1121]/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
+    <nav className="bg-[#0a0f1a] border-b border-slate-800/50 sticky top-0 z-50 shadow-lg shadow-black/20">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           
@@ -75,9 +75,9 @@ const Navbar = () => {
               
               {/* Dropdown Overlay Box */}
               {browseOpen && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 bg-slate-900/98 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] p-5 min-w-[340px]">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl shadow-black/50 p-4 min-w-[360px]">
                   {/* Arrow */}
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-900/98 border-l border-t border-slate-700/50 transform rotate-45"></div>
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-[#111827] border-l border-t border-slate-700 transform rotate-45"></div>
                   
                   {/* Browse Options - Horizontal Layout */}
                   <div className="flex gap-3">
@@ -106,6 +106,18 @@ const Navbar = () => {
                     </button>
                     
                     <button
+                      onClick={() => handleBrowseItemClick('/anime')}
+                      className={`flex-1 px-4 py-4 rounded-xl text-center transition-all duration-200 ${
+                        isActive('/anime')
+                          ? 'bg-pink-500/15 text-pink-400 ring-1 ring-pink-500/40'
+                          : 'bg-slate-800/40 text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      }`}
+                    >
+                      <span className="block text-xl mb-1.5">🎌</span>
+                      <span className="text-sm font-medium">Anime</span>
+                    </button>
+                    
+                    <button
                       onClick={() => handleBrowseItemClick('/animations')}
                       className={`flex-1 px-4 py-4 rounded-xl text-center transition-all duration-200 ${
                         isActive('/animations')
@@ -121,7 +133,7 @@ const Navbar = () => {
                   {/* Browse All Link */}
                   <button
                     onClick={() => handleBrowseItemClick('/browse')}
-                    className="w-full mt-4 py-2.5 text-center text-sm font-medium text-cyan-400 hover:text-cyan-300 transition-colors border-t border-slate-700/50 pt-4"
+                    className="w-full mt-4 py-2.5 text-center text-sm font-semibold bg-slate-800/80 hover:bg-cyan-500/20 text-cyan-400 hover:text-cyan-300 transition-all rounded-lg border border-slate-700/50"
                   >
                     Browse All →
                   </button>
@@ -199,6 +211,11 @@ const Navbar = () => {
               <li>
                 <Link to="/tvshows" className={`block py-2 px-6 rounded-lg transition-colors ${isActive('/tvshows') ? 'bg-purple-500/10 text-purple-400' : 'text-slate-400 hover:bg-slate-800'}`}>
                   📺 TV Shows
+                </Link>
+              </li>
+              <li>
+                <Link to="/anime" className={`block py-2 px-6 rounded-lg transition-colors ${isActive('/anime') ? 'bg-pink-500/10 text-pink-400' : 'text-slate-400 hover:bg-slate-800'}`}>
+                  🎌 Anime
                 </Link>
               </li>
               <li>

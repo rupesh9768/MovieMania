@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// TODO: Replace with backend API when backend is ready
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 
-// Animation genre ID
+// Animation genre ID (for non-Japanese animations)
+// Japanese Anime uses Jikan API - see Anime.jsx
 const ANIMATION_GENRE_ID = 16;
 
 // ============================================
 // BACKEND-SAFE: Categories and sub-genres
+// This page shows NON-JAPANESE animations only
+// For Japanese Anime, use /anime route
 // ============================================
 const CATEGORIES = [
   { id: 'all', name: 'All Animations' },
@@ -34,7 +38,7 @@ const SUB_GENRES = [
 const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
   const isMovie = item?.title !== undefined;
   const title = isMovie ? item?.title : item?.name;
-  const link = isMovie ? `/movie/${item?.id}` : `/tv/${item?.id}`;
+  const link = `/details/animation/${item?.id}`;
   
   return (
     <div className="flex flex-col items-center py-10 border-t border-slate-800 mt-8">
@@ -196,7 +200,16 @@ const Animations = () => {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-black mb-1">✨ Animations</h1>
-          <p className="text-slate-400 text-sm">Discover animated movies and series</p>
+          <p className="text-slate-400 text-sm">
+            Discover animated movies and series from around the world
+            <span className="mx-2">•</span>
+            <button 
+              onClick={() => navigate('/anime')} 
+              className="text-pink-400 hover:text-pink-300 transition-colors"
+            >
+              Looking for Japanese Anime? →
+            </button>
+          </p>
         </div>
 
         <div className="flex gap-6">
@@ -301,7 +314,7 @@ const Animations = () => {
                     const isMovie = item.media_type === 'movie' || item.title !== undefined;
                     const title = isMovie ? item.title : item.name;
                     const year = isMovie ? item.release_date?.slice(0, 4) : item.first_air_date?.slice(0, 4);
-                    const link = isMovie ? `/movie/${item.id}` : `/tv/${item.id}`;
+                    const link = `/details/animation/${item.id}`;
                     
                     return (
                       <div

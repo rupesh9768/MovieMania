@@ -1,31 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+// TODO: Replace with backend API when backend is ready
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 
 // ============================================
-// BACKEND-SAFE: Genres list (can be fetched from backend later)
+// BACKEND-SAFE: TV Genres list
 // ============================================
 const GENRES = [
-  { id: 28, name: 'Action' },
-  { id: 12, name: 'Adventure' },
+  { id: 10759, name: 'Action & Adventure' },
   { id: 16, name: 'Animation' },
   { id: 35, name: 'Comedy' },
   { id: 80, name: 'Crime' },
   { id: 99, name: 'Documentary' },
   { id: 18, name: 'Drama' },
   { id: 10751, name: 'Family' },
-  { id: 14, name: 'Fantasy' },
-  { id: 36, name: 'History' },
-  { id: 27, name: 'Horror' },
-  { id: 10402, name: 'Music' },
+  { id: 10762, name: 'Kids' },
   { id: 9648, name: 'Mystery' },
-  { id: 10749, name: 'Romance' },
-  { id: 878, name: 'Sci-Fi' },
-  { id: 53, name: 'Thriller' },
-  { id: 10752, name: 'War' },
+  { id: 10763, name: 'News' },
+  { id: 10764, name: 'Reality' },
+  { id: 10765, name: 'Sci-Fi & Fantasy' },
+  { id: 10766, name: 'Soap' },
+  { id: 10767, name: 'Talk' },
+  { id: 10768, name: 'War & Politics' },
   { id: 37, name: 'Western' }
 ];
 
@@ -35,22 +34,22 @@ const GENRES = [
 const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
   return (
     <div className="flex flex-col items-center py-10 border-t border-slate-800 mt-8">
-      <h3 className="text-sm font-semibold text-slate-400 mb-4">🎲 Random Movie Pick</h3>
+      <h3 className="text-sm font-semibold text-slate-400 mb-4">🎲 Random TV Show Pick</h3>
       
       {item ? (
         <div 
-          onClick={() => navigate(`/movie/${item.id}`)}
+          onClick={() => navigate(`/details/tv/${item.id}`)}
           className="w-40 cursor-pointer group"
         >
           <div className="relative rounded-xl overflow-hidden mb-3 shadow-lg">
             <img
               src={item.poster_path ? `${IMG_BASE}${item.poster_path}` : '/placeholder.jpg'}
-              alt={item.title}
+              alt={item.name}
               className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
             <div className="absolute bottom-3 left-3 right-3">
-              <p className="text-white font-semibold text-sm truncate">{item.title}</p>
+              <p className="text-white font-semibold text-sm truncate">{item.name}</p>
               <p className="text-slate-400 text-xs">★ {(item.vote_average || 0).toFixed(1)}</p>
             </div>
           </div>
@@ -76,16 +75,16 @@ const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
 };
 
 // ============================================
-// Main Movies Component
+// Main TV Shows Component
 // ============================================
-const Movies = () => {
+const TVShows = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
   const genreFromState = location.state?.genreId;
   
   // State
-  const [movies, setMovies] = useState([]);
+  const [shows, setShows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState(genreFromState || null);
@@ -94,36 +93,36 @@ const Movies = () => {
   const [randomItem, setRandomItem] = useState(null);
 
   // ============================================
-  // BACKEND-SAFE: Fetch movies (can be replaced with backend endpoint)
+  // BACKEND-SAFE: Fetch TV shows (can be replaced with backend endpoint)
   // ============================================
   useEffect(() => {
-    const fetchMovies = async () => {
+    const fetchShows = async () => {
       setLoading(true);
       try {
-        let url = `${BASE_URL}/movie/popular?api_key=${API_KEY}&page=${currentPage}`;
+        let url = `${BASE_URL}/tv/popular?api_key=${API_KEY}&page=${currentPage}`;
         
         // Search takes priority
         if (searchQuery.trim()) {
-          url = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(searchQuery)}&page=${currentPage}`;
+          url = `${BASE_URL}/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(searchQuery)}&page=${currentPage}`;
         } else if (selectedGenre) {
-          url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=${selectedGenre}&page=${currentPage}`;
+          url = `${BASE_URL}/discover/tv?api_key=${API_KEY}&with_genres=${selectedGenre}&page=${currentPage}`;
         }
 
         const res = await fetch(url);
         const data = await res.json();
         
-        // Normalize response - UI consumes movies array
-        setMovies(data.results || []);
+        // Normalize response - UI consumes shows array
+        setShows(data.results || []);
         setTotalPages(Math.min(data.total_pages || 1, 500)); // TMDB limits to 500
       } catch (err) {
-        console.error('Failed to fetch movies:', err);
-        setMovies([]);
+        console.error('Failed to fetch TV shows:', err);
+        setShows([]);
       } finally {
         setLoading(false);
       }
     };
 
-    const debounce = setTimeout(fetchMovies, 300);
+    const debounce = setTimeout(fetchShows, 300);
     return () => clearTimeout(debounce);
   }, [searchQuery, selectedGenre, currentPage]);
 
@@ -143,8 +142,8 @@ const Movies = () => {
   // Random handler - NO daily limit
   // ============================================
   const handleRandomize = () => {
-    if (movies.length === 0) return;
-    const newItem = movies[Math.floor(Math.random() * movies.length)];
+    if (shows.length === 0) return;
+    const newItem = shows[Math.floor(Math.random() * shows.length)];
     setRandomItem(newItem);
   };
 
@@ -159,8 +158,8 @@ const Movies = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-black mb-1">Movies</h1>
-          <p className="text-slate-400 text-sm">Discover and explore movies</p>
+          <h1 className="text-3xl font-black mb-1">TV Shows</h1>
+          <p className="text-slate-400 text-sm">Discover and explore TV series</p>
         </div>
 
         <div className="flex gap-6">
@@ -173,7 +172,7 @@ const Movies = () => {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search movies..."
+                    placeholder="Search TV shows..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 pl-9 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
@@ -216,7 +215,7 @@ const Movies = () => {
             </div>
           </div>
 
-          {/* RIGHT: Movie Grid */}
+          {/* RIGHT: TV Shows Grid */}
           <div className="flex-1">
             {/* Active Filters */}
             {(searchQuery || selectedGenre) && (
@@ -231,34 +230,34 @@ const Movies = () => {
               <div className="flex justify-center py-20">
                 <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
-            ) : movies.length === 0 ? (
+            ) : shows.length === 0 ? (
               <div className="text-center py-20 text-slate-500">
-                <p>No movies found</p>
+                <p>No TV shows found</p>
                 <button onClick={clearFilters} className="mt-2 text-cyan-400 text-sm">Clear filters</button>
               </div>
             ) : (
               <>
                 {/* Grid */}
                 <div className="grid grid-cols-4 gap-4">
-                  {movies.map(movie => (
+                  {shows.map(show => (
                     <div
-                      key={movie.id}
-                      onClick={() => navigate(`/movie/${movie.id}`)}
+                      key={show.id}
+                      onClick={() => navigate(`/details/tv/${show.id}`)}
                       className="cursor-pointer group"
                     >
                       <div className="relative rounded-lg overflow-hidden mb-2">
                         <img
-                          src={movie.poster_path ? `${IMG_BASE}${movie.poster_path}` : '/placeholder.jpg'}
-                          alt={movie.title}
+                          src={show.poster_path ? `${IMG_BASE}${show.poster_path}` : '/placeholder.jpg'}
+                          alt={show.name}
                           className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         <div className="absolute top-2 left-2 bg-black/70 px-1.5 py-0.5 rounded text-xs font-bold">
-                          ★ {(movie.vote_average || 0).toFixed(1)}
+                          ★ {(show.vote_average || 0).toFixed(1)}
                         </div>
                       </div>
-                      <h3 className="font-medium text-sm truncate">{movie.title}</h3>
-                      <p className="text-xs text-slate-500">{movie.release_date?.slice(0, 4)}</p>
+                      <h3 className="font-medium text-sm truncate">{show.name}</h3>
+                      <p className="text-xs text-slate-500">{show.first_air_date?.slice(0, 4)}</p>
                     </div>
                   ))}
                 </div>
@@ -293,7 +292,7 @@ const Movies = () => {
               item={randomItem}
               onRandomize={handleRandomize}
               navigate={navigate}
-              itemsAvailable={movies.length > 0}
+              itemsAvailable={shows.length > 0}
             />
           </div>
         </div>
@@ -302,4 +301,4 @@ const Movies = () => {
   );
 };
 
-export default Movies;
+export default TVShows;

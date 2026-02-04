@@ -1,9 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// TODO: Replace with backend API when backend is ready
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
+
+// ============================================
+// JIKAN API for Japanese Anime
+// TODO: Replace with backend API when backend is ready
+// ============================================
+const JIKAN_BASE_URL = 'https://api.jikan.moe/v4';
 
 // ============================================
 // Horizontal scroll section component
@@ -24,9 +31,41 @@ const HorizontalSection = ({ title, items, type, navigate, color, viewAllPath })
   // Get correct detail route based on media type
   const getDetailPath = (item) => {
     if (type === 'tv') {
-      return `/tv/${item.id}`;
+      return `/details/tv/${item.id}`;
     }
-    return `/movie/${item.id}`;
+    if (type === 'animation') {
+      return `/details/animation/${item.id}`;
+    }
+    if (type === 'anime') {
+      return `/details/anime/${item.mal_id}`;
+    }
+    return `/details/movie/${item.id}`;
+  };
+
+  // Get image URL based on type
+  const getImageUrl = (item) => {
+    if (type === 'anime') {
+      return item.images?.jpg?.image_url || '/placeholder.jpg';
+    }
+    return item.poster_path ? `${IMG_BASE}${item.poster_path}` : '/placeholder.jpg';
+  };
+
+  // Get title based on type
+  const getTitle = (item) => {
+    if (type === 'anime') return item.title;
+    return item.title || item.name;
+  };
+
+  // Get rating based on type
+  const getRating = (item) => {
+    if (type === 'anime') return item.score || 0;
+    return item.vote_average || 0;
+  };
+
+  // Get year based on type
+  const getYear = (item) => {
+    if (type === 'anime') return item.aired?.prop?.from?.year || '';
+    return (item.release_date || item.first_air_date || '').slice(0, 4);
   };
 
   if (!items || items.length === 0) return null;
@@ -73,23 +112,23 @@ const HorizontalSection = ({ title, items, type, navigate, color, viewAllPath })
       >
         {items.map((item) => (
           <div
-            key={item.id}
+            key={type === 'anime' ? item.mal_id : item.id}
             onClick={() => navigate(getDetailPath(item))}
             className="flex-shrink-0 w-36 cursor-pointer group"
           >
             <div className="relative rounded-lg overflow-hidden mb-2">
               <img
-                src={item.poster_path ? `${IMG_BASE}${item.poster_path}` : '/placeholder.jpg'}
-                alt={item.title || item.name}
+                src={getImageUrl(item)}
+                alt={getTitle(item)}
                 className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="absolute top-2 left-2 bg-black/70 px-1.5 py-0.5 rounded text-xs font-bold">
-                ★ {(item.vote_average || 0).toFixed(1)}
+                ★ {getRating(item).toFixed(1)}
               </div>
             </div>
-            <h3 className="font-medium text-sm truncate">{item.title || item.name}</h3>
-            <p className="text-xs text-slate-500">{(item.release_date || item.first_air_date || '').slice(0, 4)}</p>
+            <h3 className="font-medium text-sm truncate">{getTitle(item)}</h3>
+            <p className="text-xs text-slate-500">{getYear(item)}</p>
           </div>
         ))}
       </div>
@@ -106,7 +145,7 @@ const RandomCard = ({ item, onRandomize, navigate, allItems }) => {
     if (!item) return '/browse';
     // Check if it's a TV show (has 'name' but no 'title', or has first_air_date)
     const isTV = item.first_air_date && !item.release_date;
-    return isTV ? `/tv/${item.id}` : `/movie/${item.id}`;
+    return isTV ? `/details/tv/${item.id}` : `/details/movie/${item.id}`;
   };
 
   return (
@@ -158,18 +197,21 @@ const Browse = () => {
   const navigate = useNavigate();
   const [movies, setMovies] = useState([]);
   const [tvShows, setTvShows] = useState([]);
+  const [anime, setAnime] = useState([]);
   const [animations, setAnimations] = useState([]);
   const [randomItem, setRandomItem] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // ============================================
   // BACKEND-SAFE: Fetch browse data
-  // This logic can be replaced with backend API later
+  // Uses TMDB for movies, TV, animations
+  // Uses Jikan for Japanese anime
   // ============================================
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        // Fetch from TMDB
         const [moviesRes, tvRes, animRes] = await Promise.all([
           fetch(`${BASE_URL}/movie/popular?api_key=${API_KEY}`),
           fetch(`${BASE_URL}/tv/popular?api_key=${API_KEY}`),
@@ -183,6 +225,20 @@ const Browse = () => {
         setMovies(moviesData.results || []);
         setTvShows(tvData.results || []);
         setAnimations(animData.results || []);
+        
+        // Fetch from Jikan (with slight delay to avoid rate limiting)
+        setTimeout(async () => {
+          try {
+            const animeRes = await fetch(`${JIKAN_BASE_URL}/top/anime?limit=20`);
+            if (animeRes.ok) {
+              const animeData = await animeRes.json();
+              setAnime(animeData.data || []);
+            }
+          } catch (err) {
+            console.error('Failed to fetch anime:', err);
+          }
+        }, 300);
+        
       } catch (err) {
         console.error('Failed to fetch browse data:', err);
       } finally {
@@ -219,7 +275,7 @@ const Browse = () => {
       {/* Header */}
       <div className="max-w-6xl mx-auto px-4 pt-8 pb-6">
         <h1 className="text-3xl font-black mb-2">Browse</h1>
-        <p className="text-slate-400">Discover movies, TV shows, and animations</p>
+        <p className="text-slate-400">Discover movies, TV shows, anime, and animations</p>
       </div>
 
       {/* Horizontal Sections */}
@@ -243,9 +299,18 @@ const Browse = () => {
         />
         
         <HorizontalSection 
+          title="🎌 Anime" 
+          items={anime} 
+          type="anime"
+          navigate={navigate} 
+          color="bg-pink-500"
+          viewAllPath="/anime"
+        />
+        
+        <HorizontalSection 
           title="Animations" 
           items={animations} 
-          type="movie"
+          type="animation"
           navigate={navigate} 
           color="bg-amber-500"
           viewAllPath="/animations"

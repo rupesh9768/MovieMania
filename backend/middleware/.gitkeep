@@ -1,0 +1,2 @@
+# Middleware folder - Authentication, error handling, etc.
+# Example: authMiddleware.js, errorHandler.js

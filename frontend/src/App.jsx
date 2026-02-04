@@ -10,6 +10,7 @@ import Movies from './pages/Movies';
 import Browse from './pages/Browse';
 import TVShows from './pages/TVShows';
 import Animations from './pages/Animations';
+import Anime from './pages/Anime';
 import AdminDashboard from './pages/AdminDashboard';
 import Booking from './pages/Booking';
 
@@ -39,6 +40,10 @@ function App() {
             <Route path="/movies" element={<Movies />} />
             <Route path="/tvshows" element={<TVShows />} />
             <Route path="/animations" element={<Animations />} />
+            <Route path="/anime" element={<Anime />} />
+            {/* Unified details route: /details/:mediaType/:id */}
+            <Route path="/details/:mediaType/:id" element={<MovieDetails />} />
+            {/* Legacy routes for backwards compatibility */}
             <Route path="/movie/:id" element={<MovieDetails />} />
             <Route path="/tv/:id" element={<MovieDetails />} />
             
