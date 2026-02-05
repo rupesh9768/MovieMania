@@ -13,6 +13,8 @@ import Animations from './pages/Animations';
 import Anime from './pages/Anime';
 import AdminDashboard from './pages/AdminDashboard';
 import Booking from './pages/Booking';
+import Theater from './pages/Theater';
+import TheaterDetails from './pages/TheaterDetails';
 
 // Import Components (used as pages)
 import ShowtimeSelection from './components/ShowtimeSelection';
@@ -50,6 +52,11 @@ function App() {
             {/* Booking Flow Routes */}
             <Route path="/showtimes/:movieId" element={<ShowtimeSelection />} />
             <Route path="/seat-selection/:movieId/:showtimeId" element={<Booking />} />
+            <Route path="/booking/:id" element={<Booking />} />
+            
+            {/* Theater Routes - Movies in our halls */}
+            <Route path="/theater" element={<Theater />} />
+            <Route path="/theater/:id" element={<TheaterDetails />} />
             
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />

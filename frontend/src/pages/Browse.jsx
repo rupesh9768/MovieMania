@@ -1,338 +1,377 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-// TODO: Replace with backend API when backend is ready
-const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
-const BASE_URL = 'https://api.themoviedb.org/3';
-const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
+import { backendApi } from '../api';
 
 // ============================================
-// JIKAN API for Japanese Anime
-// TODO: Replace with backend API when backend is ready
-// ============================================
-const JIKAN_BASE_URL = 'https://api.jikan.moe/v4';
-
-// ============================================
-// Horizontal scroll section component
-// ============================================
-const HorizontalSection = ({ title, items, type, navigate, color, viewAllPath }) => {
-  const scrollRef = useRef(null);
-
-  const scroll = (direction) => {
-    if (scrollRef.current) {
-      const scrollAmount = 300;
-      scrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  // Get correct detail route based on media type
-  const getDetailPath = (item) => {
-    if (type === 'tv') {
-      return `/details/tv/${item.id}`;
-    }
-    if (type === 'animation') {
-      return `/details/animation/${item.id}`;
-    }
-    if (type === 'anime') {
-      return `/details/anime/${item.mal_id}`;
-    }
-    return `/details/movie/${item.id}`;
-  };
-
-  // Get image URL based on type
-  const getImageUrl = (item) => {
-    if (type === 'anime') {
-      return item.images?.jpg?.image_url || '/placeholder.jpg';
-    }
-    return item.poster_path ? `${IMG_BASE}${item.poster_path}` : '/placeholder.jpg';
-  };
-
-  // Get title based on type
-  const getTitle = (item) => {
-    if (type === 'anime') return item.title;
-    return item.title || item.name;
-  };
-
-  // Get rating based on type
-  const getRating = (item) => {
-    if (type === 'anime') return item.score || 0;
-    return item.vote_average || 0;
-  };
-
-  // Get year based on type
-  const getYear = (item) => {
-    if (type === 'anime') return item.aired?.prop?.from?.year || '';
-    return (item.release_date || item.first_air_date || '').slice(0, 4);
-  };
-
-  if (!items || items.length === 0) return null;
-
-  return (
-    <section className="mb-10">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <span className={`w-1.5 h-5 ${color} rounded-full`}></span>
-          <h2 className="text-lg font-bold">{title}</h2>
-        </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate(viewAllPath)}
-            className="text-sm text-slate-400 hover:text-cyan-400 transition-colors"
-          >
-            View All →
-          </button>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => scroll('left')}
-              className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button 
-              onClick={() => scroll('right')}
-              className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div 
-        ref={scrollRef}
-        className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {items.map((item) => (
-          <div
-            key={type === 'anime' ? item.mal_id : item.id}
-            onClick={() => navigate(getDetailPath(item))}
-            className="flex-shrink-0 w-36 cursor-pointer group"
-          >
-            <div className="relative rounded-lg overflow-hidden mb-2">
-              <img
-                src={getImageUrl(item)}
-                alt={getTitle(item)}
-                className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="absolute top-2 left-2 bg-black/70 px-1.5 py-0.5 rounded text-xs font-bold">
-                ★ {getRating(item).toFixed(1)}
-              </div>
-            </div>
-            <h3 className="font-medium text-sm truncate">{getTitle(item)}</h3>
-            <p className="text-xs text-slate-500">{getYear(item)}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-};
-
-// ============================================
-// Random Card Component (at bottom) - NO daily limit
-// ============================================
-const RandomCard = ({ item, onRandomize, navigate, allItems }) => {
-  // Get correct detail route
-  const getDetailPath = () => {
-    if (!item) return '/browse';
-    // Check if it's a TV show (has 'name' but no 'title', or has first_air_date)
-    const isTV = item.first_air_date && !item.release_date;
-    return isTV ? `/details/tv/${item.id}` : `/details/movie/${item.id}`;
-  };
-
-  return (
-    <div className="flex flex-col items-center py-10 border-t border-slate-800">
-      <h3 className="text-sm font-semibold text-slate-400 mb-4">🎲 Random Pick</h3>
-      
-      {item ? (
-        <div 
-          onClick={() => navigate(getDetailPath())}
-          className="w-44 cursor-pointer group"
-        >
-          <div className="relative rounded-xl overflow-hidden mb-3 shadow-lg">
-            <img
-              src={item.poster_path ? `${IMG_BASE}${item.poster_path}` : '/placeholder.jpg'}
-              alt={item.title || item.name}
-              className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-            <div className="absolute bottom-3 left-3 right-3">
-              <p className="text-white font-semibold text-sm truncate">{item.title || item.name}</p>
-              <p className="text-slate-400 text-xs">★ {(item.vote_average || 0).toFixed(1)}</p>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="w-44 h-64 bg-slate-800/50 rounded-xl flex items-center justify-center border-2 border-dashed border-slate-700">
-          <p className="text-slate-500 text-sm text-center px-4">Click below to get your random pick!</p>
-        </div>
-      )}
-
-      <button
-        onClick={onRandomize}
-        disabled={allItems.length === 0}
-        className="mt-4 px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-        {item ? 'Get Another' : 'Get Random'}
-      </button>
-    </div>
-  );
-};
-
-// ============================================
-// Main Browse Component
+// BROWSE PAGE
+// Uses ONLY backend API - No mock data
 // ============================================
 const Browse = () => {
   const navigate = useNavigate();
-  const [movies, setMovies] = useState([]);
-  const [tvShows, setTvShows] = useState([]);
-  const [anime, setAnime] = useState([]);
-  const [animations, setAnimations] = useState([]);
-  const [randomItem, setRandomItem] = useState(null);
+  
+  // State
+  const [allMovies, setAllMovies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('all');
+  const [selectedGenre, setSelectedGenre] = useState('all');
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
 
   // ============================================
-  // BACKEND-SAFE: Fetch browse data
-  // Uses TMDB for movies, TV, animations
-  // Uses Jikan for Japanese anime
+  // Fetch movies from backend
   // ============================================
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    const fetchMovies = async () => {
       try {
-        // Fetch from TMDB
-        const [moviesRes, tvRes, animRes] = await Promise.all([
-          fetch(`${BASE_URL}/movie/popular?api_key=${API_KEY}`),
-          fetch(`${BASE_URL}/tv/popular?api_key=${API_KEY}`),
-          fetch(`${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=16`)
-        ]);
-
-        const moviesData = await moviesRes.json();
-        const tvData = await tvRes.json();
-        const animData = await animRes.json();
-
-        setMovies(moviesData.results || []);
-        setTvShows(tvData.results || []);
-        setAnimations(animData.results || []);
+        setLoading(true);
+        setError(null);
         
-        // Fetch from Jikan (with slight delay to avoid rate limiting)
-        setTimeout(async () => {
-          try {
-            const animeRes = await fetch(`${JIKAN_BASE_URL}/top/anime?limit=20`);
-            if (animeRes.ok) {
-              const animeData = await animeRes.json();
-              setAnime(animeData.data || []);
-            }
-          } catch (err) {
-            console.error('Failed to fetch anime:', err);
-          }
-        }, 300);
-        
+        const movies = await backendApi.getBackendMovies();
+        console.log('✅ Browse: Fetched movies:', movies.length);
+        setAllMovies(movies);
       } catch (err) {
-        console.error('Failed to fetch browse data:', err);
+        console.error('❌ Failed to fetch movies:', err);
+        setError('Failed to load movies. Please check if backend is running.');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchData();
+    
+    fetchMovies();
   }, []);
 
   // ============================================
-  // Random handler - NO daily limit, can click anytime
+  // Derive unique countries and genres from movies
   // ============================================
-  const handleRandomize = () => {
-    const allItems = [...movies, ...tvShows];
-    if (allItems.length === 0) return;
-    
-    const newItem = allItems[Math.floor(Math.random() * allItems.length)];
-    setRandomItem(newItem);
+  const countries = useMemo(() => {
+    const unique = [...new Set(allMovies.map(m => m.country).filter(Boolean))];
+    return unique.sort();
+  }, [allMovies]);
+
+  const genres = useMemo(() => {
+    const allGenres = allMovies.flatMap(m => m.genres || []);
+    const unique = [...new Set(allGenres.filter(Boolean))];
+    return unique.sort();
+  }, [allMovies]);
+
+  // ============================================
+  // Filter movies (client-side)
+  // TODO: Move to backend when API supports filtering
+  // ============================================
+  const filteredMovies = useMemo(() => {
+    let result = [...allMovies];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(m => 
+        m.title?.toLowerCase().includes(query) ||
+        m.description?.toLowerCase().includes(query)
+      );
+    }
+
+    // Country filter
+    if (selectedCountry !== 'all') {
+      result = result.filter(m => m.country === selectedCountry);
+    }
+
+    // Genre filter
+    if (selectedGenre !== 'all') {
+      result = result.filter(m => 
+        m.genres?.some(g => g.toLowerCase() === selectedGenre.toLowerCase())
+      );
+    }
+
+    return result;
+  }, [allMovies, searchQuery, selectedCountry, selectedGenre]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCountry, selectedGenre]);
+
+  // ============================================
+  // Pagination
+  // ============================================
+  const totalPages = Math.ceil(filteredMovies.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedMovies = filteredMovies.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedCountry('all');
+    setSelectedGenre('all');
   };
 
-  const allItems = [...movies, ...tvShows];
+  const hasActiveFilters = searchQuery || selectedCountry !== 'all' || selectedGenre !== 'all';
 
+  // ============================================
+  // Loading state
+  // ============================================
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0b1121] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading movies...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================
+  // Error state
+  // ============================================
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0b1121] flex items-center justify-center">
+        <div className="text-center max-w-md px-4">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold text-red-400 mb-2">Connection Error</h2>
+          <p className="text-slate-400 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-6 rounded-full transition-colors cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#0b1121] text-white">
-      {/* Header */}
-      <div className="max-w-6xl mx-auto px-4 pt-8 pb-6">
-        <h1 className="text-3xl font-black mb-2">Browse</h1>
-        <p className="text-slate-400">Discover movies, TV shows, anime, and animations</p>
-      </div>
-
-      {/* Horizontal Sections */}
-      <div className="max-w-6xl mx-auto px-4">
-        <HorizontalSection 
-          title="Movies" 
-          items={movies} 
-          type="movie"
-          navigate={navigate} 
-          color="bg-cyan-500"
-          viewAllPath="/movies"
-        />
+      <div className="max-w-7xl mx-auto px-4 py-8">
         
-        <HorizontalSection 
-          title="TV Shows" 
-          items={tvShows} 
-          type="tv"
-          navigate={navigate} 
-          color="bg-purple-500"
-          viewAllPath="/tvshows"
-        />
-        
-        <HorizontalSection 
-          title="🎌 Anime" 
-          items={anime} 
-          type="anime"
-          navigate={navigate} 
-          color="bg-pink-500"
-          viewAllPath="/anime"
-        />
-        
-        <HorizontalSection 
-          title="Animations" 
-          items={animations} 
-          type="animation"
-          navigate={navigate} 
-          color="bg-amber-500"
-          viewAllPath="/animations"
-        />
-      </div>
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-black mb-2">Browse Movies</h1>
+          <p className="text-slate-400">
+            {filteredMovies.length} movie{filteredMovies.length !== 1 ? 's' : ''} found
+            {hasActiveFilters && ' (filtered)'}
+          </p>
+        </div>
 
-      {/* Random Section at Bottom */}
-      <div className="max-w-6xl mx-auto px-4">
-        <RandomCard 
-          item={randomItem}
-          onRandomize={handleRandomize}
-          navigate={navigate}
-          allItems={allItems}
-        />
-      </div>
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* ========== LEFT SIDEBAR ========== */}
+          <aside className="lg:w-64 flex-shrink-0">
+            <div className="lg:sticky lg:top-24 space-y-6 bg-slate-900/50 rounded-xl p-5 border border-slate-800">
+              
+              {/* Search */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">
+                  Search
+                </label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search movies..."
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition-colors"
+                />
+              </div>
 
-      {/* Hide scrollbar CSS */}
-      <style>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
+              {/* Country Filter */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">
+                  Country
+                </label>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setSelectedCountry('all')}
+                    className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
+                      selectedCountry === 'all'
+                        ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
+                        : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'
+                    }`}
+                  >
+                    All Countries
+                  </button>
+                  {countries.map(country => (
+                    <button
+                      key={country}
+                      onClick={() => setSelectedCountry(country)}
+                      className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
+                        selectedCountry === country
+                          ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
+                          : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'
+                      }`}
+                    >
+                      {country}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Genre Filter */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">
+                  Genre
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedGenre('all')}
+                    className={`px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer ${
+                      selectedGenre === 'all'
+                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
+                        : 'bg-slate-800/50 text-slate-500 hover:bg-slate-800 hover:text-white border border-slate-700'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {genres.map(genre => (
+                    <button
+                      key={genre}
+                      onClick={() => setSelectedGenre(genre)}
+                      className={`px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer ${
+                        selectedGenre === genre
+                          ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
+                          : 'bg-slate-800/50 text-slate-500 hover:bg-slate-800 hover:text-white border border-slate-700'
+                      }`}
+                    >
+                      {genre}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="w-full py-2.5 text-sm text-red-400 hover:text-red-300 transition-colors cursor-pointer border border-red-500/30 rounded-lg hover:bg-red-500/10"
+                >
+                  Clear All Filters
+                </button>
+              )}
+            </div>
+          </aside>
+
+          {/* ========== MAIN CONTENT ========== */}
+          <main className="flex-1">
+            {paginatedMovies.length > 0 ? (
+              <>
+                {/* Movie Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                  {paginatedMovies.map((movie) => (
+                    <div
+                      key={movie.id}
+                      onClick={() => navigate(`/details/movie/${movie.id}`)}
+                      className="group cursor-pointer"
+                    >
+                      <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-cyan-500/50 shadow-lg transition-all duration-300">
+                        <img
+                          src={movie.poster || movie.image}
+                          alt={movie.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        
+                        {/* Country Badge */}
+                        {movie.country && (
+                          <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-bold">
+                            {movie.country === 'Nepal' ? '🇳🇵 NP' : 
+                             movie.country === 'India' ? '🇮🇳 IN' : 
+                             movie.country === 'USA' ? '🇺🇸 US' : movie.country}
+                          </div>
+                        )}
+                        
+                        {/* Rating */}
+                        {movie.rating > 0 && (
+                          <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                            <span className="text-yellow-400">★</span> {movie.rating.toFixed(1)}
+                          </div>
+                        )}
+                        
+                        {/* View Details on hover */}
+                        <div className="absolute bottom-0 left-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <span className="text-sm text-cyan-400 font-semibold">View Details →</span>
+                        </div>
+                      </div>
+                      <h3 className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors">
+                        {movie.title}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1">{movie.year}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-3 mt-12">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-5 py-2.5 rounded-lg text-sm font-medium bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      ← Previous
+                    </button>
+                    
+                    <div className="flex gap-1.5">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                              currentPage === pageNum
+                                ? 'bg-cyan-500 text-black'
+                                : 'bg-slate-800 hover:bg-slate-700'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-5 py-2.5 rounded-lg text-sm font-medium bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-20 bg-slate-900/30 rounded-xl border border-dashed border-slate-700">
+                <span className="text-5xl mb-4 block">🔍</span>
+                <h3 className="text-xl font-bold text-slate-300 mb-2">No Movies Found</h3>
+                <p className="text-slate-500 mb-6">Try adjusting your filters or search query</p>
+                <button
+                  onClick={clearFilters}
+                  className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-full transition-all cursor-pointer"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
     </div>
   );
 };

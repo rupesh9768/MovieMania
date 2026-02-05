@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { adminMovies } from '../data/adminMovies';
+import { backendApi } from '../api';
 
 // INLINE MOCK DATA: Showtimes (replace with API call when backend is ready)
 const MOCK_SHOWTIMES = [
@@ -36,9 +36,14 @@ const ShowtimeSelection = () => {
     const loadData = async () => {
       setLoading(true);
       
-      // Find movie details from local data
-      const movieData = adminMovies.find(m => String(m.id) === String(movieId));
-      setMovie(movieData);
+      // Find movie details from backend API
+      try {
+        const movieData = await backendApi.getBackendMovieById(movieId);
+        setMovie(movieData);
+      } catch (err) {
+        console.error('Failed to fetch movie:', err);
+        setMovie(null);
+      }
       
       // TODO: Fetch showtimes from API when backend is ready
       // const res = await fetch(`/api/showtimes?movieId=${movieId}`);

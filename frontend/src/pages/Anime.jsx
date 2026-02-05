@@ -43,40 +43,40 @@ const ANIME_TYPES = [
 // ============================================
 const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
   return (
-    <div className="flex flex-col items-center py-10 border-t border-slate-800 mt-8">
-      <h3 className="text-sm font-semibold text-slate-400 mb-4">🎲 Random Anime Pick</h3>
+    <div className="flex flex-col items-center py-12 border-t border-slate-800 mt-10">
+      <h3 className="text-sm font-semibold text-slate-400 mb-5">🎲 Random Anime Pick</h3>
       
       {item ? (
         <div 
           onClick={() => navigate(`/details/anime/${item.mal_id}`)}
-          className="w-40 cursor-pointer group"
+          className="w-48 cursor-pointer group"
         >
-          <div className="relative rounded-xl overflow-hidden mb-3 shadow-lg">
+          <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-3 shadow-xl border border-slate-800/50 group-hover:border-pink-500/50 group-hover:shadow-pink-500/20 transition-all duration-300">
             <img
               src={item.images?.jpg?.image_url || '/placeholder.jpg'}
               alt={item.title}
-              className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-            <div className="absolute bottom-3 left-3 right-3">
-              <p className="text-white font-semibold text-sm truncate">{item.title}</p>
-              <p className="text-slate-400 text-xs">★ {(item.score || 0).toFixed(1)}</p>
-            </div>
-            <div className="absolute top-2 right-2 bg-pink-500/90 px-1.5 py-0.5 rounded text-xs font-bold">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+            <div className="absolute top-2.5 right-2.5 bg-pink-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold">
               🎌 {item.type || 'Anime'}
+            </div>
+            <div className="absolute bottom-4 left-4 right-4">
+              <p className="text-white font-bold text-sm truncate">{item.title}</p>
+              <p className="text-yellow-400 text-xs mt-1">★ {(item.score || 0).toFixed(1)}</p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="w-40 h-56 bg-slate-800/50 rounded-xl flex items-center justify-center border-2 border-dashed border-slate-700">
-          <p className="text-slate-500 text-xs text-center px-3">Click to get random!</p>
+        <div className="w-48 aspect-[2/3] bg-slate-800/50 rounded-xl flex items-center justify-center border-2 border-dashed border-slate-700">
+          <p className="text-slate-500 text-sm text-center px-4">Click to get random!</p>
         </div>
       )}
 
       <button
         onClick={onRandomize}
         disabled={!itemsAvailable}
-        className="mt-4 px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-pink-500 hover:bg-pink-400 text-white disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed"
+        className="mt-5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 bg-pink-500 hover:bg-pink-400 text-white disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed shadow-lg hover:shadow-pink-500/25"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -293,29 +293,32 @@ const Anime = () => {
             ) : !error && (
               <>
                 {/* Grid */}
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-4 gap-5">
                   {animeList.map(anime => (
                     <div
                       key={anime.mal_id}
                       onClick={() => navigate(`/details/anime/${anime.mal_id}`)}
                       className="cursor-pointer group"
                     >
-                      <div className="relative rounded-lg overflow-hidden mb-2">
+                      <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2.5 border border-slate-800/50 group-hover:border-pink-500/50 shadow-lg shadow-black/20 group-hover:shadow-pink-500/10 transition-all duration-300">
                         <img
                           src={anime.images?.jpg?.image_url || '/placeholder.jpg'}
                           alt={anime.title}
-                          className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="absolute top-2 left-2 bg-black/70 px-1.5 py-0.5 rounded text-xs font-bold">
-                          ★ {(anime.score || 0).toFixed(1)}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className="absolute top-2.5 left-2.5 bg-black/80 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                          <span className="text-yellow-400">★</span> {(anime.score || 0).toFixed(1)}
                         </div>
-                        <div className="absolute top-2 right-2 bg-pink-500/90 px-1.5 py-0.5 rounded text-xs font-bold">
+                        <div className="absolute top-2.5 right-2.5 bg-pink-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold">
                           {anime.type || 'Anime'}
                         </div>
+                        <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <span className="text-xs text-pink-400 font-medium">View Details →</span>
+                        </div>
                       </div>
-                      <h3 className="font-medium text-sm truncate">{anime.title}</h3>
-                      <p className="text-xs text-slate-500">{anime.aired?.prop?.from?.year || 'TBA'}</p>
+                      <h3 className="font-semibold text-sm truncate group-hover:text-pink-400 transition-colors">{anime.title}</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">{anime.aired?.prop?.from?.year || 'TBA'}</p>
                     </div>
                   ))}
                 </div>

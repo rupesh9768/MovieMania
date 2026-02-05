@@ -6,6 +6,7 @@ import cors from 'cors';
 
 // Import routes
 import healthRoutes from './routes/health.routes.js';
+import movieRoutes from './routes/movie.routes.js';
 
 // Create Express app
 const app = express();
@@ -33,12 +34,18 @@ app.use(express.urlencoded({ extended: true }));
 // Health check
 app.use('/api/health', healthRoutes);
 
+// Movies API
+app.use('/api/movies', movieRoutes);
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
     message: 'MovieMania API',
     version: '1.0.0',
-    health: '/api/health'
+    endpoints: {
+      health: '/api/health',
+      movies: '/api/movies'
+    }
   });
 });
 

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 
-// TODO: Replace with backend API when backend is ready
+// TMDB API Configuration
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 
 // ============================================
-// BACKEND-SAFE: Genres list (can be fetched from backend later)
+// TMDB Genre List
 // ============================================
 const GENRES = [
   { id: 28, name: 'Action' },
@@ -31,41 +32,52 @@ const GENRES = [
 ];
 
 // ============================================
-// Random Card Component - NO daily limit
+// Random Card Component - Uses TMDB movies
 // ============================================
 const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
+  // Get image URL
+  const getImageUrl = () => {
+    if (!item) return 'https://via.placeholder.com/300x450?text=?';
+    return item.image || (item.poster_path ? `${IMG_BASE}${item.poster_path}` : 'https://via.placeholder.com/300x450?text=No+Poster');
+  };
+
+  // Get rating
+  const getRating = () => {
+    return item?.rating || item?.vote_average || 0;
+  };
+
   return (
-    <div className="flex flex-col items-center py-10 border-t border-slate-800 mt-8">
-      <h3 className="text-sm font-semibold text-slate-400 mb-4">🎲 Random Movie Pick</h3>
+    <div className="flex flex-col items-center py-12 border-t border-slate-800 mt-10">
+      <h3 className="text-sm font-semibold text-slate-400 mb-5">🎲 Random Movie Pick</h3>
       
       {item ? (
         <div 
-          onClick={() => navigate(`/details/movie/${item.id}`)}
-          className="w-40 cursor-pointer group"
+          onClick={() => navigate(`/movie/${item.id}`)}
+          className="w-48 cursor-pointer group"
         >
-          <div className="relative rounded-xl overflow-hidden mb-3 shadow-lg">
+          <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-3 shadow-xl border border-slate-800/50 group-hover:border-cyan-500/50 group-hover:shadow-cyan-500/20 transition-all duration-300">
             <img
-              src={item.poster_path ? `${IMG_BASE}${item.poster_path}` : '/placeholder.jpg'}
+              src={getImageUrl()}
               alt={item.title}
-              className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-            <div className="absolute bottom-3 left-3 right-3">
-              <p className="text-white font-semibold text-sm truncate">{item.title}</p>
-              <p className="text-slate-400 text-xs">★ {(item.vote_average || 0).toFixed(1)}</p>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+            <div className="absolute bottom-4 left-4 right-4">
+              <p className="text-white font-bold text-sm truncate">{item.title}</p>
+              <p className="text-yellow-400 text-xs mt-1">★ {getRating().toFixed(1)}</p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="w-40 h-56 bg-slate-800/50 rounded-xl flex items-center justify-center border-2 border-dashed border-slate-700">
-          <p className="text-slate-500 text-xs text-center px-3">Click to get random!</p>
+        <div className="w-48 aspect-[2/3] bg-slate-800/50 rounded-xl flex items-center justify-center border-2 border-dashed border-slate-700">
+          <p className="text-slate-500 text-sm text-center px-4">Click to get random!</p>
         </div>
       )}
 
       <button
         onClick={onRandomize}
         disabled={!itemsAvailable}
-        className="mt-4 px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed"
+        className="mt-5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed shadow-lg hover:shadow-cyan-500/25"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -95,29 +107,46 @@ const Movies = () => {
   const [randomItem, setRandomItem] = useState(null);
 
   // ============================================
-  // BACKEND-SAFE: Fetch movies (can be replaced with backend endpoint)
+  // TMDB API: Fetch movies directly from TMDB
   // ============================================
   useEffect(() => {
     const fetchMovies = async () => {
       setLoading(true);
       try {
-        let url = `${BASE_URL}/movie/popular?api_key=${API_KEY}&page=${currentPage}`;
+        let url;
         
-        // Search takes priority
         if (searchQuery.trim()) {
+          // Search movies
           url = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(searchQuery)}&page=${currentPage}`;
         } else if (selectedGenre) {
-          url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=${selectedGenre}&page=${currentPage}`;
+          // Discover by genre
+          url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=${selectedGenre}&sort_by=popularity.desc&page=${currentPage}`;
+        } else {
+          // Popular movies
+          url = `${BASE_URL}/movie/popular?api_key=${API_KEY}&page=${currentPage}`;
         }
-
-        const res = await fetch(url);
-        const data = await res.json();
         
-        // Normalize response - UI consumes movies array
-        setMovies(data.results || []);
-        setTotalPages(Math.min(data.total_pages || 1, 500)); // TMDB limits to 500
+        const response = await axios.get(url);
+        const results = response.data.results || [];
+        
+        // Normalize TMDB data
+        const normalizedMovies = results.map(movie => ({
+          id: movie.id,
+          title: movie.title,
+          rating: movie.vote_average || 0,
+          image: movie.poster_path ? `${IMG_BASE}${movie.poster_path}` : null,
+          poster_path: movie.poster_path,
+          overview: movie.overview,
+          year: movie.release_date?.slice(0, 4) || '',
+          genre_ids: movie.genre_ids || []
+        }));
+        
+        setMovies(normalizedMovies);
+        setTotalPages(Math.min(response.data.total_pages || 1, 20)); // Limit to 20 pages
+        
+        console.log(`✅ TMDB returned ${normalizedMovies.length} movies (page ${currentPage})`);
       } catch (err) {
-        console.error('Failed to fetch movies:', err);
+        console.error('❌ Failed to fetch movies from TMDB:', err);
         setMovies([]);
       } finally {
         setLoading(false);
@@ -233,38 +262,51 @@ const Movies = () => {
                 <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
             ) : movies.length === 0 ? (
-              <div className="text-center py-20 text-slate-500">
-                <p>No movies found</p>
-                <button onClick={clearFilters} className="mt-2 text-cyan-400 text-sm">Clear filters</button>
+              <div className="text-center py-20 bg-slate-900/30 rounded-xl border border-dashed border-slate-700">
+                <span className="text-3xl mb-3 block">🎬</span>
+                <p className="text-slate-400 font-medium">No movies available</p>
+                <p className="text-slate-600 text-sm mt-1">Check back soon for new releases</p>
+                {(searchQuery || selectedGenre) && (
+                  <button onClick={clearFilters} className="mt-4 text-cyan-400 text-sm hover:underline">
+                    Clear filters
+                  </button>
+                )}
               </div>
             ) : (
               <>
                 {/* Grid */}
-                <div className="grid grid-cols-4 gap-3">
-                  {movies.map(movie => (
-                    <div
-                      key={movie.id}
-                      onClick={() => navigate(`/details/movie/${movie.id}`)}
-                      className="cursor-pointer group"
-                    >
-                      <div className="relative rounded-lg overflow-hidden mb-1.5 border border-slate-800 group-hover:border-cyan-500/40 transition-all">
-                        <img
-                          src={movie.poster_path ? `${IMG_BASE}${movie.poster_path}` : '/placeholder.jpg'}
-                          alt={movie.title}
-                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="absolute top-1.5 left-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                          <span className="text-yellow-400">★</span> {(movie.vote_average || 0).toFixed(1)}
+                <div className="grid grid-cols-4 gap-5">
+                  {movies.map(movie => {
+                    // Handle TMDB format
+                    const imageUrl = movie.image || (movie.poster_path ? `${IMG_BASE}${movie.poster_path}` : 'https://via.placeholder.com/300x450?text=No+Poster');
+                    const rating = movie.rating || movie.vote_average || 0;
+                    const year = movie.year || movie.release_date?.slice?.(0, 4) || '';
+                    
+                    return (
+                      <div
+                        key={movie.id}
+                        onClick={() => navigate(`/movie/${movie.id}`)}
+                        className="cursor-pointer group"
+                      >
+                        <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2.5 border border-slate-800/50 group-hover:border-cyan-500/50 shadow-lg shadow-black/20 group-hover:shadow-cyan-500/10 transition-all duration-300">
+                          <img
+                            src={imageUrl}
+                            alt={movie.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          <div className="absolute top-2.5 left-2.5 bg-black/80 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                            <span className="text-yellow-400">★</span> {rating.toFixed(1)}
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <span className="text-xs text-cyan-400 font-medium">View Details →</span>
+                          </div>
                         </div>
-                        <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="text-[10px] text-cyan-400 font-medium">View Details →</span>
-                        </div>
+                        <h3 className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors">{movie.title}</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">{year}</p>
                       </div>
-                      <h3 className="font-medium text-xs truncate group-hover:text-cyan-400 transition-colors">{movie.title}</h3>
-                      <p className="text-[10px] text-slate-500">{movie.release_date?.slice(0, 4)}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Pagination */}

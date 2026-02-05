@@ -4,18 +4,24 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const browseRef = useRef(null);
+  const profileRef = useRef(null);
 
   const isActive = (path) => location.pathname === path;
   const isBrowseActive = ['/browse', '/movies', '/tvshows', '/animations', '/anime'].includes(location.pathname);
+  const isProfileActive = ['/history', '/profile'].includes(location.pathname);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (browseRef.current && !browseRef.current.contains(event.target)) {
         setBrowseOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
       }
     };
 
@@ -26,6 +32,7 @@ const Navbar = () => {
   // Close dropdown on route change
   useEffect(() => {
     setBrowseOpen(false);
+    setProfileOpen(false);
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
@@ -143,6 +150,18 @@ const Navbar = () => {
 
             <li>
               <Link 
+                to="/theater" 
+                className={`text-sm font-medium transition-colors flex items-center gap-1 ${
+                  isActive('/theater') ? 'text-red-400' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span className="text-red-500">🎬</span>
+                Theater
+              </Link>
+            </li>
+
+            <li>
+              <Link 
                 to="/admin" 
                 className={`text-sm font-medium transition-colors ${
                   isActive('/admin') ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
@@ -153,20 +172,70 @@ const Navbar = () => {
             </li>
           </ul>
 
-          {/* Auth Buttons (Desktop) */}
+          {/* Right Side - Profile Dropdown */}
           <div className="hidden md:flex items-center gap-3">
-            <Link 
-              to="/login" 
-              className="text-sm font-medium text-slate-400 hover:text-white transition-colors px-4 py-2"
-            >
-              Login
-            </Link>
-            <Link 
-              to="/register" 
-              className="text-sm font-bold bg-cyan-500 hover:bg-cyan-400 text-black px-5 py-2 rounded-full transition-all"
-            >
-              Sign Up
-            </Link>
+            {/* Profile Dropdown */}
+            <div className="relative" ref={profileRef}>
+              <button 
+                onClick={() => setProfileOpen(!profileOpen)}
+                className={`flex items-center gap-2 text-sm font-medium transition-colors cursor-pointer ${
+                  isProfileActive ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                  U
+                </div>
+                <svg className={`w-4 h-4 transition-transform ${profileOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {profileOpen && (
+                <div className="absolute top-full right-0 mt-3 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl shadow-black/50 p-3 min-w-[180px]">
+                  {/* Arrow */}
+                  <div className="absolute -top-2 right-4 w-4 h-4 bg-[#111827] border-l border-t border-slate-700 transform rotate-45"></div>
+                  
+                  <div className="space-y-1">
+                    <Link
+                      to="/history"
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
+                        isActive('/history')
+                          ? 'bg-cyan-500/15 text-cyan-400'
+                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      }`}
+                      onClick={() => setProfileOpen(false)}
+                    >
+                      <span>🎟️</span>
+                      <span>Booking History</span>
+                    </Link>
+                    
+                    <Link
+                      to="/profile"
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
+                        isActive('/profile')
+                          ? 'bg-cyan-500/15 text-cyan-400'
+                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      }`}
+                      onClick={() => setProfileOpen(false)}
+                    >
+                      <span>👤</span>
+                      <span>My Profile</span>
+                    </Link>
+                    
+                    <div className="border-t border-slate-700 my-2"></div>
+                    
+                    <Link
+                      to="/login"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-slate-800/80 hover:text-white transition-all cursor-pointer"
+                      onClick={() => setProfileOpen(false)}
+                    >
+                      <span>🚪</span>
+                      <span>Login / Sign Up</span>
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mobile Menu Button */}
@@ -231,6 +300,17 @@ const Navbar = () => {
               
               <li>
                 <Link 
+                  to="/theater"
+                  className={`block py-2 px-4 rounded-lg transition-colors ${
+                    isActive('/theater') ? 'bg-red-500/10 text-red-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  🎬 Theater
+                </Link>
+              </li>
+              
+              <li>
+                <Link 
                   to="/admin"
                   className={`block py-2 px-4 rounded-lg transition-colors ${
                     isActive('/admin') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
@@ -240,13 +320,24 @@ const Navbar = () => {
                 </Link>
               </li>
               
+              <li>
+                <Link 
+                  to="/history"
+                  className={`block py-2 px-4 rounded-lg transition-colors ${
+                    isActive('/history') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  🎟️ Booking History
+                </Link>
+              </li>
+              
               <li className="pt-2 border-t border-slate-800">
                 <Link to="/login" className="block py-2 px-4 text-slate-400 hover:text-white">
                   Login
                 </Link>
               </li>
               <li>
-                <Link to="/register" className="block py-2 px-4 mx-4 bg-cyan-500 text-black font-bold rounded-lg text-center">
+                <Link to="/register" className="block py-2 px-4 mx-4 bg-cyan-500 text-black font-bold rounded-lg text-center cursor-pointer">
                   Sign Up
                 </Link>
               </li>

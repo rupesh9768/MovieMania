@@ -3,9 +3,13 @@
 // Re-exports all API services for easy imports
 // ====================================
 
-// Movie API Service
+// Movie API Service (TMDB)
 export * from './movieService';
 export { default as movieApi } from './movieService';
+
+// Backend API Service (MongoDB)
+export * from './backendService';
+export { default as backendApi } from './backendService';
 
 // TV Shows API Service
 export * from './tvService';
