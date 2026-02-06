@@ -13,6 +13,7 @@ const Navbar = () => {
   const isActive = (path) => location.pathname === path;
   const isBrowseActive = ['/browse', '/movies', '/tvshows', '/animations', '/anime'].includes(location.pathname);
   const isProfileActive = ['/history', '/profile'].includes(location.pathname);
+  const isUpcomingActive = location.pathname === '/upcoming';
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -63,6 +64,19 @@ const Navbar = () => {
                 }`}
               >
                 Home
+              </Link>
+            </li>
+
+            {/* Upcoming Movies Link */}
+            <li>
+              <Link 
+                to="/upcoming" 
+                className={`text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  isUpcomingActive ? 'text-purple-400' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span className="text-purple-500">🗓️</span>
+                Upcoming
               </Link>
             </li>
             
@@ -182,7 +196,7 @@ const Navbar = () => {
                   isProfileActive ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                <div className="w-8 h-8 bg-linear-to-br from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
                   U
                 </div>
                 <svg className={`w-4 h-4 transition-transform ${profileOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -270,6 +284,18 @@ const Navbar = () => {
                 </Link>
               </li>
               
+              {/* Upcoming Movies - Mobile */}
+              <li>
+                <Link 
+                  to="/upcoming"
+                  className={`flex items-center gap-2 py-2 px-4 rounded-lg transition-colors ${
+                    isUpcomingActive ? 'bg-purple-500/10 text-purple-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                   Upcoming Movies
+                </Link>
+              </li>
+              
               {/* Browse Links in Mobile */}
               <li className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase">Browse</li>
               <li>
@@ -350,3 +376,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
+

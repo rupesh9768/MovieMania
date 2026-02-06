@@ -117,7 +117,7 @@ const Browse = () => {
   // ============================================
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b1121] flex items-center justify-center">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-400">Loading movies...</p>
@@ -131,7 +131,7 @@ const Browse = () => {
   // ============================================
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0b1121] flex items-center justify-center">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center max-w-md px-4">
           <div className="text-5xl mb-4">⚠️</div>
           <h2 className="text-xl font-bold text-red-400 mb-2">Connection Error</h2>
@@ -148,7 +148,7 @@ const Browse = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1121] text-white">
+    <div className="min-h-screen bg-dark-bg text-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
         
         {/* Header */}
@@ -163,7 +163,7 @@ const Browse = () => {
         <div className="flex flex-col lg:flex-row gap-8">
           
           {/* ========== LEFT SIDEBAR ========== */}
-          <aside className="lg:w-64 flex-shrink-0">
+          <aside className="lg:w-64 shrink-0">
             <div className="lg:sticky lg:top-24 space-y-6 bg-slate-900/50 rounded-xl p-5 border border-slate-800">
               
               {/* Search */}
@@ -268,14 +268,14 @@ const Browse = () => {
                       onClick={() => navigate(`/details/movie/${movie.id}`)}
                       className="group cursor-pointer"
                     >
-                      <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-cyan-500/50 shadow-lg transition-all duration-300">
+                      <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-cyan-500/50 shadow-lg transition-all duration-300">
                         <img
                           src={movie.poster || movie.image}
                           alt={movie.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         
                         {/* Country Badge */}
                         {movie.country && (
@@ -377,3 +377,6 @@ const Browse = () => {
 };
 
 export default Browse;
+
+
+

@@ -72,7 +72,7 @@ const TheaterDetails = () => {
   // ============================================
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b1121] flex items-center justify-center">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -83,7 +83,7 @@ const TheaterDetails = () => {
   // ============================================
   if (!movie) {
     return (
-      <div className="min-h-screen bg-[#0b1121] flex flex-col items-center justify-center text-white">
+      <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center text-white">
         <h1 className="text-3xl font-bold mb-4">Movie Not Found</h1>
         <button onClick={() => navigate('/theater')} className="text-red-400 hover:underline">
           ← Back to Theater
@@ -93,10 +93,10 @@ const TheaterDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1121] text-white">
+    <div className="min-h-screen bg-dark-bg text-white">
       
       {/* Hero Section with Backdrop */}
-      <section className="relative h-[40vh] min-h-[300px] overflow-hidden">
+      <section className="relative h-[40vh] min-h-75 overflow-hidden">
         {/* Background */}
         {movie.backdrop ? (
           <div 
@@ -109,12 +109,12 @@ const TheaterDetails = () => {
             style={{ backgroundImage: `url(${movie.poster})` }}
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-red-900/40 to-slate-900" />
+          <div className="absolute inset-0 bg-linear-to-br from-red-900/40 to-slate-900" />
         )}
         
         {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0b1121] via-[#0b1121]/80 to-[#0b1121]/50"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0b1121] via-transparent to-transparent"></div>
+        <div className="absolute inset-0 bg-linear-to-r from-dark-bg via-dark-bg/80 to-dark-bg/50"></div>
+        <div className="absolute inset-0 bg-linear-to-t from-dark-bg via-transparent to-transparent"></div>
         
         {/* Content */}
         <div className="relative h-full max-w-6xl mx-auto px-6 flex items-end pb-8">
@@ -192,7 +192,7 @@ const TheaterDetails = () => {
                     <button
                       key={idx}
                       onClick={() => setSelectedDate(idx)}
-                      className={`flex-shrink-0 w-20 py-3 rounded-xl text-center transition-all border ${
+                      className={`shrink-0 w-20 py-3 rounded-xl text-center transition-all border ${
                         selectedDate === idx
                           ? 'bg-red-600 border-red-500 text-white'
                           : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
@@ -292,3 +292,6 @@ const TheaterDetails = () => {
 };
 
 export default TheaterDetails;
+
+
+

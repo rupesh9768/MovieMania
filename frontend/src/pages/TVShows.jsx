@@ -41,13 +41,13 @@ const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
           onClick={() => navigate(`/details/tv/${item.id}`)}
           className="w-48 cursor-pointer group"
         >
-          <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-3 shadow-xl border border-slate-800/50 group-hover:border-cyan-500/50 group-hover:shadow-cyan-500/20 transition-all duration-300">
+          <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 shadow-xl border border-slate-800/50 group-hover:border-cyan-500/50 group-hover:shadow-cyan-500/20 transition-all duration-300">
             <img
               src={item.poster_path ? `${IMG_BASE}${item.poster_path}` : '/placeholder.jpg'}
               alt={item.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+            <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent"></div>
             <div className="absolute bottom-4 left-4 right-4">
               <p className="text-white font-bold text-sm truncate">{item.name}</p>
               <p className="text-yellow-400 text-xs mt-1">★ {(item.vote_average || 0).toFixed(1)}</p>
@@ -55,7 +55,7 @@ const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
           </div>
         </div>
       ) : (
-        <div className="w-48 aspect-[2/3] bg-slate-800/50 rounded-xl flex items-center justify-center border-2 border-dashed border-slate-700">
+        <div className="w-48 aspect-2/3 bg-slate-800/50 rounded-xl flex items-center justify-center border-2 border-dashed border-slate-700">
           <p className="text-slate-500 text-sm text-center px-4">Click to get random!</p>
         </div>
       )}
@@ -154,7 +154,7 @@ const TVShows = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b1121] text-white">
+    <div className="min-h-screen bg-dark-bg text-white">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
@@ -164,7 +164,7 @@ const TVShows = () => {
 
         <div className="flex gap-6">
           {/* LEFT SIDEBAR: Search + Filters */}
-          <div className="w-56 flex-shrink-0">
+          <div className="w-56 shrink-0">
             <div className="sticky top-20 space-y-5">
               {/* Search */}
               <div>
@@ -245,13 +245,13 @@ const TVShows = () => {
                       onClick={() => navigate(`/details/tv/${show.id}`)}
                       className="cursor-pointer group"
                     >
-                      <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2.5 border border-slate-800/50 group-hover:border-cyan-500/50 shadow-lg shadow-black/20 group-hover:shadow-cyan-500/10 transition-all duration-300">
+                      <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-2.5 border border-slate-800/50 group-hover:border-cyan-500/50 shadow-lg shadow-black/20 group-hover:shadow-cyan-500/10 transition-all duration-300">
                         <img
                           src={show.poster_path ? `${IMG_BASE}${show.poster_path}` : '/placeholder.jpg'}
                           alt={show.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         <div className="absolute top-2.5 left-2.5 bg-black/80 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
                           <span className="text-yellow-400">★</span> {(show.vote_average || 0).toFixed(1)}
                         </div>
@@ -305,3 +305,6 @@ const TVShows = () => {
 };
 
 export default TVShows;
+
+
+

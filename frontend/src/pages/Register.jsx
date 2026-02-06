@@ -30,7 +30,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b1121] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4 relative overflow-hidden">
       
       {/* Background Glow Effects (Different colors for variety) */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] pointer-events-none"></div>
@@ -100,7 +100,7 @@ const Register = () => {
 
           <button 
             type="submit"
-            className="w-full mt-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-purple-500/20 transition-all active:scale-95"
+            className="w-full mt-2 bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-purple-500/20 transition-all active:scale-95"
           >
             Create Account
           </button>
@@ -118,3 +118,5 @@ const Register = () => {
 };
 
 export default Register;
+
+

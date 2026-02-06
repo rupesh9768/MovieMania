@@ -78,7 +78,7 @@ const ShowtimeSelection = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b1121] flex items-center justify-center">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-400">Loading showtimes...</p>
@@ -88,7 +88,7 @@ const ShowtimeSelection = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1121] text-white pt-8 pb-20 px-4">
+    <div className="min-h-screen bg-dark-bg text-white pt-8 pb-20 px-4">
       <div className="max-w-4xl mx-auto">
         
         {/* Header */}
@@ -203,3 +203,5 @@ const ShowtimeSelection = () => {
 };
 
 export default ShowtimeSelection;
+
+

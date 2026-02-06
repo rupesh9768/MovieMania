@@ -160,7 +160,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b1121] text-white pb-20">
+    <div className="min-h-screen bg-dark-bg text-white pb-20">
       <div className="max-w-6xl mx-auto px-4 pt-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -448,3 +448,6 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+
+

@@ -55,7 +55,7 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b1121] flex items-center justify-center">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-400">Loading seat map...</p>
@@ -65,14 +65,14 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1121] text-white p-4 flex flex-col items-center overflow-x-hidden">
+    <div className="min-h-screen bg-dark-bg text-white p-4 flex flex-col items-center overflow-x-hidden">
       
       {/* --- THE CURVED SCREEN --- */}
       <div className="relative w-full max-w-4xl mb-16 perspective-[500px]">
         {/* Glow Effect */}
         <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-3/4 h-16 bg-cyan-500/30 blur-[60px] rounded-full pointer-events-none"></div>
         {/* Actual Screen Arc */}
-        <div className="h-16 w-full border-t-[6px] border-cyan-400/60 rounded-[50%] shadow-[0_-10px_40px_rgba(34,211,238,0.3)] bg-gradient-to-b from-cyan-500/10 to-transparent"></div>
+        <div className="h-16 w-full border-t-[6px] border-cyan-400/60 rounded-[50%] shadow-[0_-10px_40px_rgba(34,211,238,0.3)] bg-linear-to-b from-cyan-500/10 to-transparent"></div>
         
         <div className="text-center mt-4">
           <p className="text-cyan-500/40 tracking-[1em] text-[9px] font-bold uppercase">Screen</p>
@@ -181,3 +181,5 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => {
 };
 
 export default SeatSelection;
+
+

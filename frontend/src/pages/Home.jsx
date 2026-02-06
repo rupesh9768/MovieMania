@@ -102,7 +102,7 @@ const Home = () => {
   // ============================================
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b1121] flex items-center justify-center">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-400">Loading movies from TMDB...</p>
@@ -116,7 +116,7 @@ const Home = () => {
   // ============================================
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0b1121] flex items-center justify-center">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center max-w-md px-4">
           <div className="text-5xl mb-4">⚠️</div>
           <h2 className="text-xl font-bold text-red-400 mb-2">API Error</h2>
@@ -133,11 +133,11 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1121] text-white">
+    <div className="min-h-screen bg-dark-bg text-white">
       
       {/* ========== HERO SLIDER ========== */}
       {heroMovies.length > 0 && (
-        <section className="relative h-[70vh] min-h-[500px] max-h-[700px] overflow-hidden">
+        <section className="relative h-[70vh] min-h-125 max-h-175 overflow-hidden">
           {heroMovies.map((movie, index) => (
             <div
               key={movie.id}
@@ -151,8 +151,8 @@ const Home = () => {
                 style={{ backgroundImage: `url(${movie.backdrop})` }}
               >
                 {/* Gradient Overlays */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#0b1121] via-[#0b1121]/70 to-transparent"></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0b1121] via-transparent to-[#0b1121]/40"></div>
+                <div className="absolute inset-0 bg-linear-to-r from-dark-bg via-dark-bg/70 to-transparent"></div>
+                <div className="absolute inset-0 bg-linear-to-t from-dark-bg via-transparent to-dark-bg/40"></div>
               </div>
               
               {/* Content */}
@@ -267,14 +267,14 @@ const Home = () => {
                   className="shrink-0 w-48 cursor-pointer group"
                   onClick={() => navigate(`/movie/${movie.id}`)}
                 >
-                  <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-green-500/50 transition-all shadow-lg">
+                  <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-green-500/50 transition-all shadow-lg">
                     <img 
                       src={movie.image || 'https://via.placeholder.com/300x450?text=No+Poster'} 
                       alt={movie.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Poster'; }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     
                     {/* Country Badge */}
                     <div className="absolute top-2 left-2 bg-green-600 px-2 py-1 rounded text-xs font-bold shadow">
@@ -336,14 +336,14 @@ const Home = () => {
                   className="shrink-0 w-48 cursor-pointer group"
                   onClick={() => navigate(`/movie/${movie.id}`)}
                 >
-                  <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-orange-500/50 transition-all shadow-lg">
+                  <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-orange-500/50 transition-all shadow-lg">
                     <img 
                       src={movie.image || 'https://via.placeholder.com/300x450?text=No+Poster'} 
                       alt={movie.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Poster'; }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     
                     {/* Country Badge */}
                     <div className="absolute top-2 left-2 bg-orange-600 px-2 py-1 rounded text-xs font-bold shadow">
@@ -405,14 +405,14 @@ const Home = () => {
                   className="shrink-0 w-48 cursor-pointer group"
                   onClick={() => navigate(`/movie/${movie.id}`)}
                 >
-                  <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-purple-500/50 transition-all shadow-lg">
+                  <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-purple-500/50 transition-all shadow-lg">
                     <img 
                       src={movie.image || 'https://via.placeholder.com/300x450?text=No+Poster'} 
                       alt={movie.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Poster'; }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     
                     {/* Rating */}
                     {movie.rating > 0 && (
@@ -435,7 +435,7 @@ const Home = () => {
         <section className="py-12 text-center">
           <button 
             onClick={() => navigate('/movies')}
-            className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white font-bold py-4 px-12 rounded-full text-lg transition-all shadow-xl shadow-cyan-500/20 cursor-pointer"
+            className="bg-linear-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white font-bold py-4 px-12 rounded-full text-lg transition-all shadow-xl shadow-cyan-500/20 cursor-pointer"
           >
             Browse All Movies →
           </button>
@@ -447,3 +447,6 @@ const Home = () => {
 };
 
 export default Home;
+
+
+

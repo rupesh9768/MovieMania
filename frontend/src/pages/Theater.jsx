@@ -51,7 +51,7 @@ const Theater = () => {
   // ============================================
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b1121] flex items-center justify-center">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-400">Loading theater movies...</p>
@@ -64,12 +64,12 @@ const Theater = () => {
   // Main render
   // ============================================
   return (
-    <div className="min-h-screen bg-[#0b1121] text-white">
+    <div className="min-h-screen bg-dark-bg text-white">
       
       {/* Hero Banner */}
       <section className="relative py-16 overflow-hidden">
         {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-red-900/20 via-[#0b1121] to-[#0b1121]"></div>
+        <div className="absolute inset-0 bg-linear-to-b from-red-900/20 via-dark-bg to-dark-bg"></div>
         
         <div className="relative max-w-6xl mx-auto px-6 text-center">
           <div className="inline-flex items-center gap-2 bg-red-500/20 border border-red-500/30 px-4 py-1.5 rounded-full mb-4">
@@ -128,7 +128,7 @@ const Theater = () => {
                 className="group relative bg-slate-900/50 rounded-xl overflow-hidden border border-slate-800/50 hover:border-red-500/50 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-red-500/10"
               >
                 {/* Poster */}
-                <div className="aspect-[2/3] relative overflow-hidden">
+                <div className="aspect-2/3 relative overflow-hidden">
                   {movie.poster ? (
                     <img 
                       src={movie.poster} 
@@ -136,13 +136,13 @@ const Theater = () => {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                    <div className="w-full h-full bg-linear-to-br from-slate-800 to-slate-900 flex items-center justify-center">
                       <span className="text-4xl">🎬</span>
                     </div>
                   )}
                   
                   {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                  <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                     <button 
                       onClick={() => handleBookNow(movie)}
                       className="bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-4 rounded-full text-sm w-full transition-all"
@@ -219,3 +219,6 @@ const Theater = () => {
 };
 
 export default Theater;
+
+
+

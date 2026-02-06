@@ -58,3 +58,5 @@ const MovieCard = ({ movie, showBooking = false }) => {
 };
 
 export default MovieCard;
+
+

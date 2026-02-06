@@ -11,6 +11,7 @@ import Browse from './pages/Browse';
 import TVShows from './pages/TVShows';
 import Animations from './pages/Animations';
 import Anime from './pages/Anime';
+import Upcoming from './pages/Upcoming';
 import AdminDashboard from './pages/AdminDashboard';
 import Booking from './pages/Booking';
 import Theater from './pages/Theater';
@@ -29,12 +30,12 @@ function App() {
   return (
     <BrowserRouter>
       {/* Wrapper to ensure footer pushes to bottom if content is short */}
-      <div className="App bg-[#0b1121] min-h-screen font-sans text-white flex flex-col">
+      <div className="App bg-dark-bg min-h-screen font-sans text-white flex flex-col">
         
         <Navbar /> 
 
-        {/* 'flex-grow' ensures this section takes up all available space */}
-        <main className="flex-grow">
+        {/* 'grow' ensures this section takes up all available space */}
+        <main className="grow">
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
@@ -43,6 +44,7 @@ function App() {
             <Route path="/tvshows" element={<TVShows />} />
             <Route path="/animations" element={<Animations />} />
             <Route path="/anime" element={<Anime />} />
+            <Route path="/upcoming" element={<Upcoming />} />
             {/* Unified details route: /details/:mediaType/:id */}
             <Route path="/details/:mediaType/:id" element={<MovieDetails />} />
             {/* Legacy routes for backwards compatibility */}
@@ -86,3 +88,5 @@ function App() {
 }
 
 export default App;
+
+

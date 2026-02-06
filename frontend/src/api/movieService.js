@@ -322,6 +322,169 @@ export const getGenres = async () => {
   }
 };
 
+/**
+ * Get upcoming movies from TMDB
+ * Uses TMDB's /movie/upcoming endpoint with date filtering
+ * @param {number} page - Page number for pagination
+ * @param {string} region - Region code (e.g., 'US', 'IN', 'NP')
+ * @returns {Promise} - Object with movies array and pagination info
+ */
+export const getUpcomingMovies = async (page = 1, region = 'US') => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Fetch upcoming movies - TMDB returns movies releasing in next 3 weeks by default
+    const response = await axios.get(
+      `${TMDB_BASE_URL}/movie/upcoming?api_key=${TMDB_API_KEY}&page=${page}&region=${region}`
+    );
+    
+    const movies = response.data.results || [];
+    
+    // Filter to only include movies with future release dates and normalize
+    const upcomingMovies = movies
+      .filter(movie => movie.release_date && movie.release_date >= today)
+      .map(movie => ({
+        ...normalizeMovie(movie),
+        releaseDate: movie.release_date,
+        rawReleaseDate: movie.release_date
+      }));
+    
+    return {
+      movies: upcomingMovies,
+      page: response.data.page,
+      totalPages: Math.min(response.data.total_pages || 1, 20),
+      totalResults: response.data.total_results
+    };
+  } catch (error) {
+    console.error('❌ Failed to fetch upcoming movies:', error.message);
+    return { movies: [], page: 1, totalPages: 1, totalResults: 0 };
+  }
+};
+
+/**
+ * Get upcoming movies with extended date range using discover endpoint
+ * More flexible for getting movies releasing further in the future
+ * @param {number} page - Page number
+ * @param {number} monthsAhead - How many months ahead to look (default: 6)
+ * @returns {Promise} - Object with movies array and pagination info
+ */
+export const getUpcomingMoviesExtended = async (page = 1, monthsAhead = 6) => {
+  try {
+    const today = new Date();
+    const startDate = today.toISOString().split('T')[0];
+    
+    const endDate = new Date(today);
+    endDate.setMonth(endDate.getMonth() + monthsAhead);
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    // Use discover endpoint for more control over date range
+    const response = await axios.get(
+      `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&page=${page}&sort_by=release_date.asc&primary_release_date.gte=${startDate}&primary_release_date.lte=${endDateStr}&with_release_type=2|3`
+    );
+    
+    const movies = (response.data.results || []).map(movie => ({
+      ...normalizeMovie(movie),
+      releaseDate: movie.release_date,
+      rawReleaseDate: movie.release_date
+    }));
+    
+    return {
+      movies,
+      page: response.data.page,
+      totalPages: Math.min(response.data.total_pages || 1, 20),
+      totalResults: response.data.total_results
+    };
+  } catch (error) {
+    console.error('❌ Failed to fetch extended upcoming movies:', error.message);
+    return { movies: [], page: 1, totalPages: 1, totalResults: 0 };
+  }
+};
+
+/**
+ * Get upcoming BIG movies - English (Hollywood), Hindi (Bollywood), and Nepali
+ * Focuses on popular/high-budget releases
+ * @param {number} monthsAhead - How many months ahead to look (default: 8)
+ * @returns {Promise} - Array of upcoming movies sorted by popularity
+ */
+export const getUpcomingBigMovies = async (monthsAhead = 8) => {
+  try {
+    const today = new Date();
+    const startDate = today.toISOString().split('T')[0];
+    
+    const endDate = new Date(today);
+    endDate.setMonth(endDate.getMonth() + monthsAhead);
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    // Fetch from multiple sources in parallel
+    const [englishMovies, hindiMovies, nepaliMovies] = await Promise.all([
+      // Hollywood/English - Big releases (high vote count threshold)
+      axios.get(
+        `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&page=1&sort_by=popularity.desc&primary_release_date.gte=${startDate}&primary_release_date.lte=${endDateStr}&with_original_language=en&vote_count.gte=0`
+      ).then(res => res.data.results || []).catch(() => []),
+      
+      // Bollywood/Hindi - Indian movies
+      axios.get(
+        `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&page=1&sort_by=popularity.desc&primary_release_date.gte=${startDate}&primary_release_date.lte=${endDateStr}&with_original_language=hi`
+      ).then(res => res.data.results || []).catch(() => []),
+      
+      // Nepali movies
+      axios.get(
+        `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&page=1&sort_by=popularity.desc&primary_release_date.gte=${startDate}&primary_release_date.lte=${endDateStr}&with_original_language=ne`
+      ).then(res => res.data.results || []).catch(() => [])
+    ]);
+    
+    // Also fetch page 2 for English and Hindi to get more results
+    const [englishPage2, hindiPage2] = await Promise.all([
+      axios.get(
+        `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&page=2&sort_by=popularity.desc&primary_release_date.gte=${startDate}&primary_release_date.lte=${endDateStr}&with_original_language=en`
+      ).then(res => res.data.results || []).catch(() => []),
+      
+      axios.get(
+        `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&page=2&sort_by=popularity.desc&primary_release_date.gte=${startDate}&primary_release_date.lte=${endDateStr}&with_original_language=hi`
+      ).then(res => res.data.results || []).catch(() => [])
+    ]);
+    
+    // Combine all movies
+    const allMovies = [
+      ...englishMovies,
+      ...englishPage2,
+      ...hindiMovies,
+      ...hindiPage2,
+      ...nepaliMovies
+    ];
+    
+    // Normalize and add language tag
+    const normalizedMovies = allMovies.map(movie => ({
+      ...normalizeMovie(movie),
+      releaseDate: movie.release_date,
+      rawReleaseDate: movie.release_date,
+      language: movie.original_language === 'hi' ? 'Hindi' : 
+                movie.original_language === 'ne' ? 'Nepali' : 
+                movie.original_language === 'en' ? 'English' : 'Other',
+      popularity: movie.popularity || 0
+    }));
+    
+    // Remove duplicates by ID
+    const seen = new Set();
+    const uniqueMovies = normalizedMovies.filter(movie => {
+      if (seen.has(movie.id)) return false;
+      seen.add(movie.id);
+      return true;
+    });
+    
+    // Sort by popularity (big movies first), then by release date
+    uniqueMovies.sort((a, b) => {
+      // Prioritize by popularity score
+      return b.popularity - a.popularity;
+    });
+    
+    return uniqueMovies;
+  } catch (error) {
+    console.error('❌ Failed to fetch big upcoming movies:', error.message);
+    return [];
+  }
+};
+
 // Export all functions as default object for convenience
 // TODO: Update exports when backend API is integrated
 export default {
@@ -332,6 +495,9 @@ export default {
   searchMovies,
   getMoviesByGenre,
   getGenres,
+  getUpcomingMovies,
+  getUpcomingMoviesExtended,
+  getUpcomingBigMovies,
   // Regional movie functions
   getIndianMovies,
   getNepaliMovies,

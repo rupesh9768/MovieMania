@@ -9,7 +9,7 @@ const BookingHistory = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#0b1121] text-white">
+    <div className="min-h-screen bg-dark-bg text-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
@@ -60,3 +60,6 @@ const BookingHistory = () => {
 };
 
 export default BookingHistory;
+
+
+

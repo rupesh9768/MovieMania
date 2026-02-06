@@ -221,7 +221,7 @@ const MovieDetails = () => {
   // ============================================
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b1121] flex items-center justify-center">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -232,7 +232,7 @@ const MovieDetails = () => {
   // ============================================
   if (!item) {
     return (
-      <div className="min-h-screen bg-[#0b1121] flex flex-col items-center justify-center text-white">
+      <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center text-white">
         <h1 className="text-3xl font-bold mb-4">Not Found</h1>
         <p className="text-slate-400 mb-6">The {mediaType} you're looking for doesn't exist.</p>
         <button onClick={() => navigate('/browse')} className="text-cyan-400 hover:underline">
@@ -257,7 +257,7 @@ const MovieDetails = () => {
   // Main render
   // ============================================
   return (
-    <div className="min-h-screen bg-[#0b1121] text-white">
+    <div className="min-h-screen bg-dark-bg text-white">
       
       {/* Back Button Bar */}
       <div className="sticky top-16 z-40 bg-[#0a0f1a]/95 backdrop-blur-sm border-b border-slate-800/30">
@@ -296,7 +296,7 @@ const MovieDetails = () => {
       )}
 
       {/* Hero Section */}
-      <section className="relative h-[50vh] min-h-[380px] overflow-hidden">
+      <section className="relative h-[50vh] min-h-95 overflow-hidden">
         {/* Background */}
         {backdropUrl ? (
           <div 
@@ -309,12 +309,12 @@ const MovieDetails = () => {
             style={{ backgroundImage: `url(${posterUrl})` }}
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-800" />
+          <div className="absolute inset-0 bg-linear-to-br from-slate-900 to-slate-800" />
         )}
         
         {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0b1121] via-[#0b1121]/85 to-[#0b1121]/50"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0b1121] via-transparent to-[#0b1121]/30"></div>
+        <div className="absolute inset-0 bg-linear-to-r from-dark-bg via-dark-bg/85 to-dark-bg/50"></div>
+        <div className="absolute inset-0 bg-linear-to-t from-dark-bg via-transparent to-dark-bg/30"></div>
         
         {/* Hero Content */}
         <div className="relative h-full max-w-6xl mx-auto px-6 flex items-end pb-10">
@@ -431,7 +431,7 @@ const MovieDetails = () => {
                 <h2 className="text-lg font-bold mb-4 text-slate-200">Cast</h2>
                 <div className="flex gap-4 overflow-x-auto pb-3" style={{ scrollbarWidth: 'none' }}>
                   {cast.map(person => (
-                    <div key={person.id} className="flex-shrink-0 w-20 text-center">
+                    <div key={person.id} className="shrink-0 w-20 text-center">
                       <div className="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden border-2 border-slate-700 bg-slate-800">
                         {person.profile_path ? (
                           <img 
@@ -593,3 +593,6 @@ const MovieDetails = () => {
 };
 
 export default MovieDetails;
+
+
+

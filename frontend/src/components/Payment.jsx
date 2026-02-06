@@ -15,7 +15,7 @@ const Payment = ({ selectedSeats, totalPrice, onBack, onConfirm, movieTitle }) =
   };
 
   return (
-    <div className="min-h-screen bg-[#0b1121] text-white p-6 flex flex-col items-center justify-center animate-fade-in">
+    <div className="min-h-screen bg-dark-bg text-white p-6 flex flex-col items-center justify-center animate-fade-in">
       
       <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
         
@@ -110,3 +110,5 @@ const Payment = ({ selectedSeats, totalPrice, onBack, onConfirm, movieTitle }) =
 };
 
 export default Payment;
+
+

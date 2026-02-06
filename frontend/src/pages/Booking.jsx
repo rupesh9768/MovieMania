@@ -44,7 +44,7 @@ function Booking() {
   };
 
   return (
-    <div className="App bg-[#0b1121] min-h-screen font-sans text-white">
+    <div className="App bg-dark-bg min-h-screen font-sans text-white">
       
       {/* Header showing booking info */}
       <div className="p-4 bg-slate-900 border-b border-slate-800">
@@ -178,3 +178,5 @@ function Booking() {
 }
 
 export default Booking;
+
+
