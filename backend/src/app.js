@@ -7,6 +7,7 @@ import cors from 'cors';
 // Import routes
 import healthRoutes from './routes/health.routes.js';
 import movieRoutes from './routes/movie.routes.js';
+import userRoutes from './routes/user.routes.js';
 
 // Create Express app
 const app = express();
@@ -37,6 +38,9 @@ app.use('/api/health', healthRoutes);
 // Movies API
 app.use('/api/movies', movieRoutes);
 
+// Users API (watchlist & favorites)
+app.use('/api/users', userRoutes);
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
@@ -44,7 +48,8 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
-      movies: '/api/movies'
+      movies: '/api/movies',
+      users: '/api/users'
     }
   });
 });

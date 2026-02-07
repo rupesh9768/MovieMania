@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { 
+  isLoggedIn, 
+  checkItemInLists, 
+  addToWatchlist, 
+  removeFromWatchlist,
+  addToFavorites,
+  removeFromFavorites 
+} from '../api/userService';
 
 // TMDB API Config
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -37,6 +45,100 @@ const MovieDetails = () => {
   const [watchProviders, setWatchProviders] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showTrailerModal, setShowTrailerModal] = useState(false);
+  
+  // Watchlist and Favorites state
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [inFavorites, setInFavorites] = useState(false);
+  const [listLoading, setListLoading] = useState(false);
+
+  // ============================================
+  // Check if item is in user's lists
+  // ============================================
+  useEffect(() => {
+    const checkLists = async () => {
+      if (!isLoggedIn() || !id || !mediaType) return;
+      
+      try {
+        const status = await checkItemInLists(mediaType, id);
+        setInWatchlist(status.inWatchlist);
+        setInFavorites(status.inFavorites);
+      } catch (error) {
+        console.error('Error checking lists:', error);
+      }
+    };
+    
+    checkLists();
+  }, [id, mediaType]);
+
+  // ============================================
+  // Handle Watchlist Toggle
+  // ============================================
+  const handleWatchlistToggle = async () => {
+    if (!isLoggedIn()) {
+      alert('Please login to add to watchlist');
+      navigate('/login');
+      return;
+    }
+    
+    if (!item) return;
+    
+    setListLoading(true);
+    try {
+      if (inWatchlist) {
+        await removeFromWatchlist(mediaType, id);
+        setInWatchlist(false);
+      } else {
+        await addToWatchlist({
+          mediaType,
+          id,
+          title: item.title,
+          poster: item.poster,
+          rating: item.rating
+        });
+        setInWatchlist(true);
+      }
+    } catch (error) {
+      console.error('Watchlist error:', error);
+      alert(error.response?.data?.message || 'Failed to update watchlist');
+    } finally {
+      setListLoading(false);
+    }
+  };
+
+  // ============================================
+  // Handle Favorites Toggle
+  // ============================================
+  const handleFavoritesToggle = async () => {
+    if (!isLoggedIn()) {
+      alert('Please login to add to favorites');
+      navigate('/login');
+      return;
+    }
+    
+    if (!item) return;
+    
+    setListLoading(true);
+    try {
+      if (inFavorites) {
+        await removeFromFavorites(mediaType, id);
+        setInFavorites(false);
+      } else {
+        await addToFavorites({
+          mediaType,
+          id,
+          title: item.title,
+          poster: item.poster,
+          rating: item.rating
+        });
+        setInFavorites(true);
+      }
+    } catch (error) {
+      console.error('Favorites error:', error);
+      alert(error.response?.data?.message || 'Failed to update favorites');
+    } finally {
+      setListLoading(false);
+    }
+  };
 
   // ============================================
   // Fetch item data based on media type
@@ -361,14 +463,53 @@ const MovieDetails = () => {
                 {trailer && (
                   <button 
                     onClick={() => setShowTrailerModal(true)}
-                    className="bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-5 rounded-full transition-all text-sm"
+                    className="bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-5 rounded-full transition-all text-sm cursor-pointer"
                   >
                     ▶ Watch Trailer
                   </button>
                 )}
+                
+                {/* Watchlist Button */}
+                <button 
+                  onClick={handleWatchlistToggle}
+                  disabled={listLoading}
+                  className={`font-medium py-2.5 px-5 rounded-full transition-all text-sm border cursor-pointer flex items-center gap-2 ${
+                    inWatchlist 
+                      ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 hover:bg-cyan-500/30' 
+                      : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                  } ${listLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {listLoading ? (
+                    <span className="animate-spin">⏳</span>
+                  ) : inWatchlist ? (
+                    <>✓ In Watchlist</>
+                  ) : (
+                    <>+ Watchlist</>
+                  )}
+                </button>
+                
+                {/* Favorites Button */}
+                <button 
+                  onClick={handleFavoritesToggle}
+                  disabled={listLoading}
+                  className={`font-medium py-2.5 px-5 rounded-full transition-all text-sm border cursor-pointer flex items-center gap-2 ${
+                    inFavorites 
+                      ? 'bg-pink-500/20 text-pink-400 border-pink-500/50 hover:bg-pink-500/30' 
+                      : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                  } ${listLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {listLoading ? (
+                    <span className="animate-spin">⏳</span>
+                  ) : inFavorites ? (
+                    <>♥ Favorited</>
+                  ) : (
+                    <>♡ Favorite</>
+                  )}
+                </button>
+                
                 <button 
                   onClick={() => navigate(-1)}
-                  className="bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-5 rounded-full transition-all text-sm border border-slate-700"
+                  className="bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-5 rounded-full transition-all text-sm border border-slate-700 cursor-pointer"
                 >
                   ← Back
                 </button>

@@ -1,146 +1,248 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { backendApi } from '../api';
+import axios from 'axios';
 
 // ============================================
-// BROWSE PAGE
-// Uses ONLY backend API - No mock data
+// BROWSE PAGE - Discovery Hub with Filters
+// Search, Genre, Country filtering
 // ============================================
+
+// TMDB API Configuration
+const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const BASE_URL = 'https://api.themoviedb.org/3';
+const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
+
+// Genre lists for filtering
+const MOVIE_GENRES = [
+  { id: 28, name: 'Action' },
+  { id: 12, name: 'Adventure' },
+  { id: 16, name: 'Animation' },
+  { id: 35, name: 'Comedy' },
+  { id: 80, name: 'Crime' },
+  { id: 99, name: 'Documentary' },
+  { id: 18, name: 'Drama' },
+  { id: 10751, name: 'Family' },
+  { id: 14, name: 'Fantasy' },
+  { id: 36, name: 'History' },
+  { id: 27, name: 'Horror' },
+  { id: 10402, name: 'Music' },
+  { id: 9648, name: 'Mystery' },
+  { id: 10749, name: 'Romance' },
+  { id: 878, name: 'Sci-Fi' },
+  { id: 53, name: 'Thriller' },
+  { id: 10752, name: 'War' },
+  { id: 37, name: 'Western' }
+];
+
+const TV_GENRES = [
+  { id: 10759, name: 'Action & Adventure' },
+  { id: 16, name: 'Animation' },
+  { id: 35, name: 'Comedy' },
+  { id: 80, name: 'Crime' },
+  { id: 99, name: 'Documentary' },
+  { id: 18, name: 'Drama' },
+  { id: 10751, name: 'Family' },
+  { id: 10762, name: 'Kids' },
+  { id: 9648, name: 'Mystery' },
+  { id: 10763, name: 'News' },
+  { id: 10764, name: 'Reality' },
+  { id: 10765, name: 'Sci-Fi & Fantasy' },
+  { id: 10766, name: 'Soap' },
+  { id: 10767, name: 'Talk' },
+  { id: 10768, name: 'War & Politics' },
+  { id: 37, name: 'Western' }
+];
+
+// Common countries for filtering
+const COUNTRIES = [
+  { code: 'US', name: 'United States' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'KR', name: 'South Korea' },
+  { code: 'JP', name: 'Japan' },
+  { code: 'IN', name: 'India' },
+  { code: 'FR', name: 'France' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'CN', name: 'China' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'BR', name: 'Brazil' },
+  { code: 'MX', name: 'Mexico' },
+  { code: 'TH', name: 'Thailand' },
+  { code: 'TR', name: 'Turkey' }
+];
+
+// Content type tabs
+const CONTENT_TYPES = [
+  { id: 'all', name: 'All', icon: '🎯' },
+  { id: 'movie', name: 'Movies', icon: '🎬' },
+  { id: 'tv', name: 'TV Shows', icon: '📺' }
+];
+
 const Browse = () => {
   const navigate = useNavigate();
   
   // State
-  const [allMovies, setAllMovies] = useState([]);
+  const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState('all');
-  const [selectedGenre, setSelectedGenre] = useState('all');
-  
-  // Pagination
+  const [contentType, setContentType] = useState('all');
+  const [selectedGenre, setSelectedGenre] = useState(null);
+  const [selectedCountry, setSelectedCountry] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 12;
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Get genres based on content type
+  const getGenres = () => {
+    if (contentType === 'tv') return TV_GENRES;
+    if (contentType === 'movie') return MOVIE_GENRES;
+    // For 'all', show common genres
+    return MOVIE_GENRES;
+  };
 
   // ============================================
-  // Fetch movies from backend
+  // Fetch content based on filters
   // ============================================
   useEffect(() => {
-    const fetchMovies = async () => {
+    const fetchContent = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        const movies = await backendApi.getBackendMovies();
-        console.log('✅ Browse: Fetched movies:', movies.length);
-        setAllMovies(movies);
+        let allResults = [];
+        
+        if (searchQuery.trim()) {
+          // Search across both movies and TV
+          if (contentType === 'all' || contentType === 'movie') {
+            const movieUrl = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(searchQuery)}&page=${currentPage}`;
+            const movieRes = await axios.get(movieUrl);
+            const movies = (movieRes.data.results || []).map(m => ({ ...m, mediaType: 'movie' }));
+            allResults = [...allResults, ...movies];
+          }
+          
+          if (contentType === 'all' || contentType === 'tv') {
+            const tvUrl = `${BASE_URL}/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(searchQuery)}&page=${currentPage}`;
+            const tvRes = await axios.get(tvUrl);
+            const tvShows = (tvRes.data.results || []).map(t => ({ ...t, mediaType: 'tv' }));
+            allResults = [...allResults, ...tvShows];
+          }
+          
+          setTotalPages(1);
+        } else {
+          // Discover with filters
+          const buildUrl = (type) => {
+            let url = `${BASE_URL}/discover/${type}?api_key=${API_KEY}&sort_by=popularity.desc&page=${currentPage}`;
+            if (selectedGenre) url += `&with_genres=${selectedGenre}`;
+            if (selectedCountry) url += `&with_origin_country=${selectedCountry}`;
+            return url;
+          };
+          
+          if (contentType === 'all') {
+            // Fetch both movies and TV
+            const [movieRes, tvRes] = await Promise.all([
+              axios.get(buildUrl('movie')),
+              axios.get(buildUrl('tv'))
+            ]);
+            
+            const movies = (movieRes.data.results || []).map(m => ({ ...m, mediaType: 'movie' }));
+            const tvShows = (tvRes.data.results || []).map(t => ({ ...t, mediaType: 'tv' }));
+            
+            // Interleave results for variety
+            const maxLen = Math.max(movies.length, tvShows.length);
+            for (let i = 0; i < maxLen; i++) {
+              if (movies[i]) allResults.push(movies[i]);
+              if (tvShows[i]) allResults.push(tvShows[i]);
+            }
+            
+            setTotalPages(Math.min(Math.max(movieRes.data.total_pages, tvRes.data.total_pages), 20));
+          } else if (contentType === 'movie') {
+            const res = await axios.get(buildUrl('movie'));
+            allResults = (res.data.results || []).map(m => ({ ...m, mediaType: 'movie' }));
+            setTotalPages(Math.min(res.data.total_pages || 1, 20));
+          } else if (contentType === 'tv') {
+            const res = await axios.get(buildUrl('tv'));
+            allResults = (res.data.results || []).map(t => ({ ...t, mediaType: 'tv' }));
+            setTotalPages(Math.min(res.data.total_pages || 1, 20));
+          }
+        }
+        
+        // Normalize data
+        const normalized = allResults.map(item => ({
+          id: item.id,
+          title: item.title || item.name,
+          rating: item.vote_average || 0,
+          image: item.poster_path ? `${IMG_BASE}${item.poster_path}` : null,
+          year: (item.release_date || item.first_air_date || '').slice(0, 4),
+          mediaType: item.mediaType,
+          overview: item.overview
+        }));
+        
+        setContent(normalized);
+        console.log(`✅ Browse: Loaded ${normalized.length} items`);
       } catch (err) {
-        console.error('❌ Failed to fetch movies:', err);
-        setError('Failed to load movies. Please check if backend is running.');
+        console.error('❌ Failed to fetch content:', err);
+        setError('Failed to load content. Please try again.');
       } finally {
         setLoading(false);
       }
     };
     
-    fetchMovies();
-  }, []);
-
-  // ============================================
-  // Derive unique countries and genres from movies
-  // ============================================
-  const countries = useMemo(() => {
-    const unique = [...new Set(allMovies.map(m => m.country).filter(Boolean))];
-    return unique.sort();
-  }, [allMovies]);
-
-  const genres = useMemo(() => {
-    const allGenres = allMovies.flatMap(m => m.genres || []);
-    const unique = [...new Set(allGenres.filter(Boolean))];
-    return unique.sort();
-  }, [allMovies]);
-
-  // ============================================
-  // Filter movies (client-side)
-  // TODO: Move to backend when API supports filtering
-  // ============================================
-  const filteredMovies = useMemo(() => {
-    let result = [...allMovies];
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(m => 
-        m.title?.toLowerCase().includes(query) ||
-        m.description?.toLowerCase().includes(query)
-      );
-    }
-
-    // Country filter
-    if (selectedCountry !== 'all') {
-      result = result.filter(m => m.country === selectedCountry);
-    }
-
-    // Genre filter
-    if (selectedGenre !== 'all') {
-      result = result.filter(m => 
-        m.genres?.some(g => g.toLowerCase() === selectedGenre.toLowerCase())
-      );
-    }
-
-    return result;
-  }, [allMovies, searchQuery, selectedCountry, selectedGenre]);
+    const debounce = setTimeout(fetchContent, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, contentType, selectedGenre, selectedCountry, currentPage]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCountry, selectedGenre]);
-
-  // ============================================
-  // Pagination
-  // ============================================
-  const totalPages = Math.ceil(filteredMovies.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedMovies = filteredMovies.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [searchQuery, contentType, selectedGenre, selectedCountry]);
 
   // Clear all filters
   const clearFilters = () => {
     setSearchQuery('');
-    setSelectedCountry('all');
-    setSelectedGenre('all');
+    setSelectedGenre(null);
+    setSelectedCountry(null);
+    setCurrentPage(1);
   };
 
-  const hasActiveFilters = searchQuery || selectedCountry !== 'all' || selectedGenre !== 'all';
+  const hasFilters = searchQuery || selectedGenre || selectedCountry;
 
   // ============================================
-  // Loading state
+  // Loading State
   // ============================================
-  if (loading) {
+  if (loading && content.length === 0) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading movies...</p>
+          <div className="relative w-20 h-20 mx-auto mb-5">
+            <div className="absolute inset-0 rounded-full border-4 border-cyan-500/30"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-cyan-500 animate-spin"></div>
+            <span className="absolute inset-0 flex items-center justify-center text-3xl">🎬</span>
+          </div>
+          <p className="text-slate-400">Loading content...</p>
         </div>
       </div>
     );
   }
 
   // ============================================
-  // Error state
+  // Error State
   // ============================================
   if (error) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center max-w-md px-4">
-          <div className="text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-red-400 mb-2">Connection Error</h2>
-          <p className="text-slate-400 mb-4">{error}</p>
+          <div className="text-5xl mb-4">😕</div>
+          <h2 className="text-lg font-bold text-red-400 mb-2">Something went wrong</h2>
+          <p className="text-slate-400 text-sm mb-5">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-6 rounded-full transition-colors cursor-pointer"
+            className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2.5 px-6 rounded-xl transition-all cursor-pointer"
           >
-            Retry
+            Try Again
           </button>
         </div>
       </div>
@@ -149,64 +251,63 @@ const Browse = () => {
 
   return (
     <div className="min-h-screen bg-dark-bg text-white">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-black mb-2">Browse Movies</h1>
-          <p className="text-slate-400">
-            {filteredMovies.length} movie{filteredMovies.length !== 1 ? 's' : ''} found
-            {hasActiveFilters && ' (filtered)'}
-          </p>
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-8">
+      {/* Hero Section */}
+      <div className="relative bg-linear-to-b from-cyan-900/20 via-purple-900/10 to-transparent py-8 mb-4">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl md:text-4xl font-black mb-2">
+              Browse <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-purple-400">All</span>
+            </h1>
+            <p className="text-slate-400 text-sm max-w-xl mx-auto">
+              Discover movies and TV shows from around the world
+            </p>
+          </div>
           
-          {/* ========== LEFT SIDEBAR ========== */}
-          <aside className="lg:w-64 shrink-0">
-            <div className="lg:sticky lg:top-24 space-y-6 bg-slate-900/50 rounded-xl p-5 border border-slate-800">
-              
-              {/* Search */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">
-                  Search
-                </label>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search movies..."
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition-colors"
-                />
-              </div>
+          {/* Search Bar - Prominent */}
+          <div className="max-w-xl mx-auto">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search movies & TV shows..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-800/80 border border-slate-700/50 rounded-xl px-5 py-3.5 pl-12 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:bg-slate-800 transition-all shadow-lg"
+              />
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">🔍</span>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
-              {/* Country Filter */}
+      <div className="max-w-6xl mx-auto px-4 pb-12">
+        <div className="flex gap-6">
+          {/* LEFT SIDEBAR: Filters */}
+          <div className="w-56 shrink-0">
+            <div className="sticky top-20 space-y-5">
+              {/* Content Type Tabs */}
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">
-                  Country
-                </label>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setSelectedCountry('all')}
-                    className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
-                      selectedCountry === 'all'
-                        ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
-                        : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'
-                    }`}
-                  >
-                    All Countries
-                  </button>
-                  {countries.map(country => (
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Content Type</label>
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-1.5 flex gap-1">
+                  {CONTENT_TYPES.map(type => (
                     <button
-                      key={country}
-                      onClick={() => setSelectedCountry(country)}
-                      className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
-                        selectedCountry === country
-                          ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
-                          : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'
+                      key={type.id}
+                      onClick={() => setContentType(type.id)}
+                      className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
+                        contentType === type.id
+                          ? 'bg-cyan-500 text-black shadow-lg'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
                       }`}
                     >
-                      {country}
+                      <span>{type.icon}</span>
+                      <span className="hidden sm:inline">{type.name}</span>
                     </button>
                   ))}
                 </div>
@@ -214,111 +315,225 @@ const Browse = () => {
 
               {/* Genre Filter */}
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">
-                  Genre
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2 block">
+                  Genres {selectedGenre && <span className="text-cyan-400">• 1 selected</span>}
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setSelectedGenre('all')}
-                    className={`px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer ${
-                      selectedGenre === 'all'
-                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
-                        : 'bg-slate-800/50 text-slate-500 hover:bg-slate-800 hover:text-white border border-slate-700'
-                    }`}
-                  >
-                    All
-                  </button>
-                  {genres.map(genre => (
-                    <button
-                      key={genre}
-                      onClick={() => setSelectedGenre(genre)}
-                      className={`px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer ${
-                        selectedGenre === genre
-                          ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
-                          : 'bg-slate-800/50 text-slate-500 hover:bg-slate-800 hover:text-white border border-slate-700'
-                      }`}
-                    >
-                      {genre}
-                    </button>
-                  ))}
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5 max-h-56 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                  <div className="flex flex-wrap gap-1.5">
+                    {getGenres().map(genre => (
+                      <button
+                        key={genre.id}
+                        onClick={() => setSelectedGenre(selectedGenre === genre.id ? null : genre.id)}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
+                          selectedGenre === genre.id 
+                            ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/25' 
+                            : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white'
+                        }`}
+                      >
+                        {genre.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Country Filter */}
+              <div>
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2 block">
+                  Country {selectedCountry && <span className="text-cyan-400">• 1 selected</span>}
+                </label>
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5 max-h-48 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                  <div className="space-y-1">
+                    {COUNTRIES.map(country => (
+                      <button
+                        key={country.code}
+                        onClick={() => setSelectedCountry(selectedCountry === country.code ? null : country.code)}
+                        className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-2 ${
+                          selectedCountry === country.code 
+                            ? 'bg-cyan-500 text-black' 
+                            : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                        }`}
+                      >
+                        <span className="text-sm">{getCountryFlag(country.code)}</span>
+                        {country.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
               {/* Clear Filters */}
-              {hasActiveFilters && (
-                <button
+              {hasFilters && (
+                <button 
                   onClick={clearFilters}
-                  className="w-full py-2.5 text-sm text-red-400 hover:text-red-300 transition-colors cursor-pointer border border-red-500/30 rounded-lg hover:bg-red-500/10"
+                  className="w-full text-xs text-slate-400 hover:text-cyan-400 py-2.5 border border-slate-800 rounded-xl hover:border-cyan-500/30 transition-all"
                 >
-                  Clear All Filters
+                  ✕ Clear all filters
                 </button>
               )}
-            </div>
-          </aside>
 
-          {/* ========== MAIN CONTENT ========== */}
-          <main className="flex-1">
-            {paginatedMovies.length > 0 ? (
+              {/* Quick Links */}
+              <div className="pt-4 border-t border-slate-800">
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Explore More</label>
+                <div className="space-y-1.5">
+                  <button
+                    onClick={() => navigate('/movies')}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all flex items-center gap-2"
+                  >
+                    <span>🎬</span> Movie Library
+                  </button>
+                  <button
+                    onClick={() => navigate('/tvshows')}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all flex items-center gap-2"
+                  >
+                    <span>📺</span> TV Shows
+                  </button>
+                  <button
+                    onClick={() => navigate('/animations')}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all flex items-center gap-2"
+                  >
+                    <span>✨</span> Animations
+                  </button>
+                  <button
+                    onClick={() => navigate('/anime')}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all flex items-center gap-2"
+                  >
+                    <span>🎌</span> Anime
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: Content Grid */}
+          <div className="flex-1">
+            {/* Active Filters Info */}
+            {hasFilters && (
+              <div className="mb-4 flex items-center gap-3 text-sm">
+                <span className="text-slate-500">Filters:</span>
+                <div className="flex flex-wrap gap-2">
+                  {searchQuery && (
+                    <span className="bg-slate-800 px-3 py-1 rounded-full text-xs text-slate-300">
+                      "{searchQuery}"
+                    </span>
+                  )}
+                  {selectedGenre && (
+                    <span className="bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full text-xs">
+                      {getGenres().find(g => g.id === selectedGenre)?.name}
+                    </span>
+                  )}
+                  {selectedCountry && (
+                    <span className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full text-xs">
+                      {COUNTRIES.find(c => c.code === selectedCountry)?.name}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Results Count */}
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-slate-500 text-sm">
+                {loading ? 'Loading...' : `${content.length} results found`}
+              </span>
+            </div>
+
+            {/* Loading Overlay */}
+            {loading && content.length > 0 && (
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+                <div className="bg-slate-900 rounded-xl p-6 shadow-xl">
+                  <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!loading && content.length === 0 ? (
+              <div className="text-center py-16 bg-slate-900/30 rounded-xl border border-dashed border-slate-700">
+                <span className="text-4xl mb-3 block">🔍</span>
+                <p className="text-slate-400 font-medium">No results found</p>
+                <p className="text-slate-600 text-sm mt-1">Try adjusting your search or filters</p>
+                {hasFilters && (
+                  <button onClick={clearFilters} className="mt-4 text-cyan-400 text-sm hover:underline">
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            ) : (
               <>
-                {/* Movie Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                  {paginatedMovies.map((movie) => (
+                {/* Content Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {content.map((item, index) => (
                     <div
-                      key={movie.id}
-                      onClick={() => navigate(`/details/movie/${movie.id}`)}
+                      key={`${item.mediaType}-${item.id}-${index}`}
+                      onClick={() => navigate(`/details/${item.mediaType}/${item.id}`)}
                       className="group cursor-pointer"
                     >
-                      <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-cyan-500/50 shadow-lg transition-all duration-300">
-                        <img
-                          src={movie.poster || movie.image}
-                          alt={movie.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }}
-                        />
-                        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        
-                        {/* Country Badge */}
-                        {movie.country && (
-                          <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-bold">
-                            {movie.country === 'Nepal' ? '🇳🇵 NP' : 
-                             movie.country === 'India' ? '🇮🇳 IN' : 
-                             movie.country === 'USA' ? '🇺🇸 US' : movie.country}
+                      <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-2 border border-slate-800/50 group-hover:border-cyan-500/50 shadow-lg group-hover:shadow-cyan-500/20 transition-all duration-300">
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                            onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                            <span className="text-4xl opacity-30">{item.mediaType === 'movie' ? '🎬' : '📺'}</span>
                           </div>
                         )}
                         
-                        {/* Rating */}
-                        {movie.rating > 0 && (
-                          <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
-                            <span className="text-yellow-400">★</span> {movie.rating.toFixed(1)}
+                        {/* Gradient Overlay */}
+                        <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
+                        
+                        {/* Media Type Badge */}
+                        <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[10px] font-bold backdrop-blur-sm ${
+                          item.mediaType === 'movie' 
+                            ? 'bg-cyan-500/90 text-black' 
+                            : 'bg-purple-500/90 text-white'
+                        }`}>
+                          {item.mediaType === 'movie' ? '🎬 Movie' : '📺 TV'}
+                        </div>
+                        
+                        {/* Rating Badge */}
+                        {item.rating > 0 && (
+                          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1">
+                            <span className="text-yellow-400">★</span> 
+                            {item.rating.toFixed(1)}
                           </div>
                         )}
                         
-                        {/* View Details on hover */}
-                        <div className="absolute bottom-0 left-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <span className="text-sm text-cyan-400 font-semibold">View Details →</span>
+                        {/* Bottom Info */}
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                          <p className="text-white font-semibold text-sm truncate">{item.title}</p>
+                          {item.year && <p className="text-slate-400 text-xs">{item.year}</p>}
+                        </div>
+                        
+                        {/* Hover Text */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="bg-black/80 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-medium text-white">
+                            View Details →
+                          </span>
                         </div>
                       </div>
-                      <h3 className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors">
-                        {movie.title}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-1">{movie.year}</p>
                     </div>
                   ))}
                 </div>
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-3 mt-12">
+                  <div className="flex justify-center items-center gap-2 mt-8">
                     <button
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className="px-5 py-2.5 rounded-lg text-sm font-medium bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       ← Previous
                     </button>
                     
-                    <div className="flex gap-1.5">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    <div className="flex items-center gap-1">
+                      {[...Array(Math.min(5, totalPages))].map((_, i) => {
                         let pageNum;
                         if (totalPages <= 5) {
                           pageNum = i + 1;
@@ -334,10 +549,10 @@ const Browse = () => {
                           <button
                             key={pageNum}
                             onClick={() => setCurrentPage(pageNum)}
-                            className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                            className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
                               currentPage === pageNum
                                 ? 'bg-cyan-500 text-black'
-                                : 'bg-slate-800 hover:bg-slate-700'
+                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
                             }`}
                           >
                             {pageNum}
@@ -349,31 +564,28 @@ const Browse = () => {
                     <button
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
-                      className="px-5 py-2.5 rounded-lg text-sm font-medium bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       Next →
                     </button>
                   </div>
                 )}
               </>
-            ) : (
-              <div className="text-center py-20 bg-slate-900/30 rounded-xl border border-dashed border-slate-700">
-                <span className="text-5xl mb-4 block">🔍</span>
-                <h3 className="text-xl font-bold text-slate-300 mb-2">No Movies Found</h3>
-                <p className="text-slate-500 mb-6">Try adjusting your filters or search query</p>
-                <button
-                  onClick={clearFilters}
-                  className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-full transition-all cursor-pointer"
-                >
-                  Clear Filters
-                </button>
-              </div>
             )}
-          </main>
+          </div>
         </div>
       </div>
     </div>
   );
+};
+
+// Helper function to get country flag emoji
+const getCountryFlag = (countryCode) => {
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt());
+  return String.fromCodePoint(...codePoints);
 };
 
 export default Browse;

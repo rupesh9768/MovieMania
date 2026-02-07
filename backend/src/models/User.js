@@ -4,8 +4,38 @@
 import mongoose from 'mongoose';
 
 /**
+ * Media Item Schema (embedded)
+ * Used for watchlist and favorites arrays
+ */
+const mediaItemSchema = new mongoose.Schema({
+  mediaType: {
+    type: String,
+    enum: ['movie', 'tv', 'anime'],
+    required: true
+  },
+  mediaId: {
+    type: String,
+    required: true
+  },
+  title: {
+    type: String,
+    required: true
+  },
+  poster: {
+    type: String
+  },
+  rating: {
+    type: Number
+  },
+  addedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: false });
+
+/**
  * User Schema
- * Basic user model for authentication (to be extended later)
+ * User model for authentication with watchlist and favorites
  */
 const userSchema = new mongoose.Schema({
   name: {
@@ -31,6 +61,8 @@ const userSchema = new mongoose.Schema({
     minlength: [6, 'Password must be at least 6 characters'],
     select: false // Don't include password in queries by default
   },
+  watchlist: [mediaItemSchema],
+  favorites: [mediaItemSchema],
   createdAt: {
     type: Date,
     default: Date.now
@@ -39,6 +71,10 @@ const userSchema = new mongoose.Schema({
 
 // Index for faster email lookups
 userSchema.index({ email: 1 });
+
+// Compound index for faster watchlist/favorites lookups
+userSchema.index({ 'watchlist.mediaType': 1, 'watchlist.mediaId': 1 });
+userSchema.index({ 'favorites.mediaType': 1, 'favorites.mediaId': 1 });
 
 const User = mongoose.model('User', userSchema);
 

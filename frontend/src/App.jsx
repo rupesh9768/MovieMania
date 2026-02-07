@@ -12,6 +12,8 @@ import TVShows from './pages/TVShows';
 import Animations from './pages/Animations';
 import Anime from './pages/Anime';
 import Upcoming from './pages/Upcoming';
+import Watchlist from './pages/Watchlist';
+import Favorites from './pages/Favorites';
 import AdminDashboard from './pages/AdminDashboard';
 import Booking from './pages/Booking';
 import Theater from './pages/Theater';
@@ -45,6 +47,11 @@ function App() {
             <Route path="/animations" element={<Animations />} />
             <Route path="/anime" element={<Anime />} />
             <Route path="/upcoming" element={<Upcoming />} />
+            
+            {/* User Library Routes */}
+            <Route path="/watchlist" element={<Watchlist />} />
+            <Route path="/favorites" element={<Favorites />} />
+            
             {/* Unified details route: /details/:mediaType/:id */}
             <Route path="/details/:mediaType/:id" element={<MovieDetails />} />
             {/* Legacy routes for backwards compatibility */}

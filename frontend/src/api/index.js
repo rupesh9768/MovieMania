@@ -23,5 +23,9 @@ export { default as animeApi } from './animeService';
 export * from './bookingService';
 export { default as bookingApi } from './bookingService';
 
+// User API Service (Watchlist & Favorites)
+export * from './userService';
+export { default as userApi } from './userService';
+
 // Axios instance (for custom requests)
 export { default as api } from './axios';
