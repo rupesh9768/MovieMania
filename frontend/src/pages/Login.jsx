@@ -1,21 +1,43 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Redirect if already logged in
+  const from = location.state?.from?.pathname || '/';
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate login logic here (e.g., check API)
-    console.log('Logging in with:', formData);
-    
-    // Redirect to Home after login
-    navigate('/');
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await login(formData.email, formData.password);
+      if (data.success) {
+        // Redirect admin to admin dashboard, others to intended page
+        if (data.user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate(from, { replace: true });
+        }
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,8 +52,14 @@ const Login = () => {
         
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black text-white mb-2 tracking-tighter">Welcome Back</h1>
-          <p className="text-slate-400 text-sm">Please sign in to your account</p>
+          <p className="text-slate-400 text-sm">Sign in to your account (User or Admin)</p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -50,7 +78,7 @@ const Login = () => {
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-xs font-bold text-slate-400 uppercase">Password</label>
-              <a href="#" className="text-xs text-cyan-500 hover:text-cyan-400">Forgot Password?</a>
+              <Link to="/forgot-password" className="text-xs text-cyan-500 hover:text-cyan-400">Forgot Password?</Link>
             </div>
             <input 
               type="password" 
@@ -65,9 +93,10 @@ const Login = () => {
 
           <button 
             type="submit"
-            className="w-full bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-cyan-500/20 transition-all active:scale-95"
+            disabled={loading}
+            className="w-full bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-cyan-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Sign In
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 

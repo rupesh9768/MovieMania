@@ -3,11 +3,13 @@
 // ====================================
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
 // Import routes
 import healthRoutes from './routes/health.routes.js';
 import movieRoutes from './routes/movie.routes.js';
 import userRoutes from './routes/user.routes.js';
+import authRoutes from './routes/auth.routes.js';
 
 // Create Express app
 const app = express();
@@ -28,12 +30,18 @@ app.use(express.json());
 // Parse URL-encoded bodies
 app.use(express.urlencoded({ extended: true }));
 
+// Parse cookies
+app.use(cookieParser());
+
 // ====================================
 // Routes
 // ====================================
 
 // Health check
 app.use('/api/health', healthRoutes);
+
+// Auth API
+app.use('/api/auth', authRoutes);
 
 // Movies API
 app.use('/api/movies', movieRoutes);
@@ -48,6 +56,7 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
+      auth: '/api/auth',
       movies: '/api/movies',
       users: '/api/users'
     }

@@ -4,6 +4,11 @@ import { backendApi } from '../api';
 // ============================================
 // ADMIN DASHBOARD - BACKEND CONNECTED
 // Uses real backend API for all CRUD operations
+//
+// TODO: Theater management (add/edit/delete theaters & halls)
+// TODO: Booking management (view all bookings, manage cancellations)
+// TODO: User management (list users, ban/unban)
+// TODO: Analytics dashboard (revenue, popular movies)
 // ============================================
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 

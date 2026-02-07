@@ -27,5 +27,9 @@ export { default as bookingApi } from './bookingService';
 export * from './userService';
 export { default as userApi } from './userService';
 
+// Auth API Service
+export * from './authService';
+export { default as authApi } from './authService';
+
 // Axios instance (for custom requests)
 export { default as api } from './axios';

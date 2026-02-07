@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { getFavorites, removeFromFavorites, isLoggedIn } from '../api/userService';
 
 // ============================================
+// TODO: Favorites system — sync favorites with backend per-user
+// TODO: Share favorites list with friends
 // FAVORITES PAGE
 // Shows user's favorite movies/shows
 // ============================================

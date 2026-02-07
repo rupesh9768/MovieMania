@@ -3,6 +3,11 @@ import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import SeatSelection from '../components/SeatSelection';
 import Payment from '../components/Payment';
 
+// TODO: Payment integration (Stripe / Khalti)
+// TODO: Booking ownership validation — ensure user can only access their own bookings
+// TODO: Booking confirmation email
+// TODO: E-ticket generation (PDF)
+
 function Booking() {
   const { movieId, showtimeId } = useParams();
   const navigate = useNavigate();

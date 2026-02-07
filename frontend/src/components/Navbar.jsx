@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -9,6 +10,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const browseRef = useRef(null);
   const profileRef = useRef(null);
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
 
   const isActive = (path) => location.pathname === path;
   const isBrowseActive = ['/browse', '/movies', '/tvshows', '/animations', '/anime'].includes(location.pathname);
@@ -174,108 +176,147 @@ const Navbar = () => {
               </Link>
             </li>
 
-            <li>
-              <Link 
-                to="/admin" 
-                className={`text-sm font-medium transition-colors ${
-                  isActive('/admin') ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Admin
-              </Link>
-            </li>
+            {/* Admin link - only shown to admins */}
+            {isAdmin && (
+              <li>
+                <Link 
+                  to="/admin" 
+                  className={`text-sm font-medium transition-colors ${
+                    isActive('/admin') ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Admin
+                </Link>
+              </li>
+            )}
           </ul>
 
-          {/* Right Side - Profile Dropdown */}
+          {/* Right Side - Auth Buttons / Profile Dropdown */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Profile Dropdown */}
-            <div className="relative" ref={profileRef}>
-              <button 
-                onClick={() => setProfileOpen(!profileOpen)}
-                className={`flex items-center gap-2 text-sm font-medium transition-colors cursor-pointer ${
-                  isProfileActive ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <div className="w-8 h-8 bg-linear-to-br from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                  U
-                </div>
-                <svg className={`w-4 h-4 transition-transform ${profileOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {profileOpen && (
-                <div className="absolute top-full right-0 mt-3 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl shadow-black/50 p-3 min-w-[180px]">
-                  {/* Arrow */}
-                  <div className="absolute -top-2 right-4 w-4 h-4 bg-[#111827] border-l border-t border-slate-700 transform rotate-45"></div>
-                  
-                  <div className="space-y-1">
-                    <Link
-                      to="/watchlist"
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
-                        isActive('/watchlist')
-                          ? 'bg-cyan-500/15 text-cyan-400'
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                      }`}
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      <span>📋</span>
-                      <span>Watchlist</span>
-                    </Link>
-                    
-                    <Link
-                      to="/favorites"
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
-                        isActive('/favorites')
-                          ? 'bg-pink-500/15 text-pink-400'
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                      }`}
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      <span>♥</span>
-                      <span>Favorites</span>
-                    </Link>
-                    
-                    <Link
-                      to="/history"
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
-                        isActive('/history')
-                          ? 'bg-cyan-500/15 text-cyan-400'
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                      }`}
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      <span>🎟️</span>
-                      <span>Booking History</span>
-                    </Link>
-                    
-                    <Link
-                      to="/profile"
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
-                        isActive('/profile')
-                          ? 'bg-cyan-500/15 text-cyan-400'
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                      }`}
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      <span>👤</span>
-                      <span>My Profile</span>
-                    </Link>
-                    
-                    <div className="border-t border-slate-700 my-2"></div>
-                    
-                    <Link
-                      to="/login"
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-slate-800/80 hover:text-white transition-all cursor-pointer"
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      <span>🚪</span>
-                      <span>Login / Sign Up</span>
-                    </Link>
+            {isAuthenticated ? (
+              /* Profile Dropdown - Logged In */
+              <div className="relative" ref={profileRef}>
+                <button 
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  className={`flex items-center gap-2 text-sm font-medium transition-colors cursor-pointer ${
+                    isProfileActive ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <div className="w-8 h-8 bg-linear-to-br from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                </div>
-              )}
-            </div>
+                  <span className="max-w-[100px] truncate">{user?.name || 'User'}</span>
+                  <svg className={`w-4 h-4 transition-transform ${profileOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {profileOpen && (
+                  <div className="absolute top-full right-0 mt-3 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl shadow-black/50 p-3 min-w-[200px]">
+                    {/* Arrow */}
+                    <div className="absolute -top-2 right-4 w-4 h-4 bg-[#111827] border-l border-t border-slate-700 transform rotate-45"></div>
+                    
+                    {/* User Info */}
+                    <div className="px-3 py-2 mb-2 border-b border-slate-700/50">
+                      <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                      {isAdmin && (
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs font-bold rounded-full">
+                          Admin
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <Link
+                        to="/watchlist"
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
+                          isActive('/watchlist')
+                            ? 'bg-cyan-500/15 text-cyan-400'
+                            : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                        }`}
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <span>📋</span>
+                        <span>Watchlist</span>
+                      </Link>
+                      
+                      <Link
+                        to="/favorites"
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
+                          isActive('/favorites')
+                            ? 'bg-pink-500/15 text-pink-400'
+                            : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                        }`}
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <span>♥</span>
+                        <span>Favorites</span>
+                      </Link>
+                      
+                      <Link
+                        to="/history"
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
+                          isActive('/history')
+                            ? 'bg-cyan-500/15 text-cyan-400'
+                            : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                        }`}
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <span>🎟️</span>
+                        <span>Booking History</span>
+                      </Link>
+                      
+                      {/* Admin Dashboard Link */}
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
+                            isActive('/admin')
+                              ? 'bg-amber-500/15 text-amber-400'
+                              : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                          }`}
+                          onClick={() => setProfileOpen(false)}
+                        >
+                          <span>⚙️</span>
+                          <span>Admin Dashboard</span>
+                        </Link>
+                      )}
+                      
+                      <div className="border-t border-slate-700 my-2"></div>
+                      
+                      <button
+                        onClick={() => {
+                          setProfileOpen(false);
+                          logout();
+                          navigate('/');
+                        }}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all cursor-pointer w-full text-left"
+                      >
+                        <span>🚪</span>
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Login / Register Buttons - Logged Out */
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/login"
+                  className="text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="text-sm font-bold bg-cyan-500 hover:bg-cyan-400 text-black px-4 py-2 rounded-lg transition-all"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -361,59 +402,81 @@ const Navbar = () => {
                 </Link>
               </li>
               
-              <li>
-                <Link 
-                  to="/admin"
-                  className={`block py-2 px-4 rounded-lg transition-colors ${
-                    isActive('/admin') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Admin
-                </Link>
-              </li>
+              {/* Admin link - only for admins */}
+              {isAdmin && (
+                <li>
+                  <Link 
+                    to="/admin"
+                    className={`block py-2 px-4 rounded-lg transition-colors ${
+                      isActive('/admin') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    ⚙️ Admin Dashboard
+                  </Link>
+                </li>
+              )}
               
-              <li>
-                <Link 
-                  to="/watchlist"
-                  className={`block py-2 px-4 rounded-lg transition-colors ${
-                    isActive('/watchlist') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  📋 Watchlist
-                </Link>
-              </li>
-              
-              <li>
-                <Link 
-                  to="/favorites"
-                  className={`block py-2 px-4 rounded-lg transition-colors ${
-                    isActive('/favorites') ? 'bg-pink-500/10 text-pink-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  ♥ Favorites
-                </Link>
-              </li>
-              
-              <li>
-                <Link 
-                  to="/history"
-                  className={`block py-2 px-4 rounded-lg transition-colors ${
-                    isActive('/history') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  🎟️ Booking History
-                </Link>
-              </li>
+              {/* Authenticated user links */}
+              {isAuthenticated && (
+                <>
+                  <li className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase">My Library</li>
+                  <li>
+                    <Link 
+                      to="/watchlist"
+                      className={`block py-2 px-4 rounded-lg transition-colors ${
+                        isActive('/watchlist') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      📋 Watchlist
+                    </Link>
+                  </li>
+                  
+                  <li>
+                    <Link 
+                      to="/favorites"
+                      className={`block py-2 px-4 rounded-lg transition-colors ${
+                        isActive('/favorites') ? 'bg-pink-500/10 text-pink-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      ♥ Favorites
+                    </Link>
+                  </li>
+                  
+                  <li>
+                    <Link 
+                      to="/history"
+                      className={`block py-2 px-4 rounded-lg transition-colors ${
+                        isActive('/history') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      🎟️ Booking History
+                    </Link>
+                  </li>
+                </>
+              )}
               
               <li className="pt-2 border-t border-slate-800">
-                <Link to="/login" className="block py-2 px-4 text-slate-400 hover:text-white">
-                  Login
-                </Link>
-              </li>
-              <li>
-                <Link to="/register" className="block py-2 px-4 mx-4 bg-cyan-500 text-black font-bold rounded-lg text-center cursor-pointer">
-                  Sign Up
-                </Link>
+                {isAuthenticated ? (
+                  <button
+                    onClick={() => {
+                      logout();
+                      navigate('/');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="block w-full text-left py-2 px-4 text-red-400 hover:text-red-300"
+                  >
+                    🚪 Logout
+                  </button>
+                ) : (
+                  <>
+                    <Link to="/login" className="block py-2 px-4 text-slate-400 hover:text-white">
+                      Login
+                    </Link>
+                    <Link to="/register" className="block py-2 px-4 mx-4 bg-cyan-500 text-black font-bold rounded-lg text-center cursor-pointer mt-2">
+                      Sign Up
+                    </Link>
+                  </>
+                )}
               </li>
             </ul>
           </div>
