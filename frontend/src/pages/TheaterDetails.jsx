@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { backendApi } from '../api';
+import CommentSection from '../components/CommentSection';
 
 // ============================================
 // THEATER MOVIE DETAILS PAGE
@@ -276,7 +277,7 @@ const TheaterDetails = () => {
               >
                 {selectedTime !== null ? 'Select Seats →' : 'Select a Showtime'}
               </button>
-              
+
               <button
                 onClick={() => navigate('/theater')}
                 className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-white transition-colors"
@@ -287,6 +288,17 @@ const TheaterDetails = () => {
           </div>
         </div>
       </section>
+
+      {/* Comment Section */}
+      {movie && (
+        <div className="max-w-6xl mx-auto px-6">
+          <CommentSection
+            contentId={String(id)}
+            contentType="theater"
+            contentTitle={movie.title}
+          />
+        </div>
+      )}
     </div>
   );
 };

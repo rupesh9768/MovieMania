@@ -46,11 +46,13 @@ export const AuthProvider = ({ children }) => {
         const data = await getProfile();
         if (data.success && data.user) {
           setUser(data.user);
+          localStorage.setItem('user', JSON.stringify(data.user));
         }
       } catch (error) {
         console.error('Failed to load user profile:', error);
         // Token is invalid or expired
         logoutApi();
+        localStorage.removeItem('user');
         setUser(null);
       } finally {
         setLoading(false);
@@ -67,6 +69,7 @@ export const AuthProvider = ({ children }) => {
     const data = await loginApi(email, password);
     if (data.success && data.user) {
       setUser(data.user);
+      localStorage.setItem('user', JSON.stringify(data.user));
     }
     return data;
   };
@@ -78,6 +81,7 @@ export const AuthProvider = ({ children }) => {
     const data = await registerApi(formData);
     if (data.success && data.user) {
       setUser(data.user);
+      localStorage.setItem('user', JSON.stringify(data.user));
     }
     return data;
   };
@@ -87,7 +91,24 @@ export const AuthProvider = ({ children }) => {
   // ====================================
   const logout = () => {
     logoutApi();
+    localStorage.removeItem('user');
     setUser(null);
+  };
+
+  // ====================================
+  // Refresh user data (after profile update)
+  // ====================================
+  const refreshUser = async () => {
+    try {
+      setAuthHeader();
+      const data = await getProfile();
+      if (data.success && data.user) {
+        setUser(data.user);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+    }
   };
 
   // ====================================
@@ -103,7 +124,8 @@ export const AuthProvider = ({ children }) => {
     isAdmin,
     login,
     register,
-    logout
+    logout,
+    refreshUser
   };
 
   return (

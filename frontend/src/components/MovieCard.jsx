@@ -43,14 +43,6 @@ const MovieCard = ({ movie, showBooking = false }) => {
               View Details
             </Link>
           )}
-
-          {/* Discussion Button - Always visible */}
-          <button 
-            onClick={() => navigate(`/discussion/${movie.id}`)}
-            className="discussion-btn px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded text-sm font-semibold transition-colors"
-          >
-            💬 Discussion
-          </button>
         </div>
       </div>
     </div>

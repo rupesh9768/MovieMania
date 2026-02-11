@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getFavorites, removeFromFavorites, isLoggedIn } from '../api/userService';
 
+const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
+
+const getPosterUrl = (poster, mediaType) => {
+  if (!poster) return null;
+  if (poster.startsWith('http')) return poster;
+  return `${IMG_BASE}${poster}`;
+};
+
 // ============================================
 // TODO: Favorites system — sync favorites with backend per-user
 // TODO: Share favorites list with friends
@@ -146,7 +154,7 @@ const Favorites = () => {
                   <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-2 border-2 border-pink-500/30 group-hover:border-pink-500/60 shadow-lg transition-all">
                     {item.poster ? (
                       <img
-                        src={item.poster}
+                        src={getPosterUrl(item.poster, item.mediaType)}
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"

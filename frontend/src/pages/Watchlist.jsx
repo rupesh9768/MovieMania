@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getWatchlist, removeFromWatchlist, isLoggedIn } from '../api/userService';
 
+const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
+
+const getPosterUrl = (poster, mediaType) => {
+  if (!poster) return null;
+  if (poster.startsWith('http')) return poster;
+  return `${IMG_BASE}${poster}`;
+};
+
 // ============================================
 // WATCHLIST PAGE
 // Shows user's saved watchlist items
@@ -144,7 +152,7 @@ const Watchlist = () => {
                   <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-2 border-2 border-cyan-500/30 group-hover:border-cyan-500/60 shadow-lg transition-all">
                     {item.poster ? (
                       <img
-                        src={item.poster}
+                        src={getPosterUrl(item.poster, item.mediaType)}
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"

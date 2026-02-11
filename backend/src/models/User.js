@@ -68,6 +68,36 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'admin'],
     default: 'user'
   },
+  avatar: {
+    type: String,
+    default: ''
+  },
+  bio: {
+    type: String,
+    maxlength: [300, 'Bio cannot exceed 300 characters'],
+    default: ''
+  },
+  age: {
+    type: Number,
+    min: [1, 'Age must be positive'],
+    max: [150, 'Invalid age']
+  },
+  location: {
+    type: String,
+    maxlength: [100, 'Location cannot exceed 100 characters'],
+    default: ''
+  },
+  currentlyWatching: {
+    title: { type: String, default: '' },
+    mediaType: { type: String, enum: ['movie', 'tv', 'anime', ''], default: '' },
+    mediaId: { type: String, default: '' },
+    poster: { type: String, default: '' }
+  },
+  profileVisibility: {
+    type: String,
+    enum: ['public', 'private'],
+    default: 'public'
+  },
   resetPasswordToken: {
     type: String
   },

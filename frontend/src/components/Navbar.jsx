@@ -2,6 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+const BACKEND_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
+
+const getAvatarUrl = (avatar) => {
+  if (!avatar) return null;
+  if (avatar.startsWith('http')) return avatar;
+  return `${BACKEND_URL}${avatar}`;
+};
+
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
@@ -14,7 +22,7 @@ const Navbar = () => {
 
   const isActive = (path) => location.pathname === path;
   const isBrowseActive = ['/browse', '/movies', '/tvshows', '/animations', '/anime'].includes(location.pathname);
-  const isProfileActive = ['/history', '/profile', '/watchlist', '/favorites'].includes(location.pathname);
+  const isProfileActive = ['/history', '/profile', '/watchlist', '/favorites'].includes(location.pathname) || location.pathname.startsWith('/profile');
   const isUpcomingActive = location.pathname === '/upcoming';
 
   // Close dropdown when clicking outside
@@ -77,7 +85,6 @@ const Navbar = () => {
                   isUpcomingActive ? 'text-purple-400' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <span className="text-purple-500">🗓️</span>
                 Upcoming
               </Link>
             </li>
@@ -112,7 +119,6 @@ const Navbar = () => {
                           : 'bg-slate-800/40 text-slate-300 hover:bg-slate-800/80 hover:text-white'
                       }`}
                     >
-                      <span className="block text-xl mb-1.5">🎬</span>
                       <span className="text-sm font-medium">Movies</span>
                     </button>
                     
@@ -124,7 +130,6 @@ const Navbar = () => {
                           : 'bg-slate-800/40 text-slate-300 hover:bg-slate-800/80 hover:text-white'
                       }`}
                     >
-                      <span className="block text-xl mb-1.5">📺</span>
                       <span className="text-sm font-medium">TV Shows</span>
                     </button>
                     
@@ -136,7 +141,6 @@ const Navbar = () => {
                           : 'bg-slate-800/40 text-slate-300 hover:bg-slate-800/80 hover:text-white'
                       }`}
                     >
-                      <span className="block text-xl mb-1.5">🎌</span>
                       <span className="text-sm font-medium">Anime</span>
                     </button>
                     
@@ -148,7 +152,6 @@ const Navbar = () => {
                           : 'bg-slate-800/40 text-slate-300 hover:bg-slate-800/80 hover:text-white'
                       }`}
                     >
-                      <span className="block text-xl mb-1.5">✨</span>
                       <span className="text-sm font-medium">Animations</span>
                     </button>
                   </div>
@@ -158,7 +161,7 @@ const Navbar = () => {
                     onClick={() => handleBrowseItemClick('/browse')}
                     className="w-full mt-4 py-2.5 text-center text-sm font-semibold bg-slate-800/80 hover:bg-cyan-500/20 text-cyan-400 hover:text-cyan-300 transition-all rounded-lg border border-slate-700/50"
                   >
-                    Browse All →
+                    Browse All
                   </button>
                 </div>
               )}
@@ -171,7 +174,6 @@ const Navbar = () => {
                   isActive('/theater') ? 'text-red-400' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <span className="text-red-500">🎬</span>
                 Theater
               </Link>
             </li>
@@ -202,9 +204,13 @@ const Navbar = () => {
                     isProfileActive ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <div className="w-8 h-8 bg-linear-to-br from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                    {user?.name?.charAt(0).toUpperCase() || 'U'}
-                  </div>
+                  {user?.avatar ? (
+                    <img src={getAvatarUrl(user.avatar)} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-600" />
+                  ) : (
+                    <div className="w-8 h-8 bg-linear-to-br from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
                   <span className="max-w-[100px] truncate">{user?.name || 'User'}</span>
                   <svg className={`w-4 h-4 transition-transform ${profileOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
@@ -229,6 +235,19 @@ const Navbar = () => {
                     
                     <div className="space-y-1">
                       <Link
+                        to="/profile"
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
+                          isActive('/profile')
+                            ? 'bg-cyan-500/15 text-cyan-400'
+                            : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                        }`}
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                        <span>My Profile</span>
+                      </Link>
+                      
+                      <Link
                         to="/watchlist"
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
                           isActive('/watchlist')
@@ -237,7 +256,7 @@ const Navbar = () => {
                         }`}
                         onClick={() => setProfileOpen(false)}
                       >
-                        <span>📋</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                         <span>Watchlist</span>
                       </Link>
                       
@@ -250,7 +269,7 @@ const Navbar = () => {
                         }`}
                         onClick={() => setProfileOpen(false)}
                       >
-                        <span>♥</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                         <span>Favorites</span>
                       </Link>
                       
@@ -263,7 +282,7 @@ const Navbar = () => {
                         }`}
                         onClick={() => setProfileOpen(false)}
                       >
-                        <span>🎟️</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
                         <span>Booking History</span>
                       </Link>
                       
@@ -278,7 +297,7 @@ const Navbar = () => {
                           }`}
                           onClick={() => setProfileOpen(false)}
                         >
-                          <span>⚙️</span>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                           <span>Admin Dashboard</span>
                         </Link>
                       )}
@@ -293,7 +312,7 @@ const Navbar = () => {
                         }}
                         className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all cursor-pointer w-full text-left"
                       >
-                        <span>🚪</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                         <span>Logout</span>
                       </button>
                     </div>
@@ -359,7 +378,7 @@ const Navbar = () => {
                     isUpcomingActive ? 'bg-purple-500/10 text-purple-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
-                   Upcoming Movies
+                  Upcoming Movies
                 </Link>
               </li>
               
@@ -367,27 +386,27 @@ const Navbar = () => {
               <li className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase">Browse</li>
               <li>
                 <Link to="/movies" className={`block py-2 px-6 rounded-lg transition-colors ${isActive('/movies') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800'}`}>
-                  🎬 Movies
+                  Movies
                 </Link>
               </li>
               <li>
                 <Link to="/tvshows" className={`block py-2 px-6 rounded-lg transition-colors ${isActive('/tvshows') ? 'bg-purple-500/10 text-purple-400' : 'text-slate-400 hover:bg-slate-800'}`}>
-                  📺 TV Shows
+                  TV Shows
                 </Link>
               </li>
               <li>
                 <Link to="/anime" className={`block py-2 px-6 rounded-lg transition-colors ${isActive('/anime') ? 'bg-pink-500/10 text-pink-400' : 'text-slate-400 hover:bg-slate-800'}`}>
-                  🎌 Anime
+                  Anime
                 </Link>
               </li>
               <li>
                 <Link to="/animations" className={`block py-2 px-6 rounded-lg transition-colors ${isActive('/animations') ? 'bg-amber-500/10 text-amber-400' : 'text-slate-400 hover:bg-slate-800'}`}>
-                  ✨ Animations
+                  Animations
                 </Link>
               </li>
               <li>
                 <Link to="/browse" className="block py-2 px-6 text-cyan-400 text-sm">
-                  Browse All →
+                  Browse All
                 </Link>
               </li>
               
@@ -398,7 +417,7 @@ const Navbar = () => {
                     isActive('/theater') ? 'bg-red-500/10 text-red-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
-                  🎬 Theater
+                  Theater
                 </Link>
               </li>
               
@@ -411,7 +430,7 @@ const Navbar = () => {
                       isActive('/admin') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                     }`}
                   >
-                    ⚙️ Admin Dashboard
+                    Admin Dashboard
                   </Link>
                 </li>
               )}
@@ -422,12 +441,22 @@ const Navbar = () => {
                   <li className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase">My Library</li>
                   <li>
                     <Link 
+                      to="/profile"
+                      className={`block py-2 px-4 rounded-lg transition-colors ${
+                        isActive('/profile') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      My Profile
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
                       to="/watchlist"
                       className={`block py-2 px-4 rounded-lg transition-colors ${
                         isActive('/watchlist') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
-                      📋 Watchlist
+                      Watchlist
                     </Link>
                   </li>
                   
@@ -438,7 +467,7 @@ const Navbar = () => {
                         isActive('/favorites') ? 'bg-pink-500/10 text-pink-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
-                      ♥ Favorites
+                      Favorites
                     </Link>
                   </li>
                   
@@ -449,7 +478,7 @@ const Navbar = () => {
                         isActive('/history') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
-                      🎟️ Booking History
+                      Booking History
                     </Link>
                   </li>
                 </>
@@ -465,7 +494,7 @@ const Navbar = () => {
                     }}
                     className="block w-full text-left py-2 px-4 text-red-400 hover:text-red-300"
                   >
-                    🚪 Logout
+                    Logout
                   </button>
                 ) : (
                   <>

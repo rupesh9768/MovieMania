@@ -31,5 +31,13 @@ export { default as userApi } from './userService';
 export * from './authService';
 export { default as authApi } from './authService';
 
+// Discussion API Service
+export * from './discussionService';
+export { default as discussionApi } from './discussionService';
+
+// Profile API Service
+export * from './profileService';
+export { default as profileApi } from './profileService';
+
 // Axios instance (for custom requests)
 export { default as api } from './axios';

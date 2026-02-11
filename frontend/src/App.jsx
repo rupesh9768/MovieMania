@@ -23,6 +23,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import Booking from './pages/Booking';
 import Theater from './pages/Theater';
 import TheaterDetails from './pages/TheaterDetails';
+import Profile from './pages/Profile';
 
 // Import Components (used as pages)
 import ShowtimeSelection from './components/ShowtimeSelection';
@@ -93,6 +94,12 @@ function App() {
               {/* Theater Routes - Movies in our halls */}
               <Route path="/theater" element={<Theater />} />
               <Route path="/theater/:id" element={<TheaterDetails />} />
+              
+              {/* Profile Routes */}
+              <Route path="/profile" element={
+                <ProtectedRoute><Profile /></ProtectedRoute>
+              } />
+              <Route path="/profile/:userId" element={<Profile />} />
               
               {/* Admin Routes (Protected — admin only) */}
               <Route path="/admin" element={

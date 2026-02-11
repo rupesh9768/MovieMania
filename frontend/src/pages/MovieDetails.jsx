@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  isLoggedIn, 
   checkItemInLists, 
   addToWatchlist, 
   removeFromWatchlist,
   addToFavorites,
   removeFromFavorites 
 } from '../api/userService';
+import { useAuth } from '../context/AuthContext';
+import CommentSection from '../components/CommentSection';
 
 // TMDB API Config
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -27,6 +28,7 @@ const MovieDetails = () => {
   const { id, mediaType: routeMediaType } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   
   // Determine media type from URL
   const getMediaType = () => {
@@ -56,7 +58,7 @@ const MovieDetails = () => {
   // ============================================
   useEffect(() => {
     const checkLists = async () => {
-      if (!isLoggedIn() || !id || !mediaType) return;
+      if (!isAuthenticated || !id || !mediaType) return;
       
       try {
         const status = await checkItemInLists(mediaType, id);
@@ -68,13 +70,13 @@ const MovieDetails = () => {
     };
     
     checkLists();
-  }, [id, mediaType]);
+  }, [id, mediaType, isAuthenticated]);
 
   // ============================================
   // Handle Watchlist Toggle
   // ============================================
   const handleWatchlistToggle = async () => {
-    if (!isLoggedIn()) {
+    if (!isAuthenticated) {
       alert('Please login to add to watchlist');
       navigate('/login');
       return;
@@ -109,7 +111,7 @@ const MovieDetails = () => {
   // Handle Favorites Toggle
   // ============================================
   const handleFavoritesToggle = async () => {
-    if (!isLoggedIn()) {
+    if (!isAuthenticated) {
       alert('Please login to add to favorites');
       navigate('/login');
       return;
@@ -506,7 +508,7 @@ const MovieDetails = () => {
                     <>♡ Favorite</>
                   )}
                 </button>
-                
+
                 <button 
                   onClick={() => navigate(-1)}
                   className="bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-5 rounded-full transition-all text-sm border border-slate-700 cursor-pointer"
@@ -728,6 +730,15 @@ const MovieDetails = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Comment Section */}
+      <div className="max-w-6xl mx-auto px-6">
+        <CommentSection
+          contentId={String(id)}
+          contentType={mediaType === 'tv' ? 'tv' : mediaType === 'anime' ? 'anime' : 'movie'}
+          contentTitle={item.title}
+        />
       </div>
     </div>
   );
