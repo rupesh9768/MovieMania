@@ -1,10 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// ============================================
-// Booking History Page (Placeholder)
-// TODO: Implement when user auth and booking backend is ready
-// ============================================
+// Booking history page
 const BookingHistory = () => {
   const navigate = useNavigate();
 
@@ -17,7 +14,7 @@ const BookingHistory = () => {
             onClick={() => navigate(-1)}
             className="text-slate-400 hover:text-white transition-colors mb-4 cursor-pointer"
           >
-            ← Back
+            Back
           </button>
           <h1 className="text-2xl font-black">Booking History</h1>
           <p className="text-slate-500 text-sm mt-1">View your past and upcoming bookings</p>
@@ -25,7 +22,7 @@ const BookingHistory = () => {
 
         {/* Empty State */}
         <div className="text-center py-20 bg-slate-900/30 rounded-xl border border-dashed border-slate-700">
-          <span className="text-5xl mb-4 block">🎫</span>
+          <span className="text-2xl text-slate-500 mb-4 block">No bookings</span>
           <h3 className="text-xl font-semibold text-slate-300 mb-2">No Bookings Yet</h3>
           <p className="text-slate-500 text-sm mb-6 max-w-sm mx-auto">
             Your booking history will appear here once you book a movie ticket.

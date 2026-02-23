@@ -1,7 +1,4 @@
-// ====================================
-// ProtectedRoute Component
-// Requires user to be logged in
-// ====================================
+// Protected route - requires authentication
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

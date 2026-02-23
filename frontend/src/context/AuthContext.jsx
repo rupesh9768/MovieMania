@@ -1,11 +1,4 @@
-// ====================================
-// Auth Context
-// Provides authentication state across the app
-//
-// TODO: Profile editing (name, avatar, password change)
-// TODO: Discussion system (movie-based comments/reviews)
-// TODO: Social login (Google, GitHub)
-// ====================================
+// Auth context for app-wide authentication state
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   login as loginApi,
@@ -30,9 +23,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ====================================
   // Auto-load user on app refresh
-  // ====================================
   useEffect(() => {
     const loadUser = async () => {
       const token = getToken();
@@ -62,9 +53,7 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
-  // ====================================
-  // Login
-  // ====================================
+
   const login = async (email, password) => {
     const data = await loginApi(email, password);
     if (data.success && data.user) {
@@ -74,9 +63,7 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  // ====================================
-  // Register
-  // ====================================
+
   const register = async (formData) => {
     const data = await registerApi(formData);
     if (data.success && data.user) {
@@ -86,18 +73,14 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  // ====================================
-  // Logout
-  // ====================================
+
   const logout = () => {
     logoutApi();
     localStorage.removeItem('user');
     setUser(null);
   };
 
-  // ====================================
-  // Refresh user data (after profile update)
-  // ====================================
+
   const refreshUser = async () => {
     try {
       setAuthHeader();
@@ -111,9 +94,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ====================================
-  // Derived State
-  // ====================================
+
   const isAuthenticated = !!user;
   const isAdmin = user?.role === 'admin';
 

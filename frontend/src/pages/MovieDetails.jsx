@@ -19,11 +19,6 @@ const BACKDROP_BASE = 'https://image.tmdb.org/t/p/original';
 // Jikan API for Anime
 const JIKAN_BASE = 'https://api.jikan.moe/v4';
 
-// ============================================
-// MovieDetails - Unified page for Movie/TV/Animation/Anime
-// Uses TMDB API for movies, TV, animations
-// Uses Jikan API for anime
-// ============================================
 const MovieDetails = () => {
   const { id, mediaType: routeMediaType } = useParams();
   const navigate = useNavigate();
@@ -53,9 +48,6 @@ const MovieDetails = () => {
   const [inFavorites, setInFavorites] = useState(false);
   const [listLoading, setListLoading] = useState(false);
 
-  // ============================================
-  // Check if item is in user's lists
-  // ============================================
   useEffect(() => {
     const checkLists = async () => {
       if (!isAuthenticated || !id || !mediaType) return;
@@ -72,9 +64,6 @@ const MovieDetails = () => {
     checkLists();
   }, [id, mediaType, isAuthenticated]);
 
-  // ============================================
-  // Handle Watchlist Toggle
-  // ============================================
   const handleWatchlistToggle = async () => {
     if (!isAuthenticated) {
       alert('Please login to add to watchlist');
@@ -107,9 +96,6 @@ const MovieDetails = () => {
     }
   };
 
-  // ============================================
-  // Handle Favorites Toggle
-  // ============================================
   const handleFavoritesToggle = async () => {
     if (!isAuthenticated) {
       alert('Please login to add to favorites');
@@ -142,9 +128,6 @@ const MovieDetails = () => {
     }
   };
 
-  // ============================================
-  // Fetch item data based on media type
-  // ============================================
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -277,9 +260,6 @@ const MovieDetails = () => {
     fetchData();
   }, [id, mediaType]);
 
-  // ============================================
-  // Helper functions
-  // ============================================
   const formatRuntime = (mins) => {
     if (!mins) return 'N/A';
     if (typeof mins === 'string') return mins; // Anime duration is already formatted
@@ -294,10 +274,10 @@ const MovieDetails = () => {
   };
 
   const getMediaTypeLabel = () => {
-    if (item?.isAnime) return '🎌 Anime';
-    if (item?.isAnimation) return '✨ Animation';
-    if (item?.mediaType === 'tv') return '📺 TV Show';
-    return '🎬 Movie';
+    if (item?.isAnime) return 'Anime';
+    if (item?.isAnimation) return 'Animation';
+    if (item?.mediaType === 'tv') return 'TV Show';
+    return 'Movie';
   };
 
   const handleGenreClick = (genre) => {
@@ -320,9 +300,6 @@ const MovieDetails = () => {
     }
   };
 
-  // ============================================
-  // Loading state
-  // ============================================
   if (loading) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
@@ -331,24 +308,18 @@ const MovieDetails = () => {
     );
   }
 
-  // ============================================
-  // Not found state
-  // ============================================
   if (!item) {
     return (
       <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center text-white">
         <h1 className="text-3xl font-bold mb-4">Not Found</h1>
         <p className="text-slate-400 mb-6">The {mediaType} you're looking for doesn't exist.</p>
         <button onClick={() => navigate('/browse')} className="text-cyan-400 hover:underline">
-          ← Back to Browse
+          Back to Browse
         </button>
       </div>
     );
   }
 
-  // ============================================
-  // Build image URLs
-  // ============================================
   const posterUrl = item.isAnime 
     ? item.poster 
     : item.poster ? `${IMG_BASE}${item.poster}` : null;
@@ -357,9 +328,6 @@ const MovieDetails = () => {
     ? item.backdrop 
     : item.backdrop ? `${BACKDROP_BASE}${item.backdrop}` : null;
 
-  // ============================================
-  // Main render
-  // ============================================
   return (
     <div className="min-h-screen bg-dark-bg text-white">
       
@@ -370,8 +338,7 @@ const MovieDetails = () => {
             onClick={handleBack}
             className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-sm"
           >
-            <span>←</span>
-            <span className="font-medium">Back</span>
+            <span>Back</span>
           </button>
         </div>
       </div>
@@ -393,7 +360,7 @@ const MovieDetails = () => {
               onClick={() => setShowTrailerModal(false)}
               className="absolute -top-12 right-0 text-white hover:text-red-400 text-xl font-bold"
             >
-              ✕ Close
+              x Close
             </button>
           </div>
         </div>
@@ -438,11 +405,11 @@ const MovieDetails = () => {
               <div className="flex items-center gap-2 mb-2">
                 <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-full ${
                   item.isAnime
-                    ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
                     : item.isAnimation 
-                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
                       : item.mediaType === 'tv' 
-                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
+                        ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' 
                         : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
                 }`}>
                   {getMediaTypeLabel()}
@@ -467,7 +434,7 @@ const MovieDetails = () => {
                     onClick={() => setShowTrailerModal(true)}
                     className="bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-5 rounded-full transition-all text-sm cursor-pointer"
                   >
-                    ▶ Watch Trailer
+                    Watch Trailer
                   </button>
                 )}
                 
@@ -482,9 +449,9 @@ const MovieDetails = () => {
                   } ${listLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {listLoading ? (
-                    <span className="animate-spin">⏳</span>
+                    <span className="animate-spin text-xs">...</span>
                   ) : inWatchlist ? (
-                    <>✓ In Watchlist</>
+                    <>In Watchlist</>
                   ) : (
                     <>+ Watchlist</>
                   )}
@@ -496,16 +463,16 @@ const MovieDetails = () => {
                   disabled={listLoading}
                   className={`font-medium py-2.5 px-5 rounded-full transition-all text-sm border cursor-pointer flex items-center gap-2 ${
                     inFavorites 
-                      ? 'bg-pink-500/20 text-pink-400 border-pink-500/50 hover:bg-pink-500/30' 
+                      ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 hover:bg-cyan-500/30' 
                       : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
                   } ${listLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {listLoading ? (
-                    <span className="animate-spin">⏳</span>
+                    <span className="animate-spin text-xs">...</span>
                   ) : inFavorites ? (
-                    <>♥ Favorited</>
+                    <>Favorited</>
                   ) : (
-                    <>♡ Favorite</>
+                    <>Favorite</>
                   )}
                 </button>
 
@@ -513,7 +480,7 @@ const MovieDetails = () => {
                   onClick={() => navigate(-1)}
                   className="bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-5 rounded-full transition-all text-sm border border-slate-700 cursor-pointer"
                 >
-                  ← Back
+                  Back
                 </button>
               </div>
             </div>
@@ -583,7 +550,7 @@ const MovieDetails = () => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-500 text-xl">👤</div>
+                          <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs">N/A</div>
                         )}
                       </div>
                       <p className="text-xs font-semibold truncate">{person.name}</p>
@@ -671,7 +638,7 @@ const MovieDetails = () => {
                 {item.isAnime && item.rank && (
                   <div>
                     <p className="text-xs text-slate-600 mb-0.5">MAL Rank</p>
-                    <p className="font-medium text-sm text-pink-400">#{item.rank}</p>
+                    <p className="font-medium text-sm text-cyan-400">#{item.rank}</p>
                   </div>
                 )}
 

@@ -6,9 +6,6 @@ const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 
-// ============================================
-// BACKEND-SAFE: TV Genres list
-// ============================================
 const GENRES = [
   { id: 10759, name: 'Action & Adventure' },
   { id: 16, name: 'Animation' },
@@ -28,13 +25,10 @@ const GENRES = [
   { id: 37, name: 'Western' }
 ];
 
-// ============================================
-// Random Card Component - NO daily limit
-// ============================================
 const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
   return (
     <div className="flex flex-col items-center py-12 border-t border-slate-800 mt-10">
-      <h3 className="text-sm font-semibold text-slate-400 mb-5">🎲 Random TV Show Pick</h3>
+      <h3 className="text-sm font-semibold text-slate-400 mb-5">Random TV Show Pick</h3>
       
       {item ? (
         <div 
@@ -74,9 +68,6 @@ const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
   );
 };
 
-// ============================================
-// Main TV Shows Component
-// ============================================
 const TVShows = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,9 +83,6 @@ const TVShows = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [randomItem, setRandomItem] = useState(null);
 
-  // ============================================
-  // BACKEND-SAFE: Fetch TV shows (can be replaced with backend endpoint)
-  // ============================================
   useEffect(() => {
     const fetchShows = async () => {
       setLoading(true);
@@ -138,9 +126,6 @@ const TVShows = () => {
     }
   }, [genreFromState]);
 
-  // ============================================
-  // Random handler - NO daily limit
-  // ============================================
   const handleRandomize = () => {
     if (shows.length === 0) return;
     const newItem = shows[Math.floor(Math.random() * shows.length)];
@@ -177,7 +162,7 @@ const TVShows = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 pl-9 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
                   />
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">🔍</span>
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 </div>
               </div>
 
@@ -256,7 +241,7 @@ const TVShows = () => {
                           <span className="text-yellow-400">★</span> {(show.vote_average || 0).toFixed(1)}
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <span className="text-xs text-cyan-400 font-medium">View Details →</span>
+                          <span className="text-xs text-cyan-400 font-medium">View Details</span>
                         </div>
                       </div>
                       <h3 className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors">{show.name}</h3>
@@ -272,7 +257,7 @@ const TVShows = () => {
                     disabled={currentPage === 1}
                     className="px-4 py-2 bg-slate-800 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
                   >
-                    ← Previous
+                    Previous
                   </button>
                   
                   <span className="text-sm text-slate-400">
@@ -284,7 +269,7 @@ const TVShows = () => {
                     disabled={currentPage === totalPages}
                     className="px-4 py-2 bg-slate-800 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
                   >
-                    Next →
+                    Next
                   </button>
                 </div>
               </>

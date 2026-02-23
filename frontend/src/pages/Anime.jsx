@@ -1,16 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// ============================================
-// JIKAN API Configuration (MyAnimeList)
-// DO NOT use TMDB for Japanese Anime
-// TODO: Replace with backend API when backend is ready
-// ============================================
 const JIKAN_BASE_URL = 'https://api.jikan.moe/v4';
 
-// ============================================
-// BACKEND-SAFE: Anime Genres from Jikan
-// ============================================
 const ANIME_GENRES = [
   { id: 1, name: 'Action' },
   { id: 2, name: 'Adventure' },
@@ -27,9 +19,6 @@ const ANIME_GENRES = [
   { id: 41, name: 'Thriller' },
 ];
 
-// ============================================
-// Anime type filters
-// ============================================
 const ANIME_TYPES = [
   { id: 'all', name: 'All Anime' },
   { id: 'tv', name: 'TV Series' },
@@ -38,28 +27,25 @@ const ANIME_TYPES = [
   { id: 'ona', name: 'ONA' },
 ];
 
-// ============================================
-// Random Card Component
-// ============================================
 const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
   return (
     <div className="flex flex-col items-center py-12 border-t border-slate-800 mt-10">
-      <h3 className="text-sm font-semibold text-slate-400 mb-5">🎲 Random Anime Pick</h3>
+      <h3 className="text-sm font-semibold text-slate-400 mb-5">Random Anime Pick</h3>
       
       {item ? (
         <div 
           onClick={() => navigate(`/details/anime/${item.mal_id}`)}
           className="w-48 cursor-pointer group"
         >
-          <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 shadow-xl border border-slate-800/50 group-hover:border-pink-500/50 group-hover:shadow-pink-500/20 transition-all duration-300">
+          <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 shadow-xl border border-slate-800/50 group-hover:border-cyan-500/50 group-hover:shadow-cyan-500/20 transition-all duration-300">
             <img
               src={item.images?.jpg?.image_url || '/placeholder.jpg'}
               alt={item.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent"></div>
-            <div className="absolute top-2.5 right-2.5 bg-pink-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold">
-              🎌 {item.type || 'Anime'}
+            <div className="absolute top-2.5 right-2.5 bg-cyan-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold text-black">
+              {item.type || 'Anime'}
             </div>
             <div className="absolute bottom-4 left-4 right-4">
               <p className="text-white font-bold text-sm truncate">{item.title}</p>
@@ -76,7 +62,7 @@ const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
       <button
         onClick={onRandomize}
         disabled={!itemsAvailable}
-        className="mt-5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 bg-pink-500 hover:bg-pink-400 text-white disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed shadow-lg hover:shadow-pink-500/25"
+        className="mt-5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed shadow-lg hover:shadow-cyan-500/25"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -87,9 +73,6 @@ const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
   );
 };
 
-// ============================================
-// Main Anime Component
-// ============================================
 const Anime = () => {
   const navigate = useNavigate();
   
@@ -104,10 +87,6 @@ const Anime = () => {
   const [randomItem, setRandomItem] = useState(null);
   const [error, setError] = useState(null);
 
-  // ============================================
-  // BACKEND-SAFE: Fetch anime from Jikan API
-  // This logic can be replaced with backend endpoint later
-  // ============================================
   useEffect(() => {
     const fetchAnime = async () => {
       setLoading(true);
@@ -163,9 +142,6 @@ const Anime = () => {
     setCurrentPage(1);
   }, [searchQuery, selectedType, selectedGenre]);
 
-  // ============================================
-  // Random handler
-  // ============================================
   const handleRandomize = () => {
     if (animeList.length === 0) return;
     const newItem = animeList[Math.floor(Math.random() * animeList.length)];
@@ -184,7 +160,7 @@ const Anime = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-black mb-1">🎌 Anime</h1>
+          <h1 className="text-3xl font-black mb-1">Anime</h1>
           <p className="text-slate-400 text-sm">Discover Japanese anime series and movies</p>
         </div>
 
@@ -201,9 +177,9 @@ const Anime = () => {
                     placeholder="Search anime..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 pl-9 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-pink-500 transition-colors"
+                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 pl-9 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
                   />
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">🔍</span>
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 </div>
               </div>
 
@@ -217,7 +193,7 @@ const Anime = () => {
                       onClick={() => setSelectedType(type.id)}
                       className={`px-3 py-2 rounded-lg text-xs font-medium text-left transition-all ${
                         selectedType === type.id 
-                          ? 'bg-pink-500 text-white' 
+                          ? 'bg-cyan-500 text-black' 
                           : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
                       }`}
                     >
@@ -238,7 +214,7 @@ const Anime = () => {
                         onClick={() => setSelectedGenre(selectedGenre === genre.id ? null : genre.id)}
                         className={`px-3 py-2 rounded-lg text-xs font-medium text-left transition-all ${
                           selectedGenre === genre.id 
-                            ? 'bg-pink-500 text-white' 
+                            ? 'bg-cyan-500 text-black' 
                             : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
                         }`}
                       >
@@ -253,7 +229,7 @@ const Anime = () => {
               {(searchQuery || selectedType !== 'all' || selectedGenre) && (
                 <button 
                   onClick={clearFilters}
-                  className="w-full text-sm text-pink-400 hover:text-pink-300 py-2"
+                  className="w-full text-sm text-cyan-400 hover:text-cyan-300 py-2"
                 >
                   Clear all filters
                 </button>
@@ -276,19 +252,19 @@ const Anime = () => {
             {error && (
               <div className="text-center py-10 text-red-400">
                 <p>{error}</p>
-                <button onClick={clearFilters} className="mt-2 text-pink-400 text-sm">Try again</button>
+                <button onClick={clearFilters} className="mt-2 text-cyan-400 text-sm">Try again</button>
               </div>
             )}
 
             {/* Loading */}
             {loading ? (
               <div className="flex justify-center py-20">
-                <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
             ) : animeList.length === 0 && !error ? (
               <div className="text-center py-20 text-slate-500">
                 <p>No anime found</p>
-                <button onClick={clearFilters} className="mt-2 text-pink-400 text-sm">Clear filters</button>
+                <button onClick={clearFilters} className="mt-2 text-cyan-400 text-sm">Clear filters</button>
               </div>
             ) : !error && (
               <>
@@ -300,7 +276,7 @@ const Anime = () => {
                       onClick={() => navigate(`/details/anime/${anime.mal_id}`)}
                       className="cursor-pointer group"
                     >
-                      <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-2.5 border border-slate-800/50 group-hover:border-pink-500/50 shadow-lg shadow-black/20 group-hover:shadow-pink-500/10 transition-all duration-300">
+                        <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-2.5 border border-slate-800/50 group-hover:border-cyan-500/50 shadow-lg shadow-black/20 group-hover:shadow-cyan-500/10 transition-all duration-300">
                         <img
                           src={anime.images?.jpg?.image_url || '/placeholder.jpg'}
                           alt={anime.title}
@@ -310,14 +286,14 @@ const Anime = () => {
                         <div className="absolute top-2.5 left-2.5 bg-black/80 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
                           <span className="text-yellow-400">★</span> {(anime.score || 0).toFixed(1)}
                         </div>
-                        <div className="absolute top-2.5 right-2.5 bg-pink-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold">
+                          <div className="absolute top-2.5 right-2.5 bg-cyan-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold text-black">
                           {anime.type || 'Anime'}
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <span className="text-xs text-pink-400 font-medium">View Details →</span>
+                          <span className="text-xs text-cyan-400 font-medium">View Details</span>
                         </div>
                       </div>
-                      <h3 className="font-semibold text-sm truncate group-hover:text-pink-400 transition-colors">{anime.title}</h3>
+                      <h3 className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors">{anime.title}</h3>
                       <p className="text-xs text-slate-500 mt-0.5">{anime.aired?.prop?.from?.year || 'TBA'}</p>
                     </div>
                   ))}
@@ -330,7 +306,7 @@ const Anime = () => {
                     disabled={currentPage === 1}
                     className="px-4 py-2 bg-slate-800 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
                   >
-                    ← Previous
+                    Previous
                   </button>
                   
                   <span className="text-sm text-slate-400">
@@ -342,7 +318,7 @@ const Anime = () => {
                     disabled={currentPage === totalPages}
                     className="px-4 py-2 bg-slate-800 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
                   >
-                    Next →
+                    Next
                   </button>
                 </div>
               </>

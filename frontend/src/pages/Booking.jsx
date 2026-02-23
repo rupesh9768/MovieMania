@@ -3,10 +3,7 @@ import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import SeatSelection from '../components/SeatSelection';
 import Payment from '../components/Payment';
 
-// TODO: Payment integration (Stripe / Khalti)
-// TODO: Booking ownership validation — ensure user can only access their own bookings
-// TODO: Booking confirmation email
-// TODO: E-ticket generation (PDF)
+// Booking page with seat selection, payment, and confirmation steps
 
 function Booking() {
   const { movieId, showtimeId } = useParams();
@@ -62,7 +59,7 @@ function Booking() {
             onClick={() => navigate(-1)}
             className="text-slate-400 hover:text-white text-sm"
           >
-            ← Back
+            Back
           </button>
         </div>
       </div>
@@ -75,7 +72,7 @@ function Booking() {
               currentPage === 'selection' ? 'bg-cyan-500 text-black' : 
               currentPage === 'payment' || currentPage === 'success' ? 'bg-green-500 text-black' : 'bg-slate-700'
             }`}>
-              {currentPage === 'payment' || currentPage === 'success' ? '✓' : '1'}
+              {currentPage === 'payment' || currentPage === 'success' ? 'Done' : '1'}
             </span>
             <span>Select Seats</span>
           </div>
@@ -85,7 +82,7 @@ function Booking() {
               currentPage === 'payment' ? 'bg-cyan-500 text-black' : 
               currentPage === 'success' ? 'bg-green-500 text-black' : 'bg-slate-700'
             }`}>
-              {currentPage === 'success' ? '✓' : '2'}
+              {currentPage === 'success' ? 'Done' : '2'}
             </span>
             <span>Payment</span>
           </div>

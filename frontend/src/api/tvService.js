@@ -1,7 +1,5 @@
-// ====================================
 // TV Shows API Service
 // TODO: Replace with backend API when backend is ready
-// ====================================
 import axios from 'axios';
 
 // TMDB Configuration (temporary until backend is ready)
@@ -36,7 +34,7 @@ export const getTrendingTV = async (timeWindow = 'day') => {
     );
     return response.data.results?.map(normalizeTV) || [];
   } catch (error) {
-    console.error('❌ Failed to fetch trending TV shows:', error.message);
+    console.error('Failed to fetch trending TV shows:', error.message);
     return [];
   }
 };
@@ -53,7 +51,7 @@ export const getTVDetails = async (tvId) => {
     );
     return normalizeTV(response.data);
   } catch (error) {
-    console.error('❌ Failed to fetch TV details:', error.message);
+    console.error('Failed to fetch TV details:', error.message);
     return null;
   }
 };
@@ -79,7 +77,7 @@ export const getAllTVShows = async (params = {}) => {
     const response = await axios.get(url);
     return response.data.results?.map(normalizeTV) || [];
   } catch (error) {
-    console.error('❌ Failed to fetch TV shows:', error.message);
+    console.error('Failed to fetch TV shows:', error.message);
     return [];
   }
 };
@@ -97,7 +95,7 @@ export const searchTVShows = async (query, page = 1) => {
     );
     return response.data.results?.map(normalizeTV) || [];
   } catch (error) {
-    console.error('❌ Failed to search TV shows:', error.message);
+    console.error('Failed to search TV shows:', error.message);
     return [];
   }
 };
@@ -115,7 +113,7 @@ export const getTVShowsByGenre = async (genreId, page = 1) => {
     );
     return response.data.results?.map(normalizeTV) || [];
   } catch (error) {
-    console.error('❌ Failed to fetch TV shows by genre:', error.message);
+    console.error('Failed to fetch TV shows by genre:', error.message);
     return [];
   }
 };
@@ -131,7 +129,7 @@ export const getTVGenres = async () => {
     );
     return response.data.genres || [];
   } catch (error) {
-    console.error('❌ Failed to fetch TV genres:', error.message);
+    console.error('Failed to fetch TV genres:', error.message);
     return [];
   }
 };
@@ -149,7 +147,7 @@ export const getSeasonDetails = async (tvId, seasonNumber) => {
     );
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to fetch season details:', error.message);
+    console.error('Failed to fetch season details:', error.message);
     return null;
   }
 };

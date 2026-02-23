@@ -2,21 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { backendApi } from '../api';
 
-// INLINE MOCK DATA: Showtimes (replace with API call when backend is ready)
-const MOCK_SHOWTIMES = [
-  { id: 'show-1', time: '10:30 AM', hallName: 'Hall A - Standard', availableSeats: 45, price: 350 },
-  { id: 'show-2', time: '1:15 PM', hallName: 'Hall B - Premium', availableSeats: 32, price: 450 },
-  { id: 'show-3', time: '4:00 PM', hallName: 'Hall A - Standard', availableSeats: 60, price: 350 },
-  { id: 'show-4', time: '7:30 PM', hallName: 'Hall C - IMAX', availableSeats: 28, price: 600 },
-  { id: 'show-5', time: '10:00 PM', hallName: 'Hall B - Premium', availableSeats: 50, price: 450 },
-];
-
 const ShowtimeSelection = () => {
   const { movieId } = useParams();
   const navigate = useNavigate();
   const [selectedShowtime, setSelectedShowtime] = useState(null);
   const [selectedDate, setSelectedDate] = useState(0);
-  const [showtimes, setShowtimes] = useState([]);
+  const [allShowtimes, setAllShowtimes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [movie, setMovie] = useState(null);
 
@@ -36,7 +27,6 @@ const ShowtimeSelection = () => {
     const loadData = async () => {
       setLoading(true);
       
-      // Find movie details from backend API
       try {
         const movieData = await backendApi.getBackendMovieById(movieId);
         setMovie(movieData);
@@ -45,28 +35,36 @@ const ShowtimeSelection = () => {
         setMovie(null);
       }
       
-      // TODO: Fetch showtimes from API when backend is ready
-      // const res = await fetch(`/api/showtimes?movieId=${movieId}`);
-      // const data = await res.json();
-      // setShowtimes(data);
+      // Fetch showtimes from backend
+      try {
+        const data = await backendApi.getMovieShowtimes(movieId);
+        setAllShowtimes(data || []);
+      } catch (err) {
+        console.error('Failed to fetch showtimes:', err);
+        setAllShowtimes([]);
+      }
       
-      // For now, use mock data
-      setShowtimes(MOCK_SHOWTIMES);
       setLoading(false);
     };
     
     loadData();
   }, [movieId]);
 
+  // Filter showtimes by selected date
+  const filteredShowtimes = allShowtimes.filter(st => {
+    const stDate = new Date(st.date).toISOString().split('T')[0];
+    return stDate === dates[selectedDate].full;
+  });
+
   const handleContinue = () => {
     if (selectedShowtime) {
-      const selectedHall = showtimes.find(h => h.id === selectedShowtime);
+      const selectedHall = filteredShowtimes.find(h => h._id === selectedShowtime);
 
       navigate(`/seat-selection/${movieId}/${selectedShowtime}`, { 
         state: { 
           movieTitle: movie?.title || "Movie",
           time: selectedHall.time,
-          hall: selectedHall.hallName || selectedHall.name,
+          hall: selectedHall.hall,
           price: selectedHall.price,
           date: dates[selectedDate].full
         } 
@@ -97,7 +95,7 @@ const ShowtimeSelection = () => {
             onClick={() => navigate(-1)}
             className="text-slate-400 hover:text-white text-sm mb-4 flex items-center gap-2"
           >
-            ← Back to Movie
+            Back to Movie
           </button>
           <h1 className="text-3xl font-black mb-2">{movie?.title || 'Select Showtime'}</h1>
           <p className="text-slate-400">Choose your preferred date and time</p>
@@ -110,7 +108,7 @@ const ShowtimeSelection = () => {
             {dates.map((d, index) => (
               <button 
                 key={index}
-                onClick={() => setSelectedDate(index)}
+                onClick={() => { setSelectedDate(index); setSelectedShowtime(null); }}
                 className={`flex flex-col items-center min-w-[70px] py-3 px-4 rounded-xl transition-all ${
                   selectedDate === index 
                     ? 'bg-cyan-500 text-black' 
@@ -128,50 +126,46 @@ const ShowtimeSelection = () => {
         {/* Showtimes Grid */}
         <div className="mb-8">
           <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Available Shows</h2>
+          {filteredShowtimes.length === 0 ? (
+            <p className="text-center text-slate-500 py-8">No showtimes available for this date.</p>
+          ) : (
           <div className="space-y-4">
-            {showtimes.map((show) => (
+            {filteredShowtimes.map((show) => (
               <div 
-                key={show.id} 
-                onClick={() => setSelectedShowtime(show.id)}
+                key={show._id} 
+                onClick={() => setSelectedShowtime(show._id)}
                 className={`p-5 rounded-2xl border cursor-pointer transition-all ${
-                  selectedShowtime === show.id 
+                  selectedShowtime === show._id 
                     ? 'bg-cyan-500/10 border-cyan-500 shadow-[0_0_20px_rgba(34,211,238,0.15)]' 
                     : 'bg-slate-900/50 border-slate-800 hover:border-slate-600'
                 }`}
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
-                    {/* Time */}
                     <div className="text-center min-w-[80px]">
                       <p className="text-2xl font-black">{show.time}</p>
                     </div>
-                    
-                    {/* Divider */}
                     <div className="h-12 w-[1px] bg-slate-700"></div>
-                    
-                    {/* Hall Info */}
                     <div>
-                      <h4 className={`font-bold ${selectedShowtime === show.id ? 'text-cyan-400' : 'text-white'}`}>
-                        {show.hallName || show.name}
+                      <h4 className={`font-bold ${selectedShowtime === show._id ? 'text-cyan-400' : 'text-white'}`}>
+                        {show.hall}
                       </h4>
                       <p className="text-sm text-slate-400">
-                        {show.availableSeats || show.available} seats available
+                        {show.availableSeats} seats available
                       </p>
                     </div>
                   </div>
-                  
-                  {/* Price & Select */}
                   <div className="text-right flex items-center gap-4">
                     <div>
                       <p className="text-xs text-slate-400">Price</p>
                       <p className="text-xl font-black text-cyan-400">NPR {show.price}</p>
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                      selectedShowtime === show.id 
+                      selectedShowtime === show._id 
                         ? 'border-cyan-500 bg-cyan-500' 
                         : 'border-slate-600'
                     }`}>
-                      {selectedShowtime === show.id && (
+                      {selectedShowtime === show._id && (
                         <svg className="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
@@ -182,6 +176,7 @@ const ShowtimeSelection = () => {
               </div>
             ))}
           </div>
+          )}
         </div>
 
         {/* Continue Button */}

@@ -7,9 +7,6 @@ const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 
-// ============================================
-// TMDB Genre List
-// ============================================
 const GENRES = [
   { id: 28, name: 'Action' },
   { id: 12, name: 'Adventure' },
@@ -31,9 +28,6 @@ const GENRES = [
   { id: 37, name: 'Western' }
 ];
 
-// ============================================
-// Random Card Component - Uses TMDB movies
-// ============================================
 const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
   // Get image URL
   const getImageUrl = () => {
@@ -48,7 +42,7 @@ const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
 
   return (
     <div className="flex flex-col items-center py-12 border-t border-slate-800 mt-10">
-      <h3 className="text-sm font-semibold text-slate-400 mb-5">🎲 Random Movie Pick</h3>
+      <h3 className="text-sm font-semibold text-slate-400 mb-5">Random Movie Pick</h3>
       
       {item ? (
         <div 
@@ -88,9 +82,6 @@ const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
   );
 };
 
-// ============================================
-// Main Movies Component
-// ============================================
 const Movies = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -106,9 +97,6 @@ const Movies = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [randomItem, setRandomItem] = useState(null);
 
-  // ============================================
-  // TMDB API: Fetch movies directly from TMDB
-  // ============================================
   useEffect(() => {
     const fetchMovies = async () => {
       setLoading(true);
@@ -144,9 +132,9 @@ const Movies = () => {
         setMovies(normalizedMovies);
         setTotalPages(Math.min(response.data.total_pages || 1, 20)); // Limit to 20 pages
         
-        console.log(`✅ TMDB returned ${normalizedMovies.length} movies (page ${currentPage})`);
+        console.log(`TMDB returned ${normalizedMovies.length} movies (page ${currentPage})`);
       } catch (err) {
-        console.error('❌ Failed to fetch movies from TMDB:', err);
+        console.error('Failed to fetch movies from TMDB:', err);
         setMovies([]);
       } finally {
         setLoading(false);
@@ -169,9 +157,6 @@ const Movies = () => {
     }
   }, [genreFromState]);
 
-  // ============================================
-  // Random handler - NO daily limit
-  // ============================================
   const handleRandomize = () => {
     if (movies.length === 0) return;
     const newItem = movies[Math.floor(Math.random() * movies.length)];
@@ -208,7 +193,7 @@ const Movies = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 pl-8 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:bg-slate-800 transition-all"
                   />
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs">🔍</span>
+                  <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 </div>
               </div>
 
@@ -240,7 +225,7 @@ const Movies = () => {
                   onClick={clearFilters}
                   className="w-full text-xs text-slate-400 hover:text-cyan-400 py-2 border border-slate-800 rounded-lg hover:border-cyan-500/30 transition-all"
                 >
-                  ✕ Clear filters
+                  Clear filters
                 </button>
               )}
             </div>
@@ -263,7 +248,7 @@ const Movies = () => {
               </div>
             ) : movies.length === 0 ? (
               <div className="text-center py-20 bg-slate-900/30 rounded-xl border border-dashed border-slate-700">
-                <span className="text-3xl mb-3 block">🎬</span>
+                <span className="text-sm text-slate-500 block mb-3">No movies available</span>
                 <p className="text-slate-400 font-medium">No movies available</p>
                 <p className="text-slate-600 text-sm mt-1">Check back soon for new releases</p>
                 {(searchQuery || selectedGenre) && (
@@ -299,7 +284,7 @@ const Movies = () => {
                             <span className="text-yellow-400">★</span> {rating.toFixed(1)}
                           </div>
                           <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <span className="text-xs text-cyan-400 font-medium">View Details →</span>
+                            <span className="text-xs text-cyan-400 font-medium">View Details</span>
                           </div>
                         </div>
                         <h3 className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors">{movie.title}</h3>
@@ -316,7 +301,7 @@ const Movies = () => {
                     disabled={currentPage === 1}
                     className="px-3 py-1.5 bg-slate-800/80 rounded-lg text-xs disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
                   >
-                    ← Prev
+                    Prev
                   </button>
                   
                   <div className="flex items-center gap-1">
@@ -352,7 +337,7 @@ const Movies = () => {
                     disabled={currentPage === totalPages}
                     className="px-3 py-1.5 bg-slate-800/80 rounded-lg text-xs disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
                   >
-                    Next →
+                    Next
                   </button>
                 </div>
               </>

@@ -18,9 +18,7 @@ const getAvatarUrl = (avatar) => {
   return `${BACKEND_URL}${avatar}`;
 };
 
-// ============================================
 // Time formatter
-// ============================================
 const formatDate = (date) => {
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -40,9 +38,7 @@ const timeAgo = (date) => {
   return `${Math.floor(days / 365)} years ago`;
 };
 
-// ============================================
-// Profile Page
-// ============================================
+// Profile page
 const Profile = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -69,9 +65,7 @@ const Profile = () => {
   const [commentHistory, setCommentHistory] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
 
-  // ============================================
-  // Fetch profile
-  // ============================================
+
   useEffect(() => {
     const fetchProfile = async () => {
       if (!viewingUserId) {
@@ -108,9 +102,7 @@ const Profile = () => {
     fetchProfile();
   }, [viewingUserId, isAuthenticated]);
 
-  // ============================================
-  // Fetch comment history when tab switches
-  // ============================================
+
   useEffect(() => {
     if (activeTab === 'comments' && viewingUserId) {
       const fetchComments = async () => {
@@ -130,9 +122,7 @@ const Profile = () => {
     }
   }, [activeTab, viewingUserId]);
 
-  // ============================================
-  // Handle avatar file upload
-  // ============================================
+
   const handleAvatarUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -167,9 +157,7 @@ const Profile = () => {
     }
   };
 
-  // ============================================
-  // Save profile
-  // ============================================
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -200,9 +188,7 @@ const Profile = () => {
     }
   };
 
-  // ============================================
-  // Navigate to details
-  // ============================================
+
   const goToDetails = (item) => {
     const mediaId = item?.mediaId || item?.contentId;
     const mediaType = item?.mediaType || item?.contentType;
@@ -218,12 +204,12 @@ const Profile = () => {
   const getAvatarColor = (name) => {
     const colors = [
       'from-cyan-500 to-blue-600',
-      'from-purple-500 to-pink-600',
-      'from-emerald-500 to-teal-600',
-      'from-orange-500 to-red-600',
-      'from-yellow-500 to-amber-600',
-      'from-rose-500 to-pink-600',
-      'from-indigo-500 to-violet-600',
+      'from-cyan-400 to-teal-600',
+      'from-teal-500 to-cyan-600',
+      'from-sky-500 to-cyan-600',
+      'from-cyan-500 to-sky-600',
+      'from-blue-500 to-cyan-600',
+      'from-cyan-600 to-blue-500',
     ];
     return colors[(name || '').charCodeAt(0) % colors.length];
   };
@@ -247,15 +233,12 @@ const Profile = () => {
 
   const getContentTypeColor = (type) => {
     if (type === 'movie') return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30';
-    if (type === 'tv') return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-    if (type === 'anime') return 'bg-pink-500/20 text-pink-400 border-pink-500/30';
-    if (type === 'theater') return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+    if (type === 'tv') return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30';
+    if (type === 'anime') return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30';
+    if (type === 'theater') return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30';
     return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
   };
 
-  // ============================================
-  // Loading
-  // ============================================
   if (loading) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
@@ -270,9 +253,6 @@ const Profile = () => {
     );
   }
 
-  // ============================================
-  // Error
-  // ============================================
   if (error || !profile) {
     return (
       <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center text-white">
@@ -283,9 +263,6 @@ const Profile = () => {
     );
   }
 
-  // ============================================
-  // Private profile view
-  // ============================================
   if (profile.isPrivate && !isOwnProfile) {
     return (
       <div className="min-h-screen bg-dark-bg text-white">
@@ -317,9 +294,6 @@ const Profile = () => {
   const favoritesCount = profile.favorites?.length || 0;
   const watchlistCount = profile.watchlist?.length || 0;
 
-  // ============================================
-  // Main render
-  // ============================================
   return (
     <div className="min-h-screen bg-dark-bg text-white">
       {/* Hidden file input for avatar upload */}
@@ -335,7 +309,7 @@ const Profile = () => {
       <div className="relative bg-linear-to-b from-cyan-900/20 via-slate-900/50 to-dark-bg">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-20 -right-20 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl"></div>
         </div>
 
         <div className="relative max-w-5xl mx-auto px-4 pt-12 pb-8">
@@ -408,7 +382,7 @@ const Profile = () => {
               {/* Stats */}
               <div className="flex items-center gap-6 mt-4 justify-center md:justify-start">
                 <div className="text-center">
-                  <p className="text-xl font-bold text-pink-400">{favoritesCount}</p>
+                  <p className="text-xl font-bold text-cyan-400">{favoritesCount}</p>
                   <p className="text-[11px] text-slate-500 uppercase tracking-wide">Favorites</p>
                 </div>
                 <div className="text-center">
@@ -434,7 +408,7 @@ const Profile = () => {
 
       {/* Save Success Toast */}
       {saveMessage && (
-        <div className="fixed top-20 right-4 z-50 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-medium flex items-center gap-2">
+        <div className="fixed top-20 right-4 z-50 bg-cyan-600 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-medium flex items-center gap-2">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
           {saveMessage}
         </div>
@@ -609,7 +583,7 @@ const Profile = () => {
             onClick={() => setActiveTab('favorites')}
             className={`px-5 py-3 text-sm font-semibold transition-all border-b-2 ${
               activeTab === 'favorites'
-                ? 'border-pink-500 text-pink-400'
+                ? 'border-cyan-500 text-cyan-400'
                 : 'border-transparent text-slate-500 hover:text-slate-300'
             }`}
           >
@@ -629,7 +603,7 @@ const Profile = () => {
             onClick={() => setActiveTab('comments')}
             className={`px-5 py-3 text-sm font-semibold transition-all border-b-2 ${
               activeTab === 'comments'
-                ? 'border-emerald-500 text-emerald-400'
+                ? 'border-cyan-500 text-cyan-400'
                 : 'border-transparent text-slate-500 hover:text-slate-300'
             }`}
           >
@@ -660,7 +634,7 @@ const Profile = () => {
                     onClick={() => goToDetails(item)}
                     className="cursor-pointer group"
                   >
-                    <div className="relative aspect-2/3 rounded-xl overflow-hidden border border-slate-800/50 group-hover:border-pink-500/40 transition-all shadow-lg">
+                    <div className="relative aspect-2/3 rounded-xl overflow-hidden border border-slate-800/50 group-hover:border-cyan-500/40 transition-all shadow-lg">
                       {item.poster ? (
                         <img
                           src={getPosterUrl(item.poster)}
@@ -675,13 +649,7 @@ const Profile = () => {
                         </div>
                       )}
                       <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <div className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                        item.mediaType === 'movie'
-                          ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                          : item.mediaType === 'tv'
-                            ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                            : 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
-                      }`}>
+                      <div className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-cyan-500/20 text-cyan-400 border border-cyan-500/30`}>
                         {item.mediaType}
                       </div>
                       {item.rating > 0 && (
@@ -739,13 +707,7 @@ const Profile = () => {
                         </div>
                       )}
                       <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <div className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                        item.mediaType === 'movie'
-                          ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                          : item.mediaType === 'tv'
-                            ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                            : 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
-                      }`}>
+                      <div className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-cyan-500/20 text-cyan-400 border border-cyan-500/30`}>
                         {item.mediaType}
                       </div>
                       {item.rating > 0 && (

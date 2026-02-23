@@ -82,7 +82,7 @@ const Navbar = () => {
               <Link 
                 to="/upcoming" 
                 className={`text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  isUpcomingActive ? 'text-purple-400' : 'text-slate-400 hover:text-white'
+                  isUpcomingActive ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Upcoming
@@ -126,7 +126,7 @@ const Navbar = () => {
                       onClick={() => handleBrowseItemClick('/tvshows')}
                       className={`flex-1 px-4 py-4 rounded-xl text-center transition-all duration-200 ${
                         isActive('/tvshows')
-                          ? 'bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/40'
+                          ? 'bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/40'
                           : 'bg-slate-800/40 text-slate-300 hover:bg-slate-800/80 hover:text-white'
                       }`}
                     >
@@ -137,7 +137,7 @@ const Navbar = () => {
                       onClick={() => handleBrowseItemClick('/anime')}
                       className={`flex-1 px-4 py-4 rounded-xl text-center transition-all duration-200 ${
                         isActive('/anime')
-                          ? 'bg-pink-500/15 text-pink-400 ring-1 ring-pink-500/40'
+                          ? 'bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/40'
                           : 'bg-slate-800/40 text-slate-300 hover:bg-slate-800/80 hover:text-white'
                       }`}
                     >
@@ -148,7 +148,7 @@ const Navbar = () => {
                       onClick={() => handleBrowseItemClick('/animations')}
                       className={`flex-1 px-4 py-4 rounded-xl text-center transition-all duration-200 ${
                         isActive('/animations')
-                          ? 'bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/40'
+                          ? 'bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/40'
                           : 'bg-slate-800/40 text-slate-300 hover:bg-slate-800/80 hover:text-white'
                       }`}
                     >
@@ -171,7 +171,7 @@ const Navbar = () => {
               <Link 
                 to="/theater" 
                 className={`text-sm font-medium transition-colors flex items-center gap-1 ${
-                  isActive('/theater') ? 'text-red-400' : 'text-slate-400 hover:text-white'
+                  isActive('/theater') ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Theater
@@ -207,7 +207,7 @@ const Navbar = () => {
                   {user?.avatar ? (
                     <img src={getAvatarUrl(user.avatar)} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-600" />
                   ) : (
-                    <div className="w-8 h-8 bg-linear-to-br from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                    <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
                       {user?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                   )}
@@ -227,7 +227,7 @@ const Navbar = () => {
                       <p className="text-sm font-medium text-white truncate">{user?.name}</p>
                       <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                       {isAdmin && (
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs font-bold rounded-full">
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-cyan-500/20 text-cyan-400 text-xs font-bold rounded-full">
                           Admin
                         </span>
                       )}
@@ -264,7 +264,7 @@ const Navbar = () => {
                         to="/favorites"
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
                           isActive('/favorites')
-                            ? 'bg-pink-500/15 text-pink-400'
+                            ? 'bg-cyan-500/15 text-cyan-400'
                             : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
                         }`}
                         onClick={() => setProfileOpen(false)}
@@ -292,7 +292,7 @@ const Navbar = () => {
                           to="/admin"
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
                             isActive('/admin')
-                              ? 'bg-amber-500/15 text-amber-400'
+                              ? 'bg-cyan-500/15 text-cyan-400'
                               : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
                           }`}
                           onClick={() => setProfileOpen(false)}
@@ -375,7 +375,7 @@ const Navbar = () => {
                 <Link 
                   to="/upcoming"
                   className={`flex items-center gap-2 py-2 px-4 rounded-lg transition-colors ${
-                    isUpcomingActive ? 'bg-purple-500/10 text-purple-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    isUpcomingActive ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
                   Upcoming Movies
@@ -390,17 +390,17 @@ const Navbar = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/tvshows" className={`block py-2 px-6 rounded-lg transition-colors ${isActive('/tvshows') ? 'bg-purple-500/10 text-purple-400' : 'text-slate-400 hover:bg-slate-800'}`}>
+                <Link to="/tvshows" className={`block py-2 px-6 rounded-lg transition-colors ${isActive('/tvshows') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800'}`}>
                   TV Shows
                 </Link>
               </li>
               <li>
-                <Link to="/anime" className={`block py-2 px-6 rounded-lg transition-colors ${isActive('/anime') ? 'bg-pink-500/10 text-pink-400' : 'text-slate-400 hover:bg-slate-800'}`}>
+                <Link to="/anime" className={`block py-2 px-6 rounded-lg transition-colors ${isActive('/anime') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800'}`}>
                   Anime
                 </Link>
               </li>
               <li>
-                <Link to="/animations" className={`block py-2 px-6 rounded-lg transition-colors ${isActive('/animations') ? 'bg-amber-500/10 text-amber-400' : 'text-slate-400 hover:bg-slate-800'}`}>
+                <Link to="/animations" className={`block py-2 px-6 rounded-lg transition-colors ${isActive('/animations') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800'}`}>
                   Animations
                 </Link>
               </li>
@@ -414,7 +414,7 @@ const Navbar = () => {
                 <Link 
                   to="/theater"
                   className={`block py-2 px-4 rounded-lg transition-colors ${
-                    isActive('/theater') ? 'bg-red-500/10 text-red-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    isActive('/theater') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
                   Theater
@@ -464,7 +464,7 @@ const Navbar = () => {
                     <Link 
                       to="/favorites"
                       className={`block py-2 px-4 rounded-lg transition-colors ${
-                        isActive('/favorites') ? 'bg-pink-500/10 text-pink-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                        isActive('/favorites') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
                       Favorites

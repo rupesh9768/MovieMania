@@ -1,7 +1,5 @@
-// ====================================
 // User Service
 // API calls for watchlist and favorites
-// ====================================
 import api from './axios';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
@@ -28,9 +26,7 @@ export const isLoggedIn = () => {
   return !!getUserId();
 };
 
-// ============================================
 // WATCHLIST OPERATIONS
-// ============================================
 
 /**
  * Get user's watchlist
@@ -71,9 +67,7 @@ export const removeFromWatchlist = async (mediaType, mediaId) => {
   return response.data;
 };
 
-// ============================================
 // FAVORITES OPERATIONS
-// ============================================
 
 /**
  * Get user's favorites
@@ -114,9 +108,7 @@ export const removeFromFavorites = async (mediaType, mediaId) => {
   return response.data;
 };
 
-// ============================================
 // CHECK STATUS
-// ============================================
 
 /**
  * Check if item is in watchlist or favorites

@@ -7,9 +7,7 @@ const api = axios.create({
   },
 });
 
-// ====================================
 // Request Interceptor — attach JWT token
-// ====================================
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('moviemania_token');
@@ -21,9 +19,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ====================================
 // Response Interceptor — handle 401 globally
-// ====================================
 api.interceptors.response.use(
   (response) => response,
   (error) => {

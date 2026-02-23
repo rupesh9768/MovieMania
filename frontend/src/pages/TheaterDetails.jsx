@@ -3,10 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { backendApi } from '../api';
 import CommentSection from '../components/CommentSection';
 
-// ============================================
-// THEATER MOVIE DETAILS PAGE
-// Shows movie info + booking options
-// ============================================
+// Theater movie details page with booking
 const TheaterDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -16,6 +13,8 @@ const TheaterDetails = () => {
   const [loading, setLoading] = useState(!location.state?.movie);
   const [selectedDate, setSelectedDate] = useState(0);
   const [selectedTime, setSelectedTime] = useState(null);
+  const [showtimes, setShowtimes] = useState([]);
+  const [showtimesLoading, setShowtimesLoading] = useState(true);
 
   // Generate next 7 days
   const dates = Array.from({ length: 7 }, (_, i) => {
@@ -24,53 +23,67 @@ const TheaterDetails = () => {
     return date;
   });
 
-  // Showtimes (mock for now - can be fetched from backend)
-  const showtimes = ['10:00 AM', '1:00 PM', '4:00 PM', '7:00 PM', '10:00 PM'];
 
-  // ============================================
-  // Fetch movie if not passed via state
-  // ============================================
   useEffect(() => {
     const fetchMovie = async () => {
-      if (movie) return;
-      
-      try {
-        setLoading(true);
-        const data = await backendApi.getBackendMovieById(id);
-        if (data) {
-          setMovie(data);
+      if (!movie) {
+        try {
+          setLoading(true);
+          const data = await backendApi.getBackendMovieById(id);
+          if (data) setMovie(data);
+        } catch (err) {
+          console.error('Failed to fetch movie:', err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error('Failed to fetch movie:', err);
-      } finally {
-        setLoading(false);
       }
     };
-    
     fetchMovie();
   }, [id, movie]);
 
-  // ============================================
-  // Handle booking
-  // ============================================
+  // Fetch showtimes from backend
+  useEffect(() => {
+    const fetchShowtimes = async () => {
+      setShowtimesLoading(true);
+      try {
+        const data = await backendApi.getMovieShowtimes(id);
+        setShowtimes(data || []);
+      } catch (err) {
+        console.error('Failed to fetch showtimes:', err);
+        setShowtimes([]);
+      } finally {
+        setShowtimesLoading(false);
+      }
+    };
+    fetchShowtimes();
+  }, [id]);
+
+  // Filter showtimes for selected date
+  const selectedDateStr = dates[selectedDate].toISOString().split('T')[0];
+  const filteredShowtimes = showtimes.filter(st => {
+    const stDate = new Date(st.date).toISOString().split('T')[0];
+    return stDate === selectedDateStr;
+  });
+
+
   const handleProceedToSeats = () => {
     if (selectedTime === null) {
       alert('Please select a showtime');
       return;
     }
     
+    const selected = filteredShowtimes[selectedTime];
     navigate(`/booking/${id}`, {
       state: {
         movie,
         date: dates[selectedDate].toISOString(),
-        time: showtimes[selectedTime]
+        time: selected.time,
+        hall: selected.hall,
+        price: selected.price
       }
     });
   };
 
-  // ============================================
-  // Loading state
-  // ============================================
   if (loading) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
@@ -79,15 +92,12 @@ const TheaterDetails = () => {
     );
   }
 
-  // ============================================
-  // Not found state
-  // ============================================
   if (!movie) {
     return (
       <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center text-white">
         <h1 className="text-3xl font-bold mb-4">Movie Not Found</h1>
         <button onClick={() => navigate('/theater')} className="text-red-400 hover:underline">
-          ← Back to Theater
+          Back to Theater
         </button>
       </div>
     );
@@ -192,7 +202,7 @@ const TheaterDetails = () => {
                   return (
                     <button
                       key={idx}
-                      onClick={() => setSelectedDate(idx)}
+                      onClick={() => { setSelectedDate(idx); setSelectedTime(null); }}
                       className={`shrink-0 w-20 py-3 rounded-xl text-center transition-all border ${
                         selectedDate === idx
                           ? 'bg-red-600 border-red-500 text-white'
@@ -211,21 +221,28 @@ const TheaterDetails = () => {
             {/* Select Showtime */}
             <div>
               <h2 className="text-lg font-bold mb-3">Select Showtime</h2>
-              <div className="flex flex-wrap gap-3">
-                {showtimes.map((time, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedTime(idx)}
-                    className={`py-3 px-6 rounded-xl text-sm font-medium transition-all border ${
-                      selectedTime === idx
-                        ? 'bg-red-600 border-red-500 text-white'
-                        : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
-                    }`}
-                  >
-                    {time}
-                  </button>
-                ))}
-              </div>
+              {showtimesLoading ? (
+                <p className="text-slate-500 text-sm">Loading showtimes...</p>
+              ) : filteredShowtimes.length === 0 ? (
+                <p className="text-slate-500 text-sm">No showtimes available for this date.</p>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  {filteredShowtimes.map((st, idx) => (
+                    <button
+                      key={st._id || idx}
+                      onClick={() => setSelectedTime(idx)}
+                      className={`py-3 px-6 rounded-xl text-sm font-medium transition-all border ${
+                        selectedTime === idx
+                          ? 'bg-red-600 border-red-500 text-white'
+                          : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
+                      }`}
+                    >
+                      <span className="block">{st.time}</span>
+                      <span className="block text-xs mt-1 opacity-70">{st.hall} - NPR {st.price}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           
@@ -254,16 +271,29 @@ const TheaterDetails = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-400">Time</span>
                   <span className="font-medium">
-                    {selectedTime !== null ? showtimes[selectedTime] : 'Not selected'}
+                    {selectedTime !== null && filteredShowtimes[selectedTime]
+                      ? filteredShowtimes[selectedTime].time
+                      : 'Not selected'}
                   </span>
                 </div>
                 
                 <div className="border-t border-slate-700 pt-3 mt-3">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Hall</span>
-                    <span className="font-medium text-red-400">Hall 1</span>
+                    <span className="font-medium text-red-400">
+                      {selectedTime !== null && filteredShowtimes[selectedTime]
+                        ? filteredShowtimes[selectedTime].hall
+                        : '-'}
+                    </span>
                   </div>
                 </div>
+
+                {selectedTime !== null && filteredShowtimes[selectedTime] && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Price</span>
+                    <span className="font-medium text-cyan-400">NPR {filteredShowtimes[selectedTime].price}</span>
+                  </div>
+                )}
               </div>
               
               <button
@@ -275,14 +305,14 @@ const TheaterDetails = () => {
                     : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 }`}
               >
-                {selectedTime !== null ? 'Select Seats →' : 'Select a Showtime'}
+                {selectedTime !== null ? 'Select Seats' : 'Select a Showtime'}
               </button>
 
               <button
                 onClick={() => navigate('/theater')}
                 className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-white transition-colors"
               >
-                ← Back to Theater
+                Back to Theater
               </button>
             </div>
           </div>

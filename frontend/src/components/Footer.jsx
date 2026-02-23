@@ -46,8 +46,8 @@ const Footer = () => {
             <span className="text-slate-600 text-[10px]">Built with</span>
             <div className="flex items-center gap-2">
               <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800/80 text-cyan-400">React</span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800/80 text-purple-400">Vite</span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800/80 text-blue-400">Tailwind</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800/80 text-cyan-400">Vite</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800/80 text-cyan-400">Tailwind</span>
             </div>
           </div>
 

@@ -19,9 +19,7 @@ const getAvatarUrl = (avatar) => {
   return `${BACKEND_URL}${avatar}`;
 };
 
-// ============================================
 // Time ago helper
-// ============================================
 const timeAgo = (date) => {
   const seconds = Math.floor((Date.now() - new Date(date)) / 1000);
   if (seconds < 60) return 'just now';
@@ -38,9 +36,7 @@ const timeAgo = (date) => {
   return `${Math.floor(days / 365)}y ago`;
 };
 
-// ============================================
-// Single Comment Component (recursive for replies)
-// ============================================
+// Single comment component (recursive for replies)
 const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, depth = 0 }) => {
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -126,12 +122,12 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
   const getAvatarColor = (name) => {
     const colors = [
       'from-cyan-500 to-blue-600',
-      'from-purple-500 to-pink-600',
-      'from-emerald-500 to-teal-600',
-      'from-orange-500 to-red-600',
-      'from-yellow-500 to-amber-600',
-      'from-rose-500 to-pink-600',
-      'from-indigo-500 to-violet-600',
+      'from-cyan-400 to-teal-600',
+      'from-teal-500 to-cyan-600',
+      'from-sky-500 to-cyan-600',
+      'from-cyan-500 to-sky-600',
+      'from-blue-500 to-cyan-600',
+      'from-cyan-600 to-blue-500',
     ];
     const idx = (name || '').charCodeAt(0) % colors.length;
     return colors[idx];
@@ -223,7 +219,7 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                   } ${!user ? 'cursor-default opacity-60' : 'cursor-pointer'}`}
                   title={user ? (userLiked ? 'Remove like' : 'Like') : 'Login to like'}
                 >
-                  <span>{userLiked ? '▲' : '△'}</span>
+                  <span>{userLiked ? '+' : '+'}</span>
                   <span>{comment.likes?.length || 0}</span>
                 </button>
 
@@ -237,7 +233,7 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                   } ${!user ? 'cursor-default opacity-60' : 'cursor-pointer'}`}
                   title={user ? (userDisliked ? 'Remove dislike' : 'Dislike') : 'Login to dislike'}
                 >
-                  <span>{userDisliked ? '▼' : '▽'}</span>
+                  <span>{userDisliked ? '-' : '-'}</span>
                   <span>{comment.dislikes?.length || 0}</span>
                 </button>
 
@@ -247,7 +243,7 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                     onClick={() => setShowReplyBox(!showReplyBox)}
                     className="text-xs text-slate-500 hover:text-white px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all"
                   >
-                    💬 Reply
+                    Reply
                   </button>
                 )}
 
@@ -255,9 +251,9 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                 {isOwner && (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="text-xs text-slate-500 hover:text-amber-400 px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all"
+                    className="text-xs text-slate-500 hover:text-cyan-400 px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all"
                   >
-                    ✏️ Edit
+                    Edit
                   </button>
                 )}
 
@@ -285,7 +281,7 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                         onClick={() => setConfirmDelete(true)}
                         className="text-xs text-slate-500 hover:text-red-400 px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all"
                       >
-                        🗑️ Delete
+                        Delete
                       </button>
                     )}
                   </>
@@ -327,7 +323,7 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
               onClick={() => setShowReplies(true)}
               className="text-xs text-cyan-400 hover:text-cyan-300 mb-2 ml-10 flex items-center gap-1 transition-colors"
             >
-              <span>▶</span> Show {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
+              <span>+</span> Show {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
             </button>
           )}
           {showReplies && (
@@ -337,7 +333,7 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                   onClick={() => setShowReplies(false)}
                   className="text-xs text-slate-500 hover:text-slate-300 mb-1 ml-10 flex items-center gap-1 transition-colors"
                 >
-                  <span>▼</span> Hide replies
+                  <span>-</span> Hide replies
                 </button>
               )}
               {comment.replies.map((reply) => (
@@ -361,9 +357,6 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
   );
 };
 
-// ============================================
-// Sort Options
-// ============================================
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest First' },
   { value: 'oldest', label: 'Oldest First' },
@@ -371,9 +364,7 @@ const SORT_OPTIONS = [
   { value: 'controversial', label: 'Most Discussed' },
 ];
 
-// ============================================
-// Main CommentSection Component
-// ============================================
+// Main comment section component
 const CommentSection = ({ contentId, contentType, contentTitle }) => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -387,9 +378,7 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
   const [charCount, setCharCount] = useState(0);
   const textareaRef = useRef(null);
 
-  // ============================================
-  // Fetch comments
-  // ============================================
+
   const fetchComments = async () => {
     try {
       setError(null);
@@ -412,9 +401,7 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
     }
   }, [contentId, contentType]);
 
-  // ============================================
-  // Sort comments
-  // ============================================
+
   const sortedComments = [...comments].sort((a, b) => {
     switch (sortBy) {
       case 'oldest':
@@ -430,9 +417,7 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
     }
   });
 
-  // ============================================
-  // Count total comments including replies
-  // ============================================
+
   const countAll = (list) => {
     let total = 0;
     for (const c of list) {
@@ -443,9 +428,7 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
   };
   const totalCount = countAll(comments);
 
-  // ============================================
-  // Post a new comment
-  // ============================================
+
   const handlePost = async () => {
     if (!newComment.trim()) return;
     setPosting(true);
@@ -461,17 +444,13 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
     }
   };
 
-  // ============================================
-  // Reply handler
-  // ============================================
+
   const handleReply = async (parentId, text) => {
     await replyToComment(parentId, text);
     await fetchComments();
   };
 
-  // ============================================
-  // Like handler
-  // ============================================
+
   const handleLike = async (commentId) => {
     try {
       await toggleLike(commentId);
@@ -481,9 +460,7 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
     }
   };
 
-  // ============================================
-  // Dislike handler
-  // ============================================
+
   const handleDislike = async (commentId) => {
     try {
       await toggleDislike(commentId);
@@ -493,9 +470,7 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
     }
   };
 
-  // ============================================
-  // Edit handler
-  // ============================================
+
   const handleEdit = async (commentId, text) => {
     try {
       await editComment(commentId, text);
@@ -505,9 +480,7 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
     }
   };
 
-  // ============================================
-  // Delete handler
-  // ============================================
+
   const handleDelete = async (commentId) => {
     try {
       await deleteComment(commentId);
@@ -528,9 +501,6 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
     }
   };
 
-  // ============================================
-  // Render
-  // ============================================
   return (
     <section className="mt-10 mb-8">
       {/* Section Header */}
@@ -648,7 +618,7 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
         <>
           {sortedComments.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-4xl mb-3">💬</div>
+              <div className="text-sm text-slate-500 mb-3">No comments</div>
               <p className="text-slate-400 text-sm">No comments yet. Be the first to share your thoughts!</p>
             </div>
           ) : (

@@ -10,26 +10,20 @@ import {
   deleteComment
 } from '../api/discussionService';
 
-// ============================================
-// Content type display helpers
-// ============================================
 const TYPE_LABELS = {
-  movie: '🎬 Movie',
-  tv: '📺 TV Show',
-  anime: '🎌 Anime',
-  theater: '🎭 Theater'
+  movie: 'Movie',
+  tv: 'TV Show',
+  anime: 'Anime',
+  theater: 'Theater'
 };
 
 const TYPE_COLORS = {
   movie: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  tv: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  anime: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
-  theater: 'bg-red-500/20 text-red-400 border-red-500/30'
+  tv: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+  anime: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+  theater: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
 };
 
-// ============================================
-// Single Comment Component (recursive for replies)
-// ============================================
 const Comment = ({ comment, user, depth = 0, onReply, onLike, onDislike, onDelete }) => {
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -144,8 +138,8 @@ const Comment = ({ comment, user, depth = 0, onReply, onLike, onDislike, onDelet
               onClick={() => setShowReplyBox(!showReplyBox)}
               className="text-xs font-medium text-slate-500 hover:text-cyan-400 transition-colors cursor-pointer"
             >
-              💬 Reply
-            </button>
+            Reply
+          </button>
           )}
 
           {/* Delete */}
@@ -158,7 +152,7 @@ const Comment = ({ comment, user, depth = 0, onReply, onLike, onDislike, onDelet
               }}
               className="text-xs font-medium text-slate-500 hover:text-red-400 transition-colors cursor-pointer ml-auto"
             >
-              🗑 Delete
+              Delete
             </button>
           )}
         </div>
@@ -187,7 +181,7 @@ const Comment = ({ comment, user, depth = 0, onReply, onLike, onDislike, onDelet
               onClick={() => { setShowReplyBox(false); setReplyText(''); }}
               className="text-slate-500 hover:text-white text-sm px-2 cursor-pointer"
             >
-              ✕
+              X
             </button>
           </div>
         )}
@@ -214,15 +208,6 @@ const Comment = ({ comment, user, depth = 0, onReply, onLike, onDislike, onDelet
   );
 };
 
-// ============================================
-// Discussion Page
-// Reddit-style threaded comments for content
-//
-// TODO: Add pagination (load more button)
-// TODO: Add comment sorting (newest, oldest, top)
-// TODO: Add reporting UI for comments
-// TODO: Add moderation tools panel for admins
-// ============================================
 const Discussion = () => {
   const { type, id } = useParams();
   const navigate = useNavigate();
@@ -234,9 +219,6 @@ const Discussion = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  // ============================================
-  // Fetch comments
-  // ============================================
   const fetchComments = useCallback(async () => {
     try {
       setError(null);
@@ -256,9 +238,6 @@ const Discussion = () => {
     fetchComments();
   }, [fetchComments]);
 
-  // ============================================
-  // Create top-level comment
-  // ============================================
   const handleCreateComment = async () => {
     if (!newComment.trim() || submitting) return;
 
@@ -279,17 +258,11 @@ const Discussion = () => {
     }
   };
 
-  // ============================================
-  // Reply handler
-  // ============================================
   const handleReply = async (parentId, text) => {
     await replyToComment(parentId, text);
     await fetchComments();
   };
 
-  // ============================================
-  // Like handler
-  // ============================================
   const handleLike = async (commentId) => {
     try {
       await toggleLike(commentId);
@@ -299,9 +272,6 @@ const Discussion = () => {
     }
   };
 
-  // ============================================
-  // Dislike handler
-  // ============================================
   const handleDislike = async (commentId) => {
     try {
       await toggleDislike(commentId);
@@ -311,9 +281,6 @@ const Discussion = () => {
     }
   };
 
-  // ============================================
-  // Delete handler
-  // ============================================
   const handleDelete = async (commentId) => {
     try {
       await deleteComment(commentId);
@@ -324,9 +291,6 @@ const Discussion = () => {
     }
   };
 
-  // ============================================
-  // Loading state
-  // ============================================
   if (loading) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
@@ -348,8 +312,7 @@ const Discussion = () => {
             onClick={() => navigate(-1)}
             className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-sm cursor-pointer"
           >
-            <span>←</span>
-            <span className="font-medium">Back</span>
+            <span>Back</span>
           </button>
 
           <div className="flex items-center gap-2">
@@ -367,7 +330,7 @@ const Discussion = () => {
         {/* Page Title */}
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-black mb-2">
-            💬 Discussion
+            Discussion
           </h1>
           <p className="text-slate-400 text-sm">
             Share your thoughts, theories, and reviews. Be respectful to others.
@@ -459,7 +422,7 @@ const Discussion = () => {
           </div>
         ) : (
           <div className="text-center py-16">
-            <div className="text-5xl mb-4">🦗</div>
+            <div className="text-lg text-slate-500 mb-4">No comments yet</div>
             <h3 className="text-lg font-bold text-slate-400 mb-2">
               No comments yet
             </h3>

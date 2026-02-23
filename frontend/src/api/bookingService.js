@@ -1,6 +1,4 @@
-// ====================================
 // Booking API Service (Placeholder)
-// ====================================
 import api from './axios';
 
 /**

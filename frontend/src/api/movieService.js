@@ -1,9 +1,7 @@
-// ====================================
 // Movie API Service
 // TODO: Replace with backend API when backend is ready
 // TODO: Move TMDB API calls to backend for security (hide API key)
 // TODO: Implement caching on backend to reduce API calls
-// ====================================
 import axios from 'axios';
 
 // TMDB Configuration (temporary until backend is ready)
@@ -72,10 +70,8 @@ const deduplicateMovies = (movies) => {
   });
 };
 
-// ====================================
 // Regional Movies API (Nepali & Indian)
 // TODO: Replace with backend endpoints for regional content
-// ====================================
 
 /**
  * Get Indian (Hindi) movies using TMDB Discover API
@@ -90,7 +86,7 @@ export const getIndianMovies = async (page = 1) => {
     );
     return response.data.results?.map(normalizeMovie) || [];
   } catch (error) {
-    console.error('❌ Failed to fetch Indian movies:', error.message);
+    console.error('Failed to fetch Indian movies:', error.message);
     return [];
   }
 };
@@ -108,7 +104,7 @@ export const getNepaliMovies = async (page = 1) => {
     );
     return response.data.results?.map(normalizeMovie) || [];
   } catch (error) {
-    console.error('❌ Failed to fetch Nepali movies:', error.message);
+    console.error('Failed to fetch Nepali movies:', error.message);
     return [];
   }
 };
@@ -134,7 +130,7 @@ export const getRegionalMovies = async (page = 1) => {
     // Remove duplicates and return
     return deduplicateMovies(mergedMovies);
   } catch (error) {
-    console.error('❌ Failed to fetch regional movies:', error.message);
+    console.error('Failed to fetch regional movies:', error.message);
     return FALLBACK_MOVIES;
   }
 };
@@ -164,7 +160,7 @@ export const getTrendingMovies = async (timeWindow = 'day', blendRegional = true
     
     return trendingMovies;
   } catch (error) {
-    console.error('❌ Failed to fetch trending movies:', error.message);
+    console.error('Failed to fetch trending movies:', error.message);
     return FALLBACK_MOVIES;
   }
 };
@@ -193,7 +189,7 @@ export const getNowPlayingMovies = async (page = 1, prioritizeRegional = true) =
     
     return nowPlayingMovies;
   } catch (error) {
-    console.error('❌ Failed to fetch now playing movies:', error.message);
+    console.error('Failed to fetch now playing movies:', error.message);
     return FALLBACK_MOVIES;
   }
 };
@@ -248,7 +244,7 @@ export const getAllMovies = async (params = {}) => {
     const response = await axios.get(url);
     return response.data.results?.map(normalizeMovie) || [];
   } catch (error) {
-    console.error('❌ Failed to fetch movies:', error.message);
+    console.error('Failed to fetch movies:', error.message);
     return FALLBACK_MOVIES;
   }
 };
@@ -265,7 +261,7 @@ export const getMovieDetails = async (movieId) => {
     );
     return normalizeMovie(response.data);
   } catch (error) {
-    console.error('❌ Failed to fetch movie details:', error.message);
+    console.error('Failed to fetch movie details:', error.message);
     return null;
   }
 };
@@ -283,7 +279,7 @@ export const searchMovies = async (query, page = 1) => {
     );
     return response.data.results?.map(normalizeMovie) || [];
   } catch (error) {
-    console.error('❌ Failed to search movies:', error.message);
+    console.error('Failed to search movies:', error.message);
     return [];
   }
 };
@@ -301,7 +297,7 @@ export const getMoviesByGenre = async (genreId, page = 1) => {
     );
     return response.data.results?.map(normalizeMovie) || [];
   } catch (error) {
-    console.error('❌ Failed to fetch movies by genre:', error.message);
+    console.error('Failed to fetch movies by genre:', error.message);
     return [];
   }
 };
@@ -317,7 +313,7 @@ export const getGenres = async () => {
     );
     return response.data.genres || [];
   } catch (error) {
-    console.error('❌ Failed to fetch genres:', error.message);
+    console.error('Failed to fetch genres:', error.message);
     return [];
   }
 };
@@ -356,7 +352,7 @@ export const getUpcomingMovies = async (page = 1, region = 'US') => {
       totalResults: response.data.total_results
     };
   } catch (error) {
-    console.error('❌ Failed to fetch upcoming movies:', error.message);
+    console.error('Failed to fetch upcoming movies:', error.message);
     return { movies: [], page: 1, totalPages: 1, totalResults: 0 };
   }
 };
@@ -395,7 +391,7 @@ export const getUpcomingMoviesExtended = async (page = 1, monthsAhead = 6) => {
       totalResults: response.data.total_results
     };
   } catch (error) {
-    console.error('❌ Failed to fetch extended upcoming movies:', error.message);
+    console.error('Failed to fetch extended upcoming movies:', error.message);
     return { movies: [], page: 1, totalPages: 1, totalResults: 0 };
   }
 };
@@ -480,7 +476,7 @@ export const getUpcomingBigMovies = async (monthsAhead = 8) => {
     
     return uniqueMovies;
   } catch (error) {
-    console.error('❌ Failed to fetch big upcoming movies:', error.message);
+    console.error('Failed to fetch big upcoming movies:', error.message);
     return [];
   }
 };

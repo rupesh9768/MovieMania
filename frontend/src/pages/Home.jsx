@@ -2,9 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTrendingMovies, getNowPlayingMovies, getNepaliMovies, getIndianMovies } from '../api/movieService';
 
-// ============================================
-// HOME PAGE - Using REAL TMDB API
-// ============================================
 const Home = () => {
   const navigate = useNavigate();
   const nepaliRef = useRef(null);
@@ -20,9 +17,6 @@ const Home = () => {
   const [error, setError] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // ============================================
-  // Fetch all movies from TMDB API
-  // ============================================
   useEffect(() => {
     const fetchAllMovies = async () => {
       try {
@@ -37,7 +31,7 @@ const Home = () => {
           getIndianMovies(1)
         ]);
         
-        console.log('✅ TMDB API Results:', {
+        console.log('TMDB API Results:', {
           trending: trending.length,
           nowPlaying: nowPlaying.length,
           nepali: nepali.length,
@@ -62,7 +56,7 @@ const Home = () => {
         setTrendingMovies(globalTrending);
         
       } catch (err) {
-        console.error('❌ Failed to fetch from TMDB:', err);
+        console.error('Failed to fetch from TMDB:', err);
         setError('Failed to load movies from TMDB API.');
       } finally {
         setLoading(false);
@@ -72,9 +66,6 @@ const Home = () => {
     fetchAllMovies();
   }, []);
 
-  // ============================================
-  // Auto-slide for hero
-  // ============================================
   useEffect(() => {
     if (heroMovies.length === 0) return;
     
@@ -97,9 +88,6 @@ const Home = () => {
     }
   };
 
-  // ============================================
-  // Loading state
-  // ============================================
   if (loading) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
@@ -111,14 +99,11 @@ const Home = () => {
     );
   }
 
-  // ============================================
-  // Error state
-  // ============================================
   if (error) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center max-w-md px-4">
-          <div className="text-5xl mb-4">⚠️</div>
+          <div className="text-5xl mb-4 text-red-400 font-bold">!</div>
           <h2 className="text-xl font-bold text-red-400 mb-2">API Error</h2>
           <p className="text-slate-400 mb-4">{error}</p>
           <button 
@@ -234,10 +219,10 @@ const Home = () => {
           <section className="mb-14">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <span className="w-1.5 h-8 bg-green-500 rounded-full"></span>
+                <span className="w-1.5 h-8 bg-cyan-500 rounded-full"></span>
                 <h2 className="text-2xl font-bold">Nepali Movies</h2>
-                <span className="text-xs font-semibold text-green-400 bg-green-500/15 px-3 py-1 rounded-full">
-                  🇳🇵 Nepal
+                <span className="text-xs font-semibold text-cyan-400 bg-cyan-500/15 px-3 py-1 rounded-full">
+                  Nepal
                 </span>
               </div>
               <div className="flex gap-2">
@@ -267,7 +252,7 @@ const Home = () => {
                   className="shrink-0 w-48 cursor-pointer group"
                   onClick={() => navigate(`/movie/${movie.id}`)}
                 >
-                  <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-green-500/50 transition-all shadow-lg">
+                    <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-cyan-500/50 transition-all shadow-lg">
                     <img 
                       src={movie.image || 'https://via.placeholder.com/300x450?text=No+Poster'} 
                       alt={movie.title}
@@ -276,11 +261,6 @@ const Home = () => {
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     
-                    {/* Country Badge */}
-                    <div className="absolute top-2 left-2 bg-green-600 px-2 py-1 rounded text-xs font-bold shadow">
-                      🇳🇵
-                    </div>
-                    
                     {/* Rating */}
                     {movie.rating > 0 && (
                       <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs font-bold text-yellow-400 flex items-center gap-1">
@@ -288,7 +268,7 @@ const Home = () => {
                       </div>
                     )}
                   </div>
-                  <h3 className="font-semibold text-sm truncate group-hover:text-green-400 transition-colors">
+                  <h3 className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors">
                     {movie.title}
                   </h3>
                   <p className="text-xs text-slate-500">{movie.year}</p>
@@ -303,10 +283,10 @@ const Home = () => {
           <section className="mb-14">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <span className="w-1.5 h-8 bg-orange-500 rounded-full"></span>
+                <span className="w-1.5 h-8 bg-cyan-500 rounded-full"></span>
                 <h2 className="text-2xl font-bold">Bollywood Movies</h2>
-                <span className="text-xs font-semibold text-orange-400 bg-orange-500/15 px-3 py-1 rounded-full">
-                  🇮🇳 India
+                <span className="text-xs font-semibold text-cyan-400 bg-cyan-500/15 px-3 py-1 rounded-full">
+                  India
                 </span>
               </div>
               <div className="flex gap-2">
@@ -336,7 +316,7 @@ const Home = () => {
                   className="shrink-0 w-48 cursor-pointer group"
                   onClick={() => navigate(`/movie/${movie.id}`)}
                 >
-                  <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-orange-500/50 transition-all shadow-lg">
+                    <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-cyan-500/50 transition-all shadow-lg">
                     <img 
                       src={movie.image || 'https://via.placeholder.com/300x450?text=No+Poster'} 
                       alt={movie.title}
@@ -345,19 +325,14 @@ const Home = () => {
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     
-                    {/* Country Badge */}
-                    <div className="absolute top-2 left-2 bg-orange-600 px-2 py-1 rounded text-xs font-bold shadow">
-                      🇮🇳
-                    </div>
-                    
                     {/* Rating */}
                     {movie.rating > 0 && (
                       <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs font-bold text-yellow-400 flex items-center gap-1">
-                        ★ {movie.rating.toFixed(1)}
+                        {movie.rating.toFixed(1)}
                       </div>
                     )}
                   </div>
-                  <h3 className="font-semibold text-sm truncate group-hover:text-orange-400 transition-colors">
+                  <h3 className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors">
                     {movie.title}
                   </h3>
                   <p className="text-xs text-slate-500">{movie.year}</p>
@@ -372,10 +347,10 @@ const Home = () => {
           <section className="mb-14">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <span className="w-1.5 h-8 bg-purple-500 rounded-full"></span>
+                <span className="w-1.5 h-8 bg-cyan-500 rounded-full"></span>
                 <h2 className="text-2xl font-bold">Now Playing Worldwide</h2>
-                <span className="text-xs font-semibold text-purple-400 bg-purple-500/15 px-3 py-1 rounded-full">
-                  🌍 Global
+                <span className="text-xs font-semibold text-cyan-400 bg-cyan-500/15 px-3 py-1 rounded-full">
+                  Global
                 </span>
               </div>
               <div className="flex gap-2">
@@ -405,7 +380,7 @@ const Home = () => {
                   className="shrink-0 w-48 cursor-pointer group"
                   onClick={() => navigate(`/movie/${movie.id}`)}
                 >
-                  <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-purple-500/50 transition-all shadow-lg">
+                    <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-cyan-500/50 transition-all shadow-lg">
                     <img 
                       src={movie.image || 'https://via.placeholder.com/300x450?text=No+Poster'} 
                       alt={movie.title}
@@ -421,7 +396,7 @@ const Home = () => {
                       </div>
                     )}
                   </div>
-                  <h3 className="font-semibold text-sm truncate group-hover:text-purple-400 transition-colors">
+                  <h3 className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors">
                     {movie.title}
                   </h3>
                   <p className="text-xs text-slate-500">{movie.year}</p>
@@ -435,9 +410,9 @@ const Home = () => {
         <section className="py-12 text-center">
           <button 
             onClick={() => navigate('/movies')}
-            className="bg-linear-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white font-bold py-4 px-12 rounded-full text-lg transition-all shadow-xl shadow-cyan-500/20 cursor-pointer"
+            className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 px-12 rounded-full text-lg transition-all shadow-xl shadow-cyan-500/20 cursor-pointer"
           >
-            Browse All Movies →
+            Browse All Movies
           </button>
         </section>
 

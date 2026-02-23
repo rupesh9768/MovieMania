@@ -7,22 +7,22 @@
    1. GLOBAL THEME & VARIABLES
    ========================================= */
 @theme {
-  --color-primary: #fbbf24;
+  --color-primary: #06b6d4;
   --color-dark-bg: #0b1121;
   --color-card-bg: #1a1a1a;
 }
 
 @layer base {
   :root {
-    --primary-gold: #fbbf24;
+    --primary-gold: #06b6d4;
     --dark-bg: #0b1121;
     --card-bg: #1a1a1a;
     --header-bg: #000000;
     --text-white: #ffffff;
     --text-gray: #aaaaaa;
-    --btn-blue: #3b82f6;
-    --btn-blue-hover: #2563eb;
-    --btn-green: #22c55e;
+    --btn-blue: #06b6d4;
+    --btn-blue-hover: #0891b2;
+    --btn-green: #06b6d4;
     --transition: all 0.3s ease;
   }
 
@@ -106,7 +106,7 @@
 
 .register-btn {
   background-color: var(--primary-gold);
-  color: #000;
+  color: #fff;
   border: none;
 }
 
@@ -140,7 +140,7 @@
 .book-now-btn {
   padding: 14px 35px;
   font-size: 1.1rem;
-  background-color: var(--btn-green);
+  background-color: var(--primary-gold);
   color: white;
   border: none;
   border-radius: 8px;
@@ -271,7 +271,7 @@
   width: 100%;
   padding: 12px;
   background-color: var(--primary-gold);
-  color: black;
+  color: white;
   border: none;
   font-weight: 800;
   border-radius: 6px;
@@ -280,8 +280,8 @@
 }
 
 .selected-hall {
-  background-color: #112211 !important; /* Slight green tint for selection */
-  border: 2px solid var(--btn-green) !important;
+  background-color: #0b1a2a !important;
+  border: 2px solid var(--primary-gold) !important;
 }
 
 

@@ -10,28 +10,21 @@ const getPosterUrl = (poster, mediaType) => {
   return `${IMG_BASE}${poster}`;
 };
 
-// ============================================
-// WATCHLIST PAGE
-// Shows user's saved watchlist items
-// ============================================
+// Watchlist page - user's saved items
 const Watchlist = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ============================================
-  // Redirect if not logged in
-  // ============================================
+
   useEffect(() => {
     if (!isLoggedIn()) {
       navigate('/login');
     }
   }, [navigate]);
 
-  // ============================================
-  // Fetch watchlist on mount
-  // ============================================
+
   useEffect(() => {
     const fetchWatchlist = async () => {
       if (!isLoggedIn()) return;
@@ -51,9 +44,7 @@ const Watchlist = () => {
     fetchWatchlist();
   }, []);
 
-  // ============================================
-  // Handle remove from watchlist
-  // ============================================
+
   const handleRemove = async (mediaType, mediaId) => {
     try {
       await removeFromWatchlist(mediaType, mediaId);
@@ -66,9 +57,7 @@ const Watchlist = () => {
     }
   };
 
-  // ============================================
-  // Navigate to details
-  // ============================================
+
   const goToDetails = (item) => {
     if (item.mediaType === 'anime') {
       navigate(`/anime/${item.mediaId}`);
@@ -77,9 +66,6 @@ const Watchlist = () => {
     }
   };
 
-  // ============================================
-  // Loading State
-  // ============================================
   if (loading) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
@@ -87,7 +73,7 @@ const Watchlist = () => {
           <div className="relative w-24 h-24 mx-auto mb-6">
             <div className="absolute inset-0 rounded-full border-4 border-cyan-500/30"></div>
             <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-cyan-500 animate-spin"></div>
-            <span className="absolute inset-0 flex items-center justify-center text-4xl">📋</span>
+            <span className="absolute inset-0 flex items-center justify-center text-2xl text-cyan-400">List</span>
           </div>
           <p className="text-slate-400 text-lg">Loading your watchlist...</p>
         </div>
@@ -101,7 +87,6 @@ const Watchlist = () => {
       <div className="relative bg-linear-to-b from-cyan-900/20 via-cyan-900/10 to-transparent py-12">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center gap-4 mb-4">
-            <span className="text-4xl">📋</span>
             <h1 className="text-3xl md:text-4xl font-black">
               My <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-blue-400">Watchlist</span>
             </h1>
@@ -116,7 +101,7 @@ const Watchlist = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {error ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">😕</div>
+            <div className="text-2xl text-slate-500 mb-4">--</div>
             <p className="text-red-400 mb-4">{error}</p>
             <button 
               onClick={() => window.location.reload()}
@@ -127,7 +112,7 @@ const Watchlist = () => {
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-16">
-            <div className="text-6xl mb-4">📋</div>
+            <div className="text-2xl text-slate-500 mb-4">No items</div>
             <h2 className="text-2xl font-bold mb-2">Your watchlist is empty</h2>
             <p className="text-slate-400 mb-6">Start adding movies and shows you want to watch!</p>
             <Link 
@@ -162,7 +147,7 @@ const Watchlist = () => {
                       />
                     ) : (
                       <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                        <span className="text-4xl opacity-30">🎬</span>
+                        <span className="text-4xl opacity-30 text-slate-600">Film</span>
                       </div>
                     )}
                     
@@ -170,13 +155,7 @@ const Watchlist = () => {
                     <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
                     
                     {/* Media Type Badge */}
-                    <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold uppercase ${
-                      item.mediaType === 'movie' 
-                        ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                        : item.mediaType === 'tv'
-                          ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                          : 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
-                    }`}>
+                    <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold uppercase bg-cyan-500/20 text-cyan-400 border border-cyan-500/30`}>
                       {item.mediaType}
                     </div>
                     
@@ -204,7 +183,7 @@ const Watchlist = () => {
                   className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 hover:bg-red-400 text-white rounded-full flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-lg"
                   title="Remove from watchlist"
                 >
-                  ✕
+                  x
                 </button>
               </div>
             ))}

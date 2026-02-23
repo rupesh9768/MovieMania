@@ -2,12 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-// ============================================
-// BROWSE PAGE - Discovery Hub with Filters
-// Search, Genre, Country filtering
-// ============================================
-
-// TMDB API Configuration
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
@@ -73,11 +67,10 @@ const COUNTRIES = [
   { code: 'TR', name: 'Turkey' }
 ];
 
-// Content type tabs
 const CONTENT_TYPES = [
-  { id: 'all', name: 'All', icon: '🎯' },
-  { id: 'movie', name: 'Movies', icon: '🎬' },
-  { id: 'tv', name: 'TV Shows', icon: '📺' }
+  { id: 'all', name: 'All' },
+  { id: 'movie', name: 'Movies' },
+  { id: 'tv', name: 'TV Shows' }
 ];
 
 const Browse = () => {
@@ -104,9 +97,6 @@ const Browse = () => {
     return MOVIE_GENRES;
   };
 
-  // ============================================
-  // Fetch content based on filters
-  // ============================================
   useEffect(() => {
     const fetchContent = async () => {
       try {
@@ -182,9 +172,9 @@ const Browse = () => {
         }));
         
         setContent(normalized);
-        console.log(`✅ Browse: Loaded ${normalized.length} items`);
+        console.log(`Browse: Loaded ${normalized.length} items`);
       } catch (err) {
-        console.error('❌ Failed to fetch content:', err);
+        console.error('Failed to fetch content:', err);
         setError('Failed to load content. Please try again.');
       } finally {
         setLoading(false);
@@ -210,9 +200,6 @@ const Browse = () => {
 
   const hasFilters = searchQuery || selectedGenre || selectedCountry;
 
-  // ============================================
-  // Loading State
-  // ============================================
   if (loading && content.length === 0) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
@@ -220,7 +207,7 @@ const Browse = () => {
           <div className="relative w-20 h-20 mx-auto mb-5">
             <div className="absolute inset-0 rounded-full border-4 border-cyan-500/30"></div>
             <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-cyan-500 animate-spin"></div>
-            <span className="absolute inset-0 flex items-center justify-center text-3xl">🎬</span>
+            <span className="absolute inset-0 flex items-center justify-center text-cyan-400 font-bold text-xl">M</span>
           </div>
           <p className="text-slate-400">Loading content...</p>
         </div>
@@ -228,14 +215,11 @@ const Browse = () => {
     );
   }
 
-  // ============================================
-  // Error State
-  // ============================================
   if (error) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center max-w-md px-4">
-          <div className="text-5xl mb-4">😕</div>
+          <div className="text-5xl mb-4 text-red-400 font-bold">!</div>
           <h2 className="text-lg font-bold text-red-400 mb-2">Something went wrong</h2>
           <p className="text-slate-400 text-sm mb-5">{error}</p>
           <button 
@@ -252,11 +236,11 @@ const Browse = () => {
   return (
     <div className="min-h-screen bg-dark-bg text-white">
       {/* Hero Section */}
-      <div className="relative bg-linear-to-b from-cyan-900/20 via-purple-900/10 to-transparent py-8 mb-4">
+      <div className="relative bg-linear-to-b from-cyan-900/20 via-slate-900/10 to-transparent py-8 mb-4">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-6">
             <h1 className="text-3xl md:text-4xl font-black mb-2">
-              Browse <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-purple-400">All</span>
+              Browse <span className="text-cyan-400">All</span>
             </h1>
             <p className="text-slate-400 text-sm max-w-xl mx-auto">
               Discover movies and TV shows from around the world
@@ -273,13 +257,13 @@ const Browse = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-slate-800/80 border border-slate-700/50 rounded-xl px-5 py-3.5 pl-12 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:bg-slate-800 transition-all shadow-lg"
               />
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">🔍</span>
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors text-sm"
                 >
-                  ✕
+                  X
                 </button>
               )}
             </div>
@@ -306,8 +290,8 @@ const Browse = () => {
                           : 'text-slate-400 hover:text-white hover:bg-slate-800'
                       }`}
                     >
-                      <span>{type.icon}</span>
                       <span className="hidden sm:inline">{type.name}</span>
+                      <span className="sm:hidden">{type.name}</span>
                     </button>
                   ))}
                 </div>
@@ -354,7 +338,6 @@ const Browse = () => {
                             : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                         }`}
                       >
-                        <span className="text-sm">{getCountryFlag(country.code)}</span>
                         {country.name}
                       </button>
                     ))}
@@ -368,7 +351,7 @@ const Browse = () => {
                   onClick={clearFilters}
                   className="w-full text-xs text-slate-400 hover:text-cyan-400 py-2.5 border border-slate-800 rounded-xl hover:border-cyan-500/30 transition-all"
                 >
-                  ✕ Clear all filters
+                  Clear all filters
                 </button>
               )}
 
@@ -380,25 +363,25 @@ const Browse = () => {
                     onClick={() => navigate('/movies')}
                     className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all flex items-center gap-2"
                   >
-                    <span>🎬</span> Movie Library
+                    Movie Library
                   </button>
                   <button
                     onClick={() => navigate('/tvshows')}
                     className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all flex items-center gap-2"
                   >
-                    <span>📺</span> TV Shows
+                    TV Shows
                   </button>
                   <button
                     onClick={() => navigate('/animations')}
                     className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all flex items-center gap-2"
                   >
-                    <span>✨</span> Animations
+                    Animations
                   </button>
                   <button
                     onClick={() => navigate('/anime')}
                     className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all flex items-center gap-2"
                   >
-                    <span>🎌</span> Anime
+                    Anime
                   </button>
                 </div>
               </div>
@@ -423,7 +406,7 @@ const Browse = () => {
                     </span>
                   )}
                   {selectedCountry && (
-                    <span className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full text-xs">
+                    <span className="bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full text-xs">
                       {COUNTRIES.find(c => c.code === selectedCountry)?.name}
                     </span>
                   )}
@@ -450,7 +433,7 @@ const Browse = () => {
             {/* Empty State */}
             {!loading && content.length === 0 ? (
               <div className="text-center py-16 bg-slate-900/30 rounded-xl border border-dashed border-slate-700">
-                <span className="text-4xl mb-3 block">🔍</span>
+                <span className="text-sm text-slate-500 block mb-3">No results found</span>
                 <p className="text-slate-400 font-medium">No results found</p>
                 <p className="text-slate-600 text-sm mt-1">Try adjusting your search or filters</p>
                 {hasFilters && (
@@ -480,7 +463,7 @@ const Browse = () => {
                           />
                         ) : (
                           <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                            <span className="text-4xl opacity-30">{item.mediaType === 'movie' ? '🎬' : '📺'}</span>
+                            <span className="text-sm text-slate-600 font-medium">{item.mediaType === 'movie' ? 'Movie' : 'TV'}</span>
                           </div>
                         )}
                         
@@ -491,9 +474,9 @@ const Browse = () => {
                         <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[10px] font-bold backdrop-blur-sm ${
                           item.mediaType === 'movie' 
                             ? 'bg-cyan-500/90 text-black' 
-                            : 'bg-purple-500/90 text-white'
+                            : 'bg-cyan-600/90 text-white'
                         }`}>
-                          {item.mediaType === 'movie' ? '🎬 Movie' : '📺 TV'}
+                          {item.mediaType === 'movie' ? 'Movie' : 'TV'}
                         </div>
                         
                         {/* Rating Badge */}
@@ -513,7 +496,7 @@ const Browse = () => {
                         {/* Hover Text */}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <span className="bg-black/80 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-medium text-white">
-                            View Details →
+                            View Details
                           </span>
                         </div>
                       </div>
@@ -529,7 +512,7 @@ const Browse = () => {
                       disabled={currentPage === 1}
                       className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
-                      ← Previous
+                      Previous
                     </button>
                     
                     <div className="flex items-center gap-1">
@@ -566,7 +549,7 @@ const Browse = () => {
                       disabled={currentPage === totalPages}
                       className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
-                      Next →
+                      Next
                     </button>
                   </div>
                 )}
@@ -577,15 +560,6 @@ const Browse = () => {
       </div>
     </div>
   );
-};
-
-// Helper function to get country flag emoji
-const getCountryFlag = (countryCode) => {
-  const codePoints = countryCode
-    .toUpperCase()
-    .split('')
-    .map(char => 127397 + char.charCodeAt());
-  return String.fromCodePoint(...codePoints);
 };
 
 export default Browse;

@@ -1,7 +1,5 @@
-// ====================================
 // API Services Index
 // Re-exports all API services for easy imports
-// ====================================
 
 // Movie API Service (TMDB)
 export * from './movieService';

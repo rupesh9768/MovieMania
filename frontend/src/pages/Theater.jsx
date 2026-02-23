@@ -2,11 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { backendApi } from '../api';
 
-// ============================================
-// THEATER PAGE
-// Shows movies currently playing in our halls
-// Admin can manage these movies
-// ============================================
+// Theater page - movies currently playing
 const Theater = () => {
   const navigate = useNavigate();
   
@@ -14,9 +10,7 @@ const Theater = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ============================================
-  // Fetch movies from backend (isNowPlaying = true)
-  // ============================================
+
   useEffect(() => {
     const fetchTheaterMovies = async () => {
       try {
@@ -25,7 +19,7 @@ const Theater = () => {
         
         // Get now playing movies from backend
         const nowPlaying = await backendApi.getBackendNowPlaying();
-        console.log('🎬 Theater movies:', nowPlaying);
+        console.log('Theater movies:', nowPlaying);
         setMovies(nowPlaying);
         
       } catch (err) {
@@ -39,16 +33,11 @@ const Theater = () => {
     fetchTheaterMovies();
   }, []);
 
-  // ============================================
-  // Handle booking click
-  // ============================================
+
   const handleBookNow = (movie) => {
     navigate(`/theater/${movie.id}`, { state: { movie } });
   };
 
-  // ============================================
-  // Loading state
-  // ============================================
   if (loading) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
@@ -60,9 +49,6 @@ const Theater = () => {
     );
   }
 
-  // ============================================
-  // Main render
-  // ============================================
   return (
     <div className="min-h-screen bg-dark-bg text-white">
       
@@ -78,7 +64,7 @@ const Theater = () => {
           </div>
           
           <h1 className="text-4xl md:text-5xl font-black mb-4">
-            🎬 Our Theater
+            Our Theater
           </h1>
           
           <p className="text-slate-400 text-lg max-w-2xl mx-auto">
@@ -107,14 +93,14 @@ const Theater = () => {
         {/* No Movies */}
         {!error && movies.length === 0 && (
           <div className="text-center py-20">
-            <div className="text-6xl mb-4">🎬</div>
+            <div className="text-5xl mb-4 text-slate-600">Film</div>
             <h2 className="text-2xl font-bold mb-2">No Movies Currently Showing</h2>
             <p className="text-slate-400 mb-6">Check back later for new releases!</p>
             <button 
               onClick={() => navigate('/admin')}
               className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-full transition-all"
             >
-              Admin: Add Movies →
+              Admin: Add Movies
             </button>
           </div>
         )}
@@ -137,7 +123,7 @@ const Theater = () => {
                     />
                   ) : (
                     <div className="w-full h-full bg-linear-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-                      <span className="text-4xl">🎬</span>
+                      <span className="text-4xl text-slate-600">Film</span>
                     </div>
                   )}
                   
@@ -147,7 +133,7 @@ const Theater = () => {
                       onClick={() => handleBookNow(movie)}
                       className="bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-4 rounded-full text-sm w-full transition-all"
                     >
-                      🎟️ Book Now
+                      Book Now
                     </button>
                   </div>
                   
@@ -197,17 +183,17 @@ const Theater = () => {
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div className="p-6">
-              <div className="text-4xl mb-3">🍿</div>
+              <div className="text-4xl mb-3 text-cyan-400">Premium</div>
               <h3 className="font-bold text-lg mb-2">Premium Experience</h3>
               <p className="text-slate-400 text-sm">Dolby Atmos sound, 4K projection, and luxury seating</p>
             </div>
             <div className="p-6">
-              <div className="text-4xl mb-3">🎟️</div>
+              <div className="text-4xl mb-3 text-cyan-400">Tickets</div>
               <h3 className="font-bold text-lg mb-2">Easy Booking</h3>
               <p className="text-slate-400 text-sm">Select your seats, pay online, and get instant confirmation</p>
             </div>
             <div className="p-6">
-              <div className="text-4xl mb-3">🎁</div>
+              <div className="text-4xl mb-3 text-cyan-400">Rewards</div>
               <h3 className="font-bold text-lg mb-2">Member Rewards</h3>
               <p className="text-slate-400 text-sm">Earn points on every booking and get exclusive discounts</p>
             </div>

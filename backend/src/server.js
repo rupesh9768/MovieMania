@@ -2,7 +2,7 @@
 // Server Entry Point
 // ====================================
 
-// Load environment variables FIRST (before any other imports)
+// Load environment variables FIRST 
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -24,7 +24,7 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log('');
       console.log('====================================');
-      console.log('   🎬 MovieMania Backend Server');
+      console.log('    MovieMania Backend Server');
       console.log('====================================');
       console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`   Port: ${PORT}`);
@@ -34,14 +34,14 @@ const startServer = async () => {
       console.log('');
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error.message);
+    console.error(' Failed to start server:', error.message);
     process.exit(1);
   }
 };
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.error('❌ Unhandled Rejection:', err.message);
+  console.error(' Unhandled Rejection:', err.message);
   process.exit(1);
 });
 

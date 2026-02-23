@@ -1,23 +1,17 @@
-// ====================================
 // Auth API Service
 // Handles authentication API calls
-// ====================================
 import api from './axios';
 
 const TOKEN_KEY = 'moviemania_token';
 
-// ====================================
 // Token Management
-// ====================================
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 
 export const setToken = (token) => localStorage.setItem(TOKEN_KEY, token);
 
 export const removeToken = () => localStorage.removeItem(TOKEN_KEY);
 
-// ====================================
 // Set auth header on axios instance
-// ====================================
 export const setAuthHeader = () => {
   const token = getToken();
   if (token) {
@@ -30,9 +24,7 @@ export const setAuthHeader = () => {
 // Initialize auth header on import
 setAuthHeader();
 
-// ====================================
 // Auth API Functions
-// ====================================
 
 /**
  * Login user

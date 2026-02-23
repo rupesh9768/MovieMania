@@ -1,7 +1,5 @@
-// ====================================
 // Anime API Service (Jikan API)
 // TODO: Replace with backend API when backend is ready
-// ====================================
 import axios from 'axios';
 
 // Jikan API Base URL (MyAnimeList unofficial API)
@@ -39,7 +37,7 @@ export const getTopAnime = async (params = {}) => {
     });
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to fetch top anime:', error.message);
+    console.error('Failed to fetch top anime:', error.message);
     return { data: [], pagination: { last_visible_page: 1 } };
   }
 };
@@ -54,7 +52,7 @@ export const getAnimeDetails = async (animeId) => {
     const response = await jikanApi.get(`/anime/${animeId}/full`);
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to fetch anime details:', error.message);
+    console.error('Failed to fetch anime details:', error.message);
     return null;
   }
 };
@@ -78,7 +76,7 @@ export const getAnimeByGenre = async (genreId, page = 1) => {
     });
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to fetch anime by genre:', error.message);
+    console.error('Failed to fetch anime by genre:', error.message);
     return { data: [], pagination: { last_visible_page: 1 } };
   }
 };
@@ -93,7 +91,7 @@ export const getAnimeCharacters = async (animeId) => {
     const response = await jikanApi.get(`/anime/${animeId}/characters`);
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to fetch anime characters:', error.message);
+    console.error('Failed to fetch anime characters:', error.message);
     return { data: [] };
   }
 };
@@ -122,7 +120,7 @@ export const searchAnime = async (query, params = {}) => {
     });
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to search anime:', error.message);
+    console.error('Failed to search anime:', error.message);
     return { data: [], pagination: { last_visible_page: 1 } };
   }
 };
@@ -136,7 +134,7 @@ export const getAnimeGenres = async () => {
     const response = await jikanApi.get('/genres/anime');
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to fetch anime genres:', error.message);
+    console.error('Failed to fetch anime genres:', error.message);
     return { data: [] };
   }
 };
@@ -155,7 +153,7 @@ export const getSeasonalAnime = async (year, season, page = 1) => {
     });
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to fetch seasonal anime:', error.message);
+    console.error('Failed to fetch seasonal anime:', error.message);
     return { data: [], pagination: { last_visible_page: 1 } };
   }
 };
@@ -172,7 +170,7 @@ export const getCurrentSeasonAnime = async (page = 1) => {
     });
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to fetch current season anime:', error.message);
+    console.error('Failed to fetch current season anime:', error.message);
     return { data: [], pagination: { last_visible_page: 1 } };
   }
 };
@@ -187,7 +185,7 @@ export const getAnimeRecommendations = async (animeId) => {
     const response = await jikanApi.get(`/anime/${animeId}/recommendations`);
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to fetch anime recommendations:', error.message);
+    console.error('Failed to fetch anime recommendations:', error.message);
     return { data: [] };
   }
 };

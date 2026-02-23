@@ -1,7 +1,4 @@
-// ====================================
-// AdminRoute Component
-// Requires user to be logged in AND have admin role
-// ====================================
+// Admin route - requires admin role
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
