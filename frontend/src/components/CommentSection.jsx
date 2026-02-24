@@ -16,6 +16,10 @@ const BACKEND_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'h
 const getAvatarUrl = (avatar) => {
   if (!avatar) return null;
   if (avatar.startsWith('http')) return avatar;
+  // Predefined avatars are served from frontend public/avatars/
+  if (avatar.startsWith('/avatars/') || !avatar.startsWith('/')) {
+    return avatar.startsWith('/') ? avatar : `/avatars/${encodeURIComponent(avatar)}`;
+  }
   return `${BACKEND_URL}${avatar}`;
 };
 

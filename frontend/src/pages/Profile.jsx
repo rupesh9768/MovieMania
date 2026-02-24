@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getUserProfile, updateProfile, uploadAvatarImage, getUserComments } from '../api/profileService';
+import { getUserProfile, updateProfile, getUserComments } from '../api/profileService';
+import AVATARS, { getAvatarPath } from '../data/avatars';
 
 const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 const BACKEND_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
@@ -15,6 +16,10 @@ const getPosterUrl = (poster) => {
 const getAvatarUrl = (avatar) => {
   if (!avatar) return null;
   if (avatar.startsWith('http')) return avatar;
+  // Predefined avatars are served from frontend public/avatars/
+  if (avatar.startsWith('/avatars/') || !avatar.startsWith('/')) {
+    return avatar.startsWith('/') ? avatar : `/avatars/${encodeURIComponent(avatar)}`;
+  }
   return `${BACKEND_URL}${avatar}`;
 };
 
@@ -43,7 +48,6 @@ const Profile = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { user: authUser, isAuthenticated, refreshUser } = useAuth();
-  const fileInputRef = useRef(null);
 
   // Which user are we viewing?
   const viewingUserId = userId || authUser?.id || authUser?._id;
@@ -57,7 +61,7 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [activeTab, setActiveTab] = useState('favorites');
   const [saveMessage, setSaveMessage] = useState('');
 
@@ -123,37 +127,26 @@ const Profile = () => {
   }, [activeTab, viewingUserId]);
 
 
-  const handleAvatarUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be under 5MB');
-      return;
-    }
-
-    setUploading(true);
+  const handleAvatarSelect = async (avatarFile) => {
     try {
-      const data = await uploadAvatarImage(file);
+      const avatarValue = avatarFile; // e.g. 'avatar-1.png'
+      const data = await updateProfile({ avatar: avatarValue });
       if (data.success) {
-        setProfile(prev => ({ ...prev, avatar: data.avatar }));
-        setEditForm(prev => ({ ...prev, avatar: data.avatar }));
+        setProfile(prev => ({ ...prev, avatar: avatarValue }));
+        setEditForm(prev => ({ ...prev, avatar: avatarValue }));
         const stored = localStorage.getItem('user');
         if (stored) {
           const parsed = JSON.parse(stored);
-          localStorage.setItem('user', JSON.stringify({ ...parsed, avatar: data.avatar }));
+          localStorage.setItem('user', JSON.stringify({ ...parsed, avatar: avatarValue }));
         }
         if (refreshUser) refreshUser();
+        setShowAvatarPicker(false);
         setSaveMessage('Avatar updated!');
         setTimeout(() => setSaveMessage(''), 3000);
       }
     } catch (err) {
-      console.error('Failed to upload avatar:', err);
-      alert(err.response?.data?.message || 'Failed to upload avatar');
-    } finally {
-      setUploading(false);
-      // Reset file input so same file can be re-selected
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      console.error('Failed to update avatar:', err);
+      alert(err.response?.data?.message || 'Failed to update avatar');
     }
   };
 
@@ -296,14 +289,56 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-dark-bg text-white">
-      {/* Hidden file input for avatar upload */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleAvatarUpload}
-        accept="image/jpeg,image/png,image/gif,image/webp"
-        className="hidden"
-      />
+      {/* Avatar Picker Modal */}
+      {showAvatarPicker && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowAvatarPicker(false)}>
+          <div className="bg-[#111827] border border-slate-700 rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-white">Choose Your Avatar</h2>
+              <button onClick={() => setShowAvatarPicker(false)} className="text-slate-400 hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+              {AVATARS.map((av) => {
+                const isSelected = editForm.avatar === av.file || profile?.avatar === av.file;
+                return (
+                  <button
+                    key={av.id}
+                    onClick={() => handleAvatarSelect(av.file)}
+                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all duration-200 hover:scale-105 ${
+                      isSelected
+                        ? 'border-cyan-500 ring-2 ring-cyan-500/40 shadow-lg shadow-cyan-500/20'
+                        : 'border-slate-700 hover:border-slate-500'
+                    }`}
+                  >
+                    <img
+                      src={getAvatarPath(av.file)}
+                      alt={av.label}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.target.src = 'https://via.placeholder.com/200?text=' + av.label; }}
+                    />
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-cyan-500/20 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-cyan-400 drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {/* Remove avatar option */}
+            {(editForm.avatar || profile?.avatar) && (
+              <button
+                onClick={() => handleAvatarSelect('')}
+                className="w-full mt-4 py-2.5 text-center text-sm font-medium text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-xl border border-red-500/20 transition-all"
+              >
+                Remove Avatar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Hero Banner */}
       <div className="relative bg-linear-to-b from-cyan-900/20 via-slate-900/50 to-dark-bg">
@@ -329,16 +364,11 @@ const Profile = () => {
               )}
               {isOwnProfile && (
                 <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
+                  onClick={() => setShowAvatarPicker(true)}
                   className="absolute bottom-1 right-1 w-9 h-9 bg-cyan-600 hover:bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm shadow-lg transition-all opacity-0 group-hover:opacity-100"
-                  title="Upload photo"
+                  title="Choose avatar"
                 >
-                  {uploading ? (
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  )}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </button>
               )}
             </div>
@@ -423,7 +453,7 @@ const Profile = () => {
               Edit Profile
             </h2>
 
-            {/* Avatar upload section */}
+            {/* Avatar selection section */}
             <div className="mb-5 flex items-center gap-4">
               <div className="relative">
                 {editForm.avatar ? (
@@ -436,41 +466,17 @@ const Profile = () => {
               </div>
               <div>
                 <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
+                  onClick={() => setShowAvatarPicker(true)}
                   className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-sm px-4 py-2 rounded-lg transition-all flex items-center gap-2"
                 >
-                  {uploading ? (
-                    <>
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                      Upload Photo
-                    </>
-                  )}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  Choose Avatar
                 </button>
-                <p className="text-xs text-slate-500 mt-1">JPG, PNG, GIF, WebP. Max 5MB.</p>
+                <p className="text-xs text-slate-500 mt-1">Pick from predefined avatars</p>
               </div>
               {editForm.avatar && (
                 <button
-                  onClick={async () => {
-                    setEditForm(prev => ({ ...prev, avatar: '' }));
-                    try {
-                      await updateProfile({ avatar: '' });
-                      setProfile(prev => ({ ...prev, avatar: '' }));
-                      const stored = localStorage.getItem('user');
-                      if (stored) {
-                        const parsed = JSON.parse(stored);
-                        localStorage.setItem('user', JSON.stringify({ ...parsed, avatar: '' }));
-                      }
-                      if (refreshUser) refreshUser();
-                    } catch (err) {
-                      console.error('Failed to remove avatar:', err);
-                    }
-                  }}
+                  onClick={() => handleAvatarSelect('')}
                   className="text-xs text-red-400 hover:text-red-300 transition-colors"
                 >
                   Remove
