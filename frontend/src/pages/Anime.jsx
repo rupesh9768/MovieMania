@@ -49,7 +49,6 @@ const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
             </div>
             <div className="absolute bottom-4 left-4 right-4">
               <p className="text-white font-bold text-sm truncate">{item.title}</p>
-              <p className="text-yellow-400 text-xs mt-1">★ {(item.score || 0).toFixed(1)}</p>
             </div>
           </div>
         </div>
@@ -283,9 +282,7 @@ const Anime = () => {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        <div className="absolute top-2.5 left-2.5 bg-black/80 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
-                          <span className="text-yellow-400">★</span> {(anime.score || 0).toFixed(1)}
-                        </div>
+
                           <div className="absolute top-2.5 right-2.5 bg-cyan-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold text-black">
                           {anime.type || 'Anime'}
                         </div>

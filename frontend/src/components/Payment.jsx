@@ -7,10 +7,10 @@ const Payment = ({ selectedSeats, totalPrice, onBack, onConfirm, movieTitle }) =
   const handlePayment = () => {
     setIsProcessing(true);
     
-    // Simulate API delay for realism
+    // Simulate payment gateway processing
     setTimeout(() => {
       setIsProcessing(false);
-      onConfirm(); // Trigger the Success page
+      onConfirm(paymentMethod); // Pass selected payment method to parent
     }, 2000);
   };
 
@@ -42,7 +42,7 @@ const Payment = ({ selectedSeats, totalPrice, onBack, onConfirm, movieTitle }) =
 
           <div className="flex justify-between items-center">
             <span className="text-slate-300">Total Amount</span>
-            <span className="text-2xl font-black text-white">${totalPrice}</span>
+            <span className="text-2xl font-black text-white">NPR {totalPrice}</span>
           </div>
         </div>
 
@@ -91,9 +91,9 @@ const Payment = ({ selectedSeats, totalPrice, onBack, onConfirm, movieTitle }) =
           className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-4 rounded-full mb-3 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isProcessing ? (
-             <>Processing...</> // You can add a spinner here later
+             <>Processing...</>
           ) : (
-             <>Pay USD {totalPrice}</>
+             <>Pay NPR {totalPrice}</>
           )}
         </button>
 

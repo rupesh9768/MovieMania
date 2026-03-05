@@ -14,7 +14,6 @@ const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w1280';
 const normalizeTV = (show) => ({
   id: show.id,
   title: show.name || show.title,
-  rating: show.vote_average,
   image: show.poster_path ? `${IMG_BASE}${show.poster_path}` : null,
   backdrop: show.backdrop_path ? `${BACKDROP_BASE}${show.backdrop_path}` : null,
   overview: show.overview,

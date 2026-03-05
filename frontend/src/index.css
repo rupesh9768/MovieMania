@@ -10,6 +10,17 @@
   --color-primary: #06b6d4;
   --color-dark-bg: #0b1121;
   --color-card-bg: #1a1a1a;
+
+  /* Custom animations */
+  --animate-scroll-up: scroll-up 25s linear infinite;
+  --animate-scroll-down: scroll-down 30s linear infinite;
+  --animate-scroll-up-slow: scroll-up 35s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow-pulse: glow-pulse 4s ease-in-out infinite;
+  --animate-shake: shake 0.5s ease-in-out;
+  --animate-fade-in: fade-in 0.5s ease-out;
+  --animate-slide-up: slide-up 0.6s ease-out;
+  --animate-shimmer: shimmer 2s infinite linear;
 }
 
 @layer base {
@@ -34,6 +45,7 @@
 
   html {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    scroll-behavior: smooth;
   }
 
   body {
@@ -41,11 +53,34 @@
     color: var(--text-white);
     line-height: 1.6;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   a {
     text-decoration: none;
     transition: var(--transition);
+  }
+
+  /* Custom scrollbar for the whole site */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0b1121;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #334155;
+  }
+
+  /* Selection highlight */
+  ::selection {
+    background: rgba(6, 182, 212, 0.3);
+    color: #fff;
   }
 }
 
@@ -294,3 +329,99 @@
     scrollbar-width: none;  /* Firefox */
   }
 }
+
+/* =========================================
+   KEYFRAME ANIMATIONS
+   ========================================= */
+
+/* Floating poster scroll animations */
+@keyframes scroll-up {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+@keyframes scroll-down {
+  0% { transform: translateY(-50%); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes bounce-in {
+  0% { opacity: 0; transform: translateY(40px) scale(0.9); }
+  50% { transform: translateY(-5px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes fire-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* =========================================
+   GLASSMORPHISM CARD STYLE
+   ========================================= */
+.glass-card {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* =========================================
+   FIRE EMOJI BUTTON
+   ========================================= */
+.fire-btn {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fire-btn:hover {
+  animation: fire-pulse 0.6s ease-in-out infinite;
+}
+
+.fire-btn.active {
+  filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.6));
+}
+
+/* =========================================
+   SECTION ENTRANCE ANIMATION
+   ========================================= */
+.section-animate {
+  animation: slide-up 0.6s ease-out both;
+}
+
+.section-animate:nth-child(2) { animation-delay: 0.1s; }
+.section-animate:nth-child(3) { animation-delay: 0.2s; }
+.section-animate:nth-child(4) { animation-delay: 0.3s; }
+.section-animate:nth-child(5) { animation-delay: 0.4s; }
+

@@ -1,74 +1,73 @@
-// Booking API Service (Placeholder)
+// Booking API Service
 import api from './axios';
 
 /**
  * Create a new booking
- * @param {Object} bookingData - Booking details
+ * POST /api/bookings
+ * @param {Object} bookingData - { movieId, showtimeId, movieTitle, hall, date, time, seats, totalPrice, paymentMethod }
  * @returns {Promise} - Created booking
  */
 export const createBooking = async (bookingData) => {
   const response = await api.post('/bookings', bookingData);
-  return response.data;
+  if (response.data?.success) return response.data.data;
+  throw new Error(response.data?.message || 'Failed to create booking');
 };
 
 /**
- * Get user's bookings
+ * Get booked seats for a specific movie showtime
+ * GET /api/bookings/seats?movieId=xxx&showtimeId=yyy
+ * @param {string} movieId
+ * @param {string} showtimeId
+ * @returns {Promise<string[]>} - Array of booked seat IDs (e.g. ['A3', 'B5'])
+ */
+export const getBookedSeats = async (movieId, showtimeId) => {
+  const response = await api.get('/bookings/seats', {
+    params: { movieId, showtimeId }
+  });
+  if (response.data?.success) return response.data.data;
+  return [];
+};
+
+/**
+ * Get current user's bookings
+ * GET /api/bookings/my
  * @returns {Promise} - Array of user bookings
  */
-export const getUserBookings = async () => {
-  const response = await api.get('/bookings/my-bookings');
-  return response.data;
+export const getMyBookings = async () => {
+  const response = await api.get('/bookings/my');
+  if (response.data?.success) return response.data.data;
+  return [];
 };
 
 /**
  * Get booking by ID
+ * GET /api/bookings/:id
  * @param {string} bookingId - Booking ID
  * @returns {Promise} - Booking details
  */
 export const getBookingById = async (bookingId) => {
   const response = await api.get(`/bookings/${bookingId}`);
-  return response.data;
+  if (response.data?.success) return response.data.data;
+  return null;
 };
 
 /**
  * Cancel a booking
+ * PATCH /api/bookings/:id/cancel
  * @param {string} bookingId - Booking ID
  * @returns {Promise} - Cancellation result
  */
 export const cancelBooking = async (bookingId) => {
-  const response = await api.delete(`/bookings/${bookingId}`);
-  return response.data;
-};
-
-/**
- * Get available showtimes for a movie
- * @param {string} movieId - Movie ID
- * @param {string} date - Date string (YYYY-MM-DD)
- * @returns {Promise} - Available showtimes
- */
-export const getShowtimes = async (movieId, date) => {
-  const response = await api.get('/bookings/showtimes', {
-    params: { movieId, date }
-  });
-  return response.data;
-};
-
-/**
- * Get available seats for a showtime
- * @param {string} showtimeId - Showtime ID
- * @returns {Promise} - Seat availability
- */
-export const getAvailableSeats = async (showtimeId) => {
-  const response = await api.get(`/bookings/showtimes/${showtimeId}/seats`);
-  return response.data;
+  const response = await api.patch(`/bookings/${bookingId}/cancel`);
+  if (response.data?.success) return response.data.data;
+  throw new Error(response.data?.message || 'Failed to cancel booking');
 };
 
 // Export all functions as default object
 export default {
   createBooking,
-  getUserBookings,
+  getBookedSeats,
+  getMyBookings,
   getBookingById,
-  cancelBooking,
-  getShowtimes,
-  getAvailableSeats
+  cancelBooking
 };

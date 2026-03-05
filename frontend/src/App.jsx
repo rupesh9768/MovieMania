@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
-// Auth Provider
+// Providers
 import { AuthProvider } from './context/AuthContext';
 
 // Import Pages
@@ -43,7 +43,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         {/* Wrapper to ensure footer pushes to bottom if content is short */}
-        <div className="App bg-dark-bg min-h-screen font-sans text-white flex flex-col">
+        <div className="App min-h-screen font-sans flex flex-col bg-dark-bg text-white">
           
           <Navbar /> 
 

@@ -219,6 +219,22 @@ const Discussion = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  // Check if this movie is in the interested list
+  const [interestedCount, setInterestedCount] = useState(0);
+  const [isInterested, setIsInterested] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('interestedUpcoming') || '[]');
+      const movieId = Number(id) || id;
+      setIsInterested(saved.includes(movieId));
+      setInterestedCount(saved.length);
+    } catch { 
+      setIsInterested(false);
+      setInterestedCount(0);
+    }
+  }, [id]);
+
   const fetchComments = useCallback(async () => {
     try {
       setError(null);
@@ -319,6 +335,11 @@ const Discussion = () => {
             <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-full border ${TYPE_COLORS[type] || 'bg-slate-700 text-slate-300 border-slate-600'}`}>
               {TYPE_LABELS[type] || type}
             </span>
+            {isInterested && (
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1">
+                🔥 Interested
+              </span>
+            )}
             <span className="text-slate-500 text-xs">ID: {id}</span>
           </div>
         </div>
@@ -335,6 +356,12 @@ const Discussion = () => {
           <p className="text-slate-400 text-sm">
             Share your thoughts, theories, and reviews. Be respectful to others.
           </p>
+          {type === 'movie' && isInterested && (
+            <div className="mt-3 inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/30 rounded-lg px-4 py-2">
+              <span className="text-base">🔥</span>
+              <span className="text-sm text-orange-300 font-medium">You're interested in this movie</span>
+            </div>
+          )}
         </div>
 
         {/* Error State */}

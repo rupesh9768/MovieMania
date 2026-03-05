@@ -49,6 +49,10 @@ const MovieDetails = () => {
   const [listLoading, setListLoading] = useState(false);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id, mediaType]);
+
+  useEffect(() => {
     const checkLists = async () => {
       if (!isAuthenticated || !id || !mediaType) return;
       
@@ -83,8 +87,7 @@ const MovieDetails = () => {
           mediaType,
           id,
           title: item.title,
-          poster: item.poster,
-          rating: item.rating
+          poster: item.poster
         });
         setInWatchlist(true);
       }
@@ -115,8 +118,7 @@ const MovieDetails = () => {
           mediaType,
           id,
           title: item.title,
-          poster: item.poster,
-          rating: item.rating
+          poster: item.poster
         });
         setInFavorites(true);
       }
@@ -154,7 +156,6 @@ const MovieDetails = () => {
             overview: anime.synopsis,
             poster: anime.images?.jpg?.large_image_url,
             backdrop: anime.images?.jpg?.large_image_url,
-            rating: anime.score,
             voteCount: anime.scored_by,
             releaseDate: anime.aired?.from?.split('T')[0],
             aired: anime.aired?.string,
@@ -213,7 +214,6 @@ const MovieDetails = () => {
           overview: data.overview,
           poster: data.poster_path,
           backdrop: data.backdrop_path,
-          rating: data.vote_average,
           voteCount: data.vote_count,
           releaseDate: data.release_date || data.first_air_date,
           runtime: data.runtime || data.episode_run_time?.[0],
@@ -501,38 +501,6 @@ const MovieDetails = () => {
               <p className="text-slate-400 leading-relaxed">
                 {item.overview || `No description available for this ${item.mediaType}.`}
               </p>
-            </section>
-
-            {/* Rating */}
-            <section className="bg-slate-900/50 border border-slate-800/50 rounded-xl p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">User Rating</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-3xl font-black text-yellow-400">
-                      {item.rating?.toFixed(1) || 'N/A'}
-                    </span>
-                    <span className="text-slate-600">/ 10</span>
-                  </div>
-                  <div className="flex gap-0.5 mt-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <span 
-                        key={star} 
-                        className={`text-lg ${
-                          star <= Math.round((item.rating || 0) / 2) 
-                            ? 'text-yellow-400' 
-                            : 'text-slate-700'
-                        }`}
-                      >
-                        ★
-                      </span>
-                    ))}
-                  </div>
-                  {item.voteCount && (
-                    <p className="text-xs text-slate-500 mt-2">{item.voteCount.toLocaleString()} votes</p>
-                  )}
-                </div>
-              </div>
             </section>
 
             {/* Cast */}

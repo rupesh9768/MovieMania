@@ -16,6 +16,7 @@ import movieRoutes from './routes/movie.routes.js';
 import userRoutes from './routes/user.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import discussionRoutes from './routes/discussion.routes.js';
+import bookingRoutes from './routes/booking.routes.js';
 
 // Create Express app
 const app = express();
@@ -72,6 +73,9 @@ app.use('/api/users', userRoutes);
 
 // Discussion API (threaded comments)
 app.use('/api/discussion', discussionRoutes);
+
+// Bookings API
+app.use('/api/bookings', bookingRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

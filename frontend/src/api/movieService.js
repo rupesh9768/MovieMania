@@ -16,7 +16,6 @@ const FALLBACK_MOVIES = [
   {
     id: 1,
     title: 'Sample Movie 1',
-    rating: 8.5,
     image: 'https://via.placeholder.com/500x750?text=Movie+1',
     backdrop: 'https://via.placeholder.com/1280x720?text=Backdrop+1',
     overview: 'A captivating story awaits you.',
@@ -25,7 +24,6 @@ const FALLBACK_MOVIES = [
   {
     id: 2,
     title: 'Sample Movie 2',
-    rating: 7.8,
     image: 'https://via.placeholder.com/500x750?text=Movie+2',
     backdrop: 'https://via.placeholder.com/1280x720?text=Backdrop+2',
     overview: 'An exciting adventure begins.',
@@ -34,7 +32,6 @@ const FALLBACK_MOVIES = [
   {
     id: 3,
     title: 'Sample Movie 3',
-    rating: 9.0,
     image: 'https://via.placeholder.com/500x750?text=Movie+3',
     backdrop: 'https://via.placeholder.com/1280x720?text=Backdrop+3',
     overview: 'Experience the thrill.',
@@ -49,10 +46,10 @@ const FALLBACK_MOVIES = [
 const normalizeMovie = (movie) => ({
   id: movie.id,
   title: movie.title || movie.name,
-  rating: movie.vote_average,
   image: movie.poster_path ? `${IMG_BASE}${movie.poster_path}` : null,
   backdrop: movie.backdrop_path ? `${BACKDROP_BASE}${movie.backdrop_path}` : null,
   overview: movie.overview,
+  popularity: movie.popularity || 0,
   year: (movie.release_date || movie.first_air_date)?.slice(0, 4),
   genre_ids: movie.genre_ids || [],
   original_language: movie.original_language || null

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { getBookedSeats } from '../api/bookingService';
 
-// INLINE MOCK DATA: Already booked seats (replace with API call when backend is ready)
-const MOCK_BOOKED_SEATS = ['A3', 'A4', 'B5', 'B6', 'C7', 'D2', 'D3', 'E8', 'E9', 'F1', 'G10', 'H5', 'H6'];
+// Fallback mock data (used only if API fails)
+const FALLBACK_BOOKED_SEATS = ['A3', 'A4', 'B5', 'B6', 'C7', 'D2', 'D3', 'E8', 'E9', 'F1', 'G10', 'H5', 'H6'];
 
 /**
  * SeatSelection Component
@@ -22,18 +23,19 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => {
   const [occupiedSeats, setOccupiedSeats] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch occupied seats (mock for now, replace with API when ready)
+  // Fetch occupied seats from backend API
   useEffect(() => {
     const loadOccupiedSeats = async () => {
       setLoading(true);
       
-      // TODO: Fetch from API when backend is ready
-      // const res = await fetch(`/api/bookings/seats?movieId=${movieId}&showtimeId=${showtimeId}`);
-      // const data = await res.json();
-      // setOccupiedSeats(data);
+      try {
+        const seats = await getBookedSeats(movieId, showtimeId);
+        setOccupiedSeats(seats);
+      } catch (error) {
+        console.error('Failed to fetch booked seats, using fallback:', error);
+        setOccupiedSeats(FALLBACK_BOOKED_SEATS);
+      }
       
-      // For now, use mock data
-      setOccupiedSeats(MOCK_BOOKED_SEATS);
       setLoading(false);
     };
     

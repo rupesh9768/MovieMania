@@ -164,7 +164,6 @@ const Browse = () => {
         const normalized = allResults.map(item => ({
           id: item.id,
           title: item.title || item.name,
-          rating: item.vote_average || 0,
           image: item.poster_path ? `${IMG_BASE}${item.poster_path}` : null,
           year: (item.release_date || item.first_air_date || '').slice(0, 4),
           mediaType: item.mediaType,
@@ -479,25 +478,10 @@ const Browse = () => {
                           {item.mediaType === 'movie' ? 'Movie' : 'TV'}
                         </div>
                         
-                        {/* Rating Badge */}
-                        {item.rating > 0 && (
-                          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1">
-                            <span className="text-yellow-400">★</span> 
-                            {item.rating.toFixed(1)}
-                          </div>
-                        )}
-                        
-                        {/* Bottom Info */}
+                        {/* Bottom Info */}}
                         <div className="absolute bottom-0 left-0 right-0 p-3">
                           <p className="text-white font-semibold text-sm truncate">{item.title}</p>
                           {item.year && <p className="text-slate-400 text-xs">{item.year}</p>}
-                        </div>
-                        
-                        {/* Hover Text */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="bg-black/80 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-medium text-white">
-                            View Details
-                          </span>
                         </div>
                       </div>
                     </div>

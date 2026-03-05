@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom'; 
 import SeatSelection from '../components/SeatSelection';
 import Payment from '../components/Payment';
+import { createBooking } from '../api/bookingService';
 
 // Booking page with seat selection, payment, and confirmation steps
 
@@ -10,6 +11,8 @@ function Booking() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState('selection');
   const [bookingData, setBookingData] = useState({ seats: [], price: 0 });
+  const [bookingError, setBookingError] = useState('');
+  const [bookingResult, setBookingResult] = useState(null);
 
   // Get the data passed from the previous page
   const { state } = useLocation();
@@ -20,25 +23,29 @@ function Booking() {
     setCurrentPage('payment');
   };
 
-  const handlePaymentSuccess = () => {
-    // TODO: POST to your backend when ready
-    // const res = await fetch('/api/bookings', { method: 'POST', body: JSON.stringify({...}) });
-    
-    const booking = {
-      id: Date.now(),
-      movieId,
-      showtimeId,
-      movieTitle,
-      seats: bookingData.seats,
-      totalPrice: bookingData.price,
-      hall,
-      time,
-      date,
-      status: 'confirmed'
-    };
-    
-    console.log('Booking created:', booking);
-    setCurrentPage('success');
+  const handlePaymentSuccess = async (paymentMethod) => {
+    setBookingError('');
+    try {
+      const booking = await createBooking({
+        movieId,
+        showtimeId,
+        movieTitle,
+        hall,
+        date,
+        time,
+        seats: bookingData.seats,
+        totalPrice: bookingData.price,
+        paymentMethod: paymentMethod || 'khalti'
+      });
+      
+      setBookingResult(booking);
+      setCurrentPage('success');
+    } catch (error) {
+      console.error('Booking failed:', error);
+      const msg = error.response?.data?.message || error.message || 'Booking failed. Please try again.';
+      setBookingError(msg);
+      // Stay on payment page so user can retry
+    }
   };
 
   const handleBack = () => {
@@ -106,13 +113,22 @@ function Booking() {
       )}
 
       {currentPage === 'payment' && (
-        <Payment 
-          selectedSeats={bookingData.seats} 
-          totalPrice={bookingData.price}
-          onBack={handleBack}
-          onConfirm={handlePaymentSuccess}
-          movieTitle={movieTitle}
-        />
+        <>
+          {bookingError && (
+            <div className="max-w-md mx-auto mt-4 px-4">
+              <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 text-center text-sm">
+                {bookingError}
+              </div>
+            </div>
+          )}
+          <Payment 
+            selectedSeats={bookingData.seats} 
+            totalPrice={bookingData.price}
+            onBack={handleBack}
+            onConfirm={handlePaymentSuccess}
+            movieTitle={movieTitle}
+          />
+        </>
       )}
 
       {currentPage === 'success' && (

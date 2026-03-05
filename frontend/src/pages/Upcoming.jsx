@@ -15,15 +15,8 @@ const Upcoming = () => {
   const [selectedFilter, setSelectedFilter] = useState('all'); // all, thisMonth, nextMonth, interested
   const [sortBy, setSortBy] = useState('popularity'); // popularity, date, title
   
-  // Interested movies (localStorage)
-  const [interestedMovies, setInterestedMovies] = useState(() => {
-    try {
-      const saved = localStorage.getItem('interestedUpcoming');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Interested movies (localStorage) - initialized empty, will sync after movies load
+  const [interestedMovies, setInterestedMovies] = useState([]);
 
   // Current time for countdown (update every minute)
   const [now, setNow] = useState(new Date());
@@ -48,6 +41,30 @@ const Upcoming = () => {
         
         setMovies(upcomingMovies);
         setGenres(genreData);
+        
+        // Clean up interested list: remove released movies & invalid IDs
+        try {
+          const saved = JSON.parse(localStorage.getItem('interestedUpcoming') || '[]');
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const upcomingIds = new Set(upcomingMovies.map(m => m.id));
+          
+          // Keep only IDs that exist in upcoming list AND haven't released yet
+          const cleaned = saved.filter(id => {
+            if (!upcomingIds.has(id)) return false;
+            const movie = upcomingMovies.find(m => m.id === id);
+            if (!movie || !movie.releaseDate) return true; // keep if no date info
+            return new Date(movie.releaseDate) >= today;
+          });
+          
+          if (cleaned.length !== saved.length) {
+            localStorage.setItem('interestedUpcoming', JSON.stringify(cleaned));
+            console.log(`Cleaned interested list: ${saved.length} → ${cleaned.length}`);
+          }
+          setInterestedMovies(cleaned);
+        } catch {
+          setInterestedMovies([]);
+        }
       } catch (err) {
         console.error('Failed to fetch upcoming movies:', err);
         setError('Failed to load upcoming movies. Please try again.');
@@ -226,12 +243,12 @@ const Upcoming = () => {
             {/* Stats */}
             <div className="flex gap-5">
               <div className="text-center px-4 py-2 bg-slate-800/50 rounded-xl">
-                <p className="text-2xl font-black text-white">{movies.length}</p>
+                <p className="text-2xl font-black text-white">{filteredMovies.length}</p>
                 <p className="text-xs text-slate-500 uppercase tracking-wider">Movies</p>
               </div>
-              <div className="text-center px-4 py-2 bg-cyan-500/10 rounded-xl border border-cyan-500/30">
-                <p className="text-2xl font-black text-cyan-400">{interestedMovies.length}</p>
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Watchlist</p>
+              <div className="text-center px-4 py-2 bg-orange-500/10 rounded-xl border border-orange-500/30">
+                <p className="text-2xl font-black text-orange-400">{interestedMovies.length}</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Interested</p>
               </div>
             </div>
           </div>
@@ -267,21 +284,21 @@ const Upcoming = () => {
         </div>
 
         {/* Filters Row */}
-        <div className="flex flex-wrap items-center gap-4 mb-8 pb-6 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-8 pb-6 border-b border-slate-800">
           {/* Time Filters */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {[
               { key: 'all', label: 'All' },
               { key: 'thisMonth', label: 'This Month' },
               { key: 'nextMonth', label: 'Next Month' },
-              { key: 'interested', label: 'Watchlist' },
+              { key: 'interested', label: '🔥 Interested' },
             ].map(filter => (
               <button
                 key={filter.key}
                 onClick={() => { setSelectedFilter(filter.key); setDisplayCount(30); }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   selectedFilter === filter.key
-                    ? 'bg-slate-700 text-white'
+                    ? filter.key === 'interested' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40' : 'bg-slate-700 text-white'
                     : 'text-slate-500 hover:text-white hover:bg-slate-800'
                 }`}
               >
@@ -290,11 +307,11 @@ const Upcoming = () => {
             ))}
           </div>
           
-          <div className="flex-1"></div>
+          <div className="sm:flex-1"></div>
           
           {/* Sort */}
           <div className="flex items-center gap-2">
-            <span className="text-slate-500 text-sm">Sort:</span>
+            <span className="text-slate-500 text-sm whitespace-nowrap">Sort:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -359,13 +376,14 @@ const Upcoming = () => {
                             e.stopPropagation();
                             toggleInterested(movie.id);
                           }}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer text-base ${
                             isInterested(movie.id)
-                              ? 'bg-cyan-500 text-white scale-110'
-                              : 'bg-black/60 text-slate-400 hover:bg-cyan-500/80 hover:text-white hover:scale-110'
+                              ? 'bg-orange-500/90 scale-110'
+                              : 'bg-black/60 hover:bg-orange-500/80 hover:scale-110'
                           }`}
+                          title={isInterested(movie.id) ? 'Remove interest' : 'Mark as interested'}
                         >
-                          {isInterested(movie.id) ? 'Saved' : 'Save'}
+                          🔥
                         </button>
                       </div>
                       
@@ -431,24 +449,24 @@ const Upcoming = () => {
 
         {/* Watchlist Summary */}
         {interestedMovies.length > 0 && selectedFilter !== 'interested' && (
-          <div className="mt-12 p-5 bg-linear-to-r from-cyan-500/10 via-cyan-500/10 to-cyan-500/10 border border-cyan-500/30 rounded-2xl">
+          <div className="mt-12 p-5 bg-linear-to-r from-orange-500/10 via-orange-500/10 to-orange-500/10 border border-orange-500/30 rounded-2xl">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center">
-                  <span className="text-lg font-bold text-cyan-400">{interestedMovies.length}</span>
+                <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                  <span className="text-lg">🔥</span>
                 </div>
                 <div>
                   <p className="text-white font-bold">
-                    {interestedMovies.length} movie{interestedMovies.length > 1 ? 's' : ''} in your watchlist
+                    {interestedMovies.length} movie{interestedMovies.length > 1 ? 's' : ''} you're interested in
                   </p>
                   <p className="text-slate-400 text-sm">Don't miss these upcoming releases!</p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedFilter('interested')}
-                className="px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-xl transition-all cursor-pointer"
+                className="px-5 py-2.5 bg-orange-500 hover:bg-orange-400 text-black font-bold rounded-xl transition-all cursor-pointer"
               >
-                View Watchlist
+                View Interested
               </button>
             </div>
           </div>
