@@ -109,7 +109,7 @@ const Navbar = () => {
               
               {/* Dropdown Overlay Box */}
               {browseOpen && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl shadow-black/50 p-4 min-w-[360px]">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl shadow-black/50 p-4 min-w-90">
                   {/* Arrow */}
                   <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-[#111827] border-l border-t border-slate-700 transform rotate-45"></div>
                   
@@ -215,14 +215,14 @@ const Navbar = () => {
                       {user?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                   )}
-                  <span className="max-w-[100px] truncate">{user?.name || 'User'}</span>
+                  <span className="max-w-25 truncate">{user?.name || 'User'}</span>
                   <svg className={`w-4 h-4 transition-transform ${profileOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
                 
                 {profileOpen && (
-                  <div className="absolute top-full right-0 mt-3 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl shadow-black/50 p-3 min-w-[200px]">
+                  <div className="absolute top-full right-0 mt-3 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl shadow-black/50 p-3 min-w-50">
                     {/* Arrow */}
                     <div className="absolute -top-2 right-4 w-4 h-4 bg-[#111827] border-l border-t border-slate-700 transform rotate-45"></div>
                     

@@ -7,12 +7,16 @@ const api = axios.create({
   },
 });
 
-// Request Interceptor — attach JWT token
+// Request Interceptor — attach JWT token and handle FormData
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('moviemania_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Let browser set Content-Type with boundary for FormData
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
     }
     return config;
   },

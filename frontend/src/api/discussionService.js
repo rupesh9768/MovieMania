@@ -1,8 +1,5 @@
 // Discussion API Service
 // Handles all discussion/comment endpoints
-//
-// TODO: Add pagination params to getDiscussion
-// TODO: Add report comment endpoint
 import api from './axios';
 
 // Fetch discussion thread for a content item
@@ -11,18 +8,30 @@ export const getDiscussion = async (contentType, contentId) => {
   return response.data;
 };
 
-// Create a new top-level comment
-export const createComment = async ({ contentId, contentType, text }) => {
-  const response = await api.post('/discussion', {
-    contentId,
-    contentType,
-    text
-  });
+// Create a new top-level comment (with optional image)
+export const createComment = async ({ contentId, contentType, text, image }) => {
+  if (image) {
+    const formData = new FormData();
+    formData.append('contentId', contentId);
+    formData.append('contentType', contentType);
+    formData.append('text', text);
+    formData.append('image', image);
+    const response = await api.post('/discussion', formData);
+    return response.data;
+  }
+  const response = await api.post('/discussion', { contentId, contentType, text });
   return response.data;
 };
 
-// Reply to an existing comment
-export const replyToComment = async (commentId, text) => {
+// Reply to an existing comment (with optional image)
+export const replyToComment = async (commentId, text, image) => {
+  if (image) {
+    const formData = new FormData();
+    formData.append('text', text);
+    formData.append('image', image);
+    const response = await api.post(`/discussion/${commentId}/reply`, formData);
+    return response.data;
+  }
   const response = await api.post(`/discussion/${commentId}/reply`, { text });
   return response.data;
 };
@@ -39,8 +48,15 @@ export const toggleDislike = async (commentId) => {
   return response.data;
 };
 
-// Edit a comment (owner only)
-export const editComment = async (commentId, text) => {
+// Edit a comment (owner only, with optional image)
+export const editComment = async (commentId, text, image) => {
+  if (image) {
+    const formData = new FormData();
+    formData.append('text', text);
+    formData.append('image', image);
+    const response = await api.put(`/discussion/${commentId}/edit`, formData);
+    return response.data;
+  }
   const response = await api.put(`/discussion/${commentId}/edit`, { text });
   return response.data;
 };
@@ -51,6 +67,12 @@ export const deleteComment = async (commentId) => {
   return response.data;
 };
 
+// Fetch trending discussions
+export const getTrendingDiscussions = async () => {
+  const response = await api.get('/discussion/trending');
+  return response.data;
+};
+
 export default {
   getDiscussion,
   createComment,
@@ -58,5 +80,6 @@ export default {
   toggleLike,
   toggleDislike,
   editComment,
-  deleteComment
+  deleteComment,
+  getTrendingDiscussions
 };

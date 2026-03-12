@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTrendingMovies, getNowPlayingMovies, getNepaliMovies, getIndianMovies, getUpcomingBigMovies } from '../api/movieService';
+import TrendingDiscussions from '../components/TrendingDiscussions';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -125,14 +126,14 @@ const Home = () => {
         className="shrink-0 w-48 cursor-pointer group"
         onClick={() => navigate(`/movie/${movie.id}`)}
       >
-        <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-cyan-500/50 transition-all shadow-lg group-hover:shadow-cyan-500/20 duration-300">
+        <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-cyan-500/50 transition-all shadow-lg group-hover:shadow-cyan-500/20 duration-300">
           <img 
             src={movie.image || 'https://via.placeholder.com/300x450?text=No+Poster'} 
             alt={movie.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Poster'; }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
           {/* Interested badge on hover */}
           {movieIsInterested && (
@@ -160,7 +161,7 @@ const Home = () => {
   const SectionHeader = ({ title, badge, scrollRef }) => (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-3">
-        <span className="w-1 h-8 bg-gradient-to-b from-cyan-400 to-cyan-600 rounded-full"></span>
+        <span className="w-1 h-8 bg-linear-to-b from-cyan-400 to-cyan-600 rounded-full"></span>
         <h2 className="text-2xl font-bold">{title}</h2>
         {badge && (
           <span className="text-xs font-semibold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
@@ -213,7 +214,7 @@ const Home = () => {
           <p className="text-slate-400 mb-6 text-sm">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-2.5 px-8 rounded-full transition-all cursor-pointer shadow-lg shadow-cyan-500/20"
+            className="bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-2.5 px-8 rounded-full transition-all cursor-pointer shadow-lg shadow-cyan-500/20"
           >
             Retry
           </button>
@@ -239,8 +240,8 @@ const Home = () => {
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                 style={{ backgroundImage: `url(${movie.backdrop})` }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-dark-bg via-dark-bg/70 to-transparent"></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-dark-bg via-transparent to-dark-bg/40"></div>
+                <div className="absolute inset-0 bg-linear-to-r from-dark-bg via-dark-bg/70 to-transparent"></div>
+                <div className="absolute inset-0 bg-linear-to-t from-dark-bg via-transparent to-dark-bg/40"></div>
               </div>
               
               <div className="relative h-full max-w-7xl mx-auto px-6 flex items-center">
@@ -261,7 +262,7 @@ const Home = () => {
                   <div className="flex items-center gap-4 flex-wrap">
                     <button 
                       onClick={() => navigate(`/movie/${movie.id}`)}
-                      className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg shadow-cyan-500/30 cursor-pointer active:scale-95"
+                      className="bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg shadow-cyan-500/30 cursor-pointer active:scale-95"
                     >
                       View Details
                     </button>
@@ -283,7 +284,7 @@ const Home = () => {
                 onClick={() => goToSlide(i)}
                 className={`transition-all rounded-full cursor-pointer ${
                   i === currentSlide 
-                    ? 'w-10 h-3 bg-gradient-to-r from-cyan-400 to-cyan-500 shadow-lg shadow-cyan-500/40' 
+                    ? 'w-10 h-3 bg-linear-to-r from-cyan-400 to-cyan-500 shadow-lg shadow-cyan-500/40' 
                     : 'w-3 h-3 bg-white/20 hover:bg-white/40'
                 }`}
               />
@@ -312,6 +313,9 @@ const Home = () => {
             </div>
           </section>
         )}
+
+        {/* ========== TRENDING DISCUSSIONS ========== */}
+        <TrendingDiscussions />
         
         {/* ========== NEPALI MOVIES ========== */}
         {nepaliMovies.length > 0 && (
@@ -371,7 +375,7 @@ const Home = () => {
             <p className="text-slate-400 text-sm mb-8 max-w-md mx-auto">Explore thousands of movies from around the world. From Hollywood blockbusters to regional cinema.</p>
             <button 
               onClick={() => navigate('/movies')}
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-4 px-12 rounded-full text-lg transition-all shadow-xl shadow-cyan-500/20 cursor-pointer active:scale-95"
+              className="bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-4 px-12 rounded-full text-lg transition-all shadow-xl shadow-cyan-500/20 cursor-pointer active:scale-95"
             >
               Browse All Movies
             </button>

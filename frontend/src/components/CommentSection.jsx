@@ -44,6 +44,8 @@ const timeAgo = (date) => {
 const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, depth = 0 }) => {
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState('');
+  const [replyImage, setReplyImage] = useState(null);
+  const [replyImagePreview, setReplyImagePreview] = useState(null);
   const [replying, setReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
@@ -52,6 +54,7 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showSpoiler, setShowSpoiler] = useState(false);
   const replyInputRef = useRef(null);
+  const replyFileRef = useRef(null);
 
   const isOwner = user && comment.user?._id === user._id;
   const isAdmin = user?.role === 'admin';
@@ -85,12 +88,22 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
     });
   };
 
+  const handleReplyImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setReplyImage(file);
+      setReplyImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleReply = async () => {
     if (!replyText.trim()) return;
     setReplying(true);
     try {
-      await onReply(comment._id, replyText.trim());
+      await onReply(comment._id, replyText.trim(), replyImage);
       setReplyText('');
+      setReplyImage(null);
+      setReplyImagePreview(null);
       setShowReplyBox(false);
     } finally {
       setReplying(false);
@@ -205,9 +218,21 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-slate-300 mt-1 leading-relaxed whitespace-pre-wrap wrap-break-word">
-                {renderText(comment.text)}
-              </p>
+              <>
+                <p className="text-sm text-slate-300 mt-1 leading-relaxed whitespace-pre-wrap wrap-break-word">
+                  {renderText(comment.text)}
+                </p>
+                {comment.imageUrl && (
+                  <div className="mt-2">
+                    <img
+                      src={comment.imageUrl}
+                      alt="Comment attachment"
+                      className="max-w-xs max-h-64 rounded-lg border border-slate-700/50 cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => window.open(comment.imageUrl, '_blank')}
+                    />
+                  </div>
+                )}
+              </>
             )}
 
             {/* Action Bar */}
@@ -295,24 +320,40 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
 
             {/* Reply Input */}
             {showReplyBox && (
-              <div className="mt-3 flex gap-2">
-                <input
-                  ref={replyInputRef}
-                  type="text"
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleReply()}
-                  placeholder={`Reply to ${comment.user?.name}...`}
-                  className="flex-1 bg-slate-800/80 border border-slate-700/60 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/40 focus:border-cyan-500/40"
-                  maxLength={2000}
-                />
-                <button
-                  onClick={handleReply}
-                  disabled={replying || !replyText.trim()}
-                  className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors shrink-0"
-                >
-                  {replying ? '...' : 'Reply'}
-                </button>
+              <div className="mt-3 space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    ref={replyInputRef}
+                    type="text"
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleReply()}
+                    placeholder={`Reply to ${comment.user?.name}...`}
+                    className="flex-1 bg-slate-800/80 border border-slate-700/60 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/40 focus:border-cyan-500/40"
+                    maxLength={2000}
+                  />
+                  <button
+                    onClick={() => replyFileRef.current?.click()}
+                    className="text-slate-500 hover:text-cyan-400 px-2 transition-colors"
+                    title="Attach image"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  </button>
+                  <input ref={replyFileRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleReplyImageChange} />
+                  <button
+                    onClick={handleReply}
+                    disabled={replying || !replyText.trim()}
+                    className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors shrink-0"
+                  >
+                    {replying ? '...' : 'Reply'}
+                  </button>
+                </div>
+                {replyImagePreview && (
+                  <div className="relative inline-block">
+                    <img src={replyImagePreview} alt="Preview" className="max-h-24 rounded-lg border border-slate-700" />
+                    <button onClick={() => { setReplyImage(null); setReplyImagePreview(null); }} className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-400">×</button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -377,10 +418,13 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [newComment, setNewComment] = useState('');
+  const [commentImage, setCommentImage] = useState(null);
+  const [commentImagePreview, setCommentImagePreview] = useState(null);
   const [posting, setPosting] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [charCount, setCharCount] = useState(0);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
 
 
   const fetchComments = async () => {
@@ -433,13 +477,28 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
   const totalCount = countAll(comments);
 
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setCommentImage(file);
+      setCommentImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeImage = () => {
+    setCommentImage(null);
+    setCommentImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handlePost = async () => {
     if (!newComment.trim()) return;
     setPosting(true);
     try {
-      await createComment({ contentId, contentType, text: newComment.trim() });
+      await createComment({ contentId, contentType, text: newComment.trim(), image: commentImage });
       setNewComment('');
       setCharCount(0);
+      removeImage();
       await fetchComments();
     } catch (err) {
       console.error('Failed to post comment:', err);
@@ -449,8 +508,8 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
   };
 
 
-  const handleReply = async (parentId, text) => {
-    await replyToComment(parentId, text);
+  const handleReply = async (parentId, text, image) => {
+    await replyToComment(parentId, text, image);
     await fetchComments();
   };
 
@@ -553,8 +612,25 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
                 }}
               />
 
+              {/* Image Preview */}
+              {commentImagePreview && (
+                <div className="mt-2 relative inline-block">
+                  <img src={commentImagePreview} alt="Preview" className="max-h-32 rounded-lg border border-slate-700" />
+                  <button onClick={removeImage} className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-400">×</button>
+                </div>
+              )}
+
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-slate-500 hover:text-cyan-400 transition-colors flex items-center gap-1 text-[11px]"
+                    title="Attach image"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    Image
+                  </button>
+                  <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleImageChange} />
                   <p className="text-[11px] text-slate-600">
                     Ctrl+Enter to post • Use ||text|| for spoilers
                   </p>

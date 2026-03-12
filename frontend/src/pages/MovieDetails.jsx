@@ -476,6 +476,14 @@ const MovieDetails = () => {
                   )}
                 </button>
 
+                {/* Discussion Button */}
+                <button 
+                  onClick={() => navigate(`/discussion/${mediaType}/${id}`)}
+                  className="bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-5 rounded-full transition-all text-sm border border-slate-700 cursor-pointer flex items-center gap-2"
+                >
+                  💬 Discussion
+                </button>
+
                 <button 
                   onClick={() => navigate(-1)}
                   className="bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-5 rounded-full transition-all text-sm border border-slate-700 cursor-pointer"

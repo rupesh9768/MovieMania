@@ -24,6 +24,7 @@ import Booking from './pages/Booking';
 import Theater from './pages/Theater';
 import TheaterDetails from './pages/TheaterDetails';
 import Profile from './pages/Profile';
+import Discussion from './pages/Discussion';
 
 // Import Components (used as pages)
 import ShowtimeSelection from './components/ShowtimeSelection';
@@ -78,6 +79,9 @@ function App() {
               {/* Legacy routes for backwards compatibility */}
               <Route path="/movie/:id" element={<MovieDetails />} />
               <Route path="/tv/:id" element={<MovieDetails />} />
+              
+              {/* Discussion Route */}
+              <Route path="/discussion/:type/:id" element={<Discussion />} />
               
               {/* Booking Flow Routes (Protected) */}
               {/* TODO: Add booking ownership validation */}
