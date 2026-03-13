@@ -21,6 +21,7 @@ import Watchlist from './pages/Watchlist';
 import Favorites from './pages/Favorites';
 import AdminDashboard from './pages/AdminDashboard';
 import Booking from './pages/Booking';
+import BookingHistory from './pages/BookingHistory';
 import Theater from './pages/Theater';
 import TheaterDetails from './pages/TheaterDetails';
 import Profile from './pages/Profile';
@@ -102,6 +103,9 @@ function App() {
               {/* Profile Routes */}
               <Route path="/profile" element={
                 <ProtectedRoute><Profile /></ProtectedRoute>
+              } />
+              <Route path="/booking-history" element={
+                <ProtectedRoute><BookingHistory /></ProtectedRoute>
               } />
               <Route path="/profile/:userId" element={<Profile />} />
               

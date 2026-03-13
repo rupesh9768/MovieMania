@@ -104,7 +104,7 @@ const Profile = () => {
     };
 
     fetchProfile();
-  }, [viewingUserId, isAuthenticated]);
+  }, [viewingUserId, isAuthenticated, navigate]);
 
 
   useEffect(() => {
@@ -584,6 +584,17 @@ const Profile = () => {
         )}
 
         {/* Tabs */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          {isOwnProfile ? (
+            <button
+              onClick={() => navigate('/booking-history')}
+              className="bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 text-cyan-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all"
+            >
+              Booking History
+            </button>
+          ) : <span />}
+        </div>
+
         <div className="flex items-center gap-1 mb-6 border-b border-slate-800/50">
           <button
             onClick={() => setActiveTab('favorites')}

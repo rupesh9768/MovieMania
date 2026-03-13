@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMyBookings, cancelBooking } from '../api/bookingService';
-import { AuthContext } from '../context/AuthContext';
+import { getBookingsByUserId, cancelBooking } from '../api/bookingService';
+import { useAuth } from '../context/AuthContext';
+
+const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
 // Booking history page — fetches real data from backend
 const BookingHistory = () => {
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,7 +21,8 @@ const BookingHistory = () => {
         return;
       }
       try {
-        const data = await getMyBookings();
+        const userId = user._id || user.id;
+        const data = await getBookingsByUserId(userId);
         setBookings(data);
       } catch (err) {
         console.error('Failed to load bookings:', err);
@@ -45,14 +48,34 @@ const BookingHistory = () => {
   };
 
   const statusColor = (status) => {
-    if (status === 'confirmed') return 'text-green-400 bg-green-500/10 border-green-500/30';
+    if (status === 'reserved') return 'text-cyan-300 bg-cyan-500/10 border-cyan-500/30';
+    if (status === 'booked') return 'text-green-400 bg-green-500/10 border-green-500/30';
     if (status === 'cancelled') return 'text-red-400 bg-red-500/10 border-red-500/30';
-    return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
+    return 'text-amber-400 bg-amber-500/10 border-amber-500/30';
+  };
+
+  const formatShowtime = (date, time) => {
+    const parsedDate = new Date(date);
+    const dateLabel = Number.isNaN(parsedDate.getTime())
+      ? (date || '-')
+      : parsedDate.toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
+        });
+
+    return `${dateLabel} • ${time || '-'}`;
+  };
+
+  const getPosterUrl = (poster) => {
+    if (!poster) return '';
+    if (poster.startsWith('http')) return poster;
+    return `${TMDB_IMAGE_BASE}${poster}`;
   };
 
   return (
     <div className="min-h-screen bg-dark-bg text-white">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
           <button 
@@ -118,47 +141,57 @@ const BookingHistory = () => {
             {bookings.map((booking) => (
               <div 
                 key={booking._id} 
-                className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition-all"
+                className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 hover:border-cyan-500/30 transition-all shadow-lg"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   {/* Left: Movie info */}
-                  <div className="flex-1">
+                  <div className="flex-1 flex gap-4">
+                    <div className="shrink-0">
+                      {booking.moviePoster ? (
+                        <img
+                          src={getPosterUrl(booking.moviePoster)}
+                          alt={booking.movieTitle}
+                          className="w-20 h-28 object-cover rounded-xl border border-slate-700 shadow-md"
+                        />
+                      ) : (
+                        <div className="w-20 h-28 rounded-xl border border-slate-700 bg-slate-800" />
+                      )}
+                    </div>
+
+                    <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-bold text-white">{booking.movieTitle}</h3>
+                      <h3 className="text-xl font-black text-white">{booking.movieTitle}</h3>
                       <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold capitalize ${statusColor(booking.status)}`}>
                         {booking.status}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-slate-400">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-slate-400">
                       <div>
                         <span className="text-slate-500 block text-xs">Hall</span>
                         {booking.hall}
                       </div>
                       <div>
-                        <span className="text-slate-500 block text-xs">Date</span>
-                        {booking.date}
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-xs">Time</span>
-                        {booking.time}
+                        <span className="text-slate-500 block text-xs">Showtime</span>
+                        {formatShowtime(booking.date, booking.time)}
                       </div>
                       <div>
                         <span className="text-slate-500 block text-xs">Seats</span>
                         <span className="text-cyan-400">{booking.seats?.sort().join(', ')}</span>
                       </div>
                     </div>
+                    </div>
                   </div>
 
                   {/* Right: Price & Actions */}
                   <div className="text-right flex sm:flex-col items-center sm:items-end gap-3">
-                    <span className="text-xl font-black text-green-400">NPR {booking.totalPrice}</span>
-                    {booking.status === 'confirmed' && (
+                    <span className="text-2xl font-black text-green-400">NPR {booking.totalPrice}</span>
+                    {(booking.status === 'booked' || booking.status === 'reserved') && booking.canCancel && (
                       <button
                         onClick={() => handleCancel(booking._id)}
                         disabled={cancellingId === booking._id}
-                        className="text-xs text-red-400 hover:text-red-300 border border-red-500/30 px-3 py-1 rounded-full hover:bg-red-500/10 transition-all disabled:opacity-50"
+                        className="text-xs text-red-300 border border-red-500/40 px-4 py-2 rounded-full bg-red-500/10 hover:bg-red-500/20 transition-all disabled:opacity-50"
                       >
-                        {cancellingId === booking._id ? 'Cancelling...' : 'Cancel'}
+                        {cancellingId === booking._id ? 'Cancelling...' : booking.status === 'reserved' ? 'Cancel Reservation' : 'Cancel Booking'}
                       </button>
                     )}
                   </div>

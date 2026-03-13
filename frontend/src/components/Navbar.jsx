@@ -26,7 +26,7 @@ const Navbar = () => {
 
   const isActive = (path) => location.pathname === path;
   const isBrowseActive = ['/browse', '/movies', '/tvshows', '/animations', '/anime'].includes(location.pathname);
-  const isProfileActive = ['/history', '/profile', '/watchlist', '/favorites'].includes(location.pathname) || location.pathname.startsWith('/profile');
+  const isProfileActive = ['/booking-history', '/profile', '/watchlist', '/favorites'].includes(location.pathname) || location.pathname.startsWith('/profile');
   const isUpcomingActive = location.pathname === '/upcoming';
 
   // Close dropdown when clicking outside
@@ -278,9 +278,9 @@ const Navbar = () => {
                       </Link>
                       
                       <Link
-                        to="/history"
+                        to="/booking-history"
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
-                          isActive('/history')
+                          isActive('/booking-history')
                             ? 'bg-cyan-500/15 text-cyan-400'
                             : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
                         }`}
@@ -476,10 +476,10 @@ const Navbar = () => {
                   </li>
                   
                   <li>
-                    <Link 
-                      to="/history"
+                    <Link
+                      to="/booking-history"
                       className={`block py-2 px-4 rounded-lg transition-colors ${
-                        isActive('/history') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                        isActive('/booking-history') ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
                       Booking History

@@ -478,7 +478,7 @@ const Browse = () => {
                           {item.mediaType === 'movie' ? 'Movie' : 'TV'}
                         </div>
                         
-                        {/* Bottom Info */}}
+                        {/* Bottom Info */}
                         <div className="absolute bottom-0 left-0 right-0 p-3">
                           <p className="text-white font-semibold text-sm truncate">{item.title}</p>
                           {item.year && <p className="text-slate-400 text-xs">{item.year}</p>}

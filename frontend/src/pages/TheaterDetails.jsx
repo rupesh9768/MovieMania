@@ -73,9 +73,10 @@ const TheaterDetails = () => {
     }
     
     const selected = filteredShowtimes[selectedTime];
-    navigate(`/booking/${id}`, {
+    navigate(`/seat-selection/${id}/${selected._id}`, {
       state: {
-        movie,
+        movieTitle: movie.title,
+        moviePoster: movie.poster,
         date: dates[selectedDate].toISOString(),
         time: selected.time,
         hall: selected.hall,

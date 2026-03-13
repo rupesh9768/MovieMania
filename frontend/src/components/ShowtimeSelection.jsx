@@ -63,6 +63,7 @@ const ShowtimeSelection = () => {
       navigate(`/seat-selection/${movieId}/${selectedShowtime}`, { 
         state: { 
           movieTitle: movie?.title || "Movie",
+          moviePoster: movie?.poster || '',
           time: selectedHall.time,
           hall: selectedHall.hall,
           price: selectedHall.price,
@@ -109,7 +110,7 @@ const ShowtimeSelection = () => {
               <button 
                 key={index}
                 onClick={() => { setSelectedDate(index); setSelectedShowtime(null); }}
-                className={`flex flex-col items-center min-w-[70px] py-3 px-4 rounded-xl transition-all ${
+                className={`flex flex-col items-center min-w-17.5 py-3 px-4 rounded-xl transition-all ${
                   selectedDate === index 
                     ? 'bg-cyan-500 text-black' 
                     : 'bg-slate-900 border border-slate-800 hover:border-slate-600'
@@ -142,10 +143,10 @@ const ShowtimeSelection = () => {
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
-                    <div className="text-center min-w-[80px]">
+                    <div className="text-center min-w-20">
                       <p className="text-2xl font-black">{show.time}</p>
                     </div>
-                    <div className="h-12 w-[1px] bg-slate-700"></div>
+                    <div className="h-12 w-px bg-slate-700"></div>
                     <div>
                       <h4 className={`font-bold ${selectedShowtime === show._id ? 'text-cyan-400' : 'text-white'}`}>
                         {show.hall}

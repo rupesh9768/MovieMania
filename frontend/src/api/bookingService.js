@@ -14,6 +14,31 @@ export const createBooking = async (bookingData) => {
 };
 
 /**
+ * Reserve seats for 5 minutes
+ * POST /api/bookings/reserve
+ * @param {Object} bookingData
+ * @returns {Promise} - Reserved booking
+ */
+export const reserveBooking = async (bookingData) => {
+  const response = await api.post('/bookings/reserve', bookingData);
+  if (response.data?.success) return response.data.data;
+  throw new Error(response.data?.message || 'Failed to reserve seats');
+};
+
+/**
+ * Confirm reserved booking
+ * PATCH /api/bookings/:id/confirm
+ * @param {string} bookingId
+ * @param {Object} data
+ * @returns {Promise}
+ */
+export const confirmBooking = async (bookingId, data = {}) => {
+  const response = await api.patch(`/bookings/${bookingId}/confirm`, data);
+  if (response.data?.success) return response.data.data;
+  throw new Error(response.data?.message || 'Failed to confirm booking');
+};
+
+/**
  * Get booked seats for a specific movie showtime
  * GET /api/bookings/seats?movieId=xxx&showtimeId=yyy
  * @param {string} movieId
@@ -24,8 +49,14 @@ export const getBookedSeats = async (movieId, showtimeId) => {
   const response = await api.get('/bookings/seats', {
     params: { movieId, showtimeId }
   });
-  if (response.data?.success) return response.data.data;
-  return [];
+  if (response.data?.success) {
+    return {
+      allSeats: response.data.data || [],
+      bookedSeats: response.data.bookedSeats || [],
+      reservedSeats: response.data.reservedSeats || []
+    };
+  }
+  return { allSeats: [], bookedSeats: [], reservedSeats: [] };
 };
 
 /**
@@ -35,6 +66,18 @@ export const getBookedSeats = async (movieId, showtimeId) => {
  */
 export const getMyBookings = async () => {
   const response = await api.get('/bookings/my');
+  if (response.data?.success) return response.data.data;
+  return [];
+};
+
+/**
+ * Get bookings by user ID
+ * GET /api/bookings/user/:userId
+ * @param {string} userId
+ * @returns {Promise}
+ */
+export const getBookingsByUserId = async (userId) => {
+  const response = await api.get(`/bookings/user/${userId}`);
   if (response.data?.success) return response.data.data;
   return [];
 };
@@ -58,7 +101,7 @@ export const getBookingById = async (bookingId) => {
  * @returns {Promise} - Cancellation result
  */
 export const cancelBooking = async (bookingId) => {
-  const response = await api.patch(`/bookings/${bookingId}/cancel`);
+  const response = await api.delete(`/bookings/${bookingId}`);
   if (response.data?.success) return response.data.data;
   throw new Error(response.data?.message || 'Failed to cancel booking');
 };
@@ -66,8 +109,11 @@ export const cancelBooking = async (bookingId) => {
 // Export all functions as default object
 export default {
   createBooking,
+  reserveBooking,
+  confirmBooking,
   getBookedSeats,
   getMyBookings,
+  getBookingsByUserId,
   getBookingById,
   cancelBooking
 };
