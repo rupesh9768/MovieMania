@@ -267,16 +267,14 @@ const Upcoming = () => {
             <button
               key={lang.key}
               onClick={() => { setSelectedLanguage(lang.key); setDisplayCount(30); }}
-              className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+              className={`option-chip px-5 py-2.5 text-sm font-semibold cursor-pointer flex items-center gap-2 ${
                 selectedLanguage === lang.key
-                  ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/30'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                  ? 'option-chip-active'
+                  : ''
               }`}
             >
               {lang.label}
-              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                selectedLanguage === lang.key ? 'bg-white/20' : 'bg-slate-700'
-              }`}>
+              <span className="option-chip-count">
                 {languageCounts[lang.key] || 0}
               </span>
             </button>
@@ -296,10 +294,10 @@ const Upcoming = () => {
               <button
                 key={filter.key}
                 onClick={() => { setSelectedFilter(filter.key); setDisplayCount(30); }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                className={`option-chip px-4 py-2 text-sm font-medium cursor-pointer ${
                   selectedFilter === filter.key
-                    ? filter.key === 'interested' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40' : 'bg-slate-700 text-white'
-                    : 'text-slate-500 hover:text-white hover:bg-slate-800'
+                    ? filter.key === 'interested' ? 'option-chip-accent' : 'option-chip-active'
+                    : ''
                 }`}
               >
                 {filter.label}
@@ -315,7 +313,7 @@ const Upcoming = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+              className="bg-[#181818] border border-[#2a2a2a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#4a4a4a] cursor-pointer"
             >
               <option value="popularity">Most Popular</option>
               <option value="date">Release Date</option>

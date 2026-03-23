@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { getBackendMovieById } from '../api/backendService';
 import { 
   checkItemInLists, 
   addToWatchlist, 
@@ -24,9 +25,11 @@ const MovieDetails = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const isBackendMovieRoute = location.pathname.startsWith('/movie/backend/');
   
   // Determine media type from URL
   const getMediaType = () => {
+    if (isBackendMovieRoute) return 'movie';
     if (routeMediaType) return routeMediaType;
     if (location.pathname.startsWith('/tv/')) return 'tv';
     if (location.pathname.startsWith('/anime/')) return 'anime';
@@ -135,6 +138,31 @@ const MovieDetails = () => {
       setLoading(true);
       
       try {
+        // ========== BACKEND MOVIE (MongoDB API) ==========
+        if (isBackendMovieRoute) {
+          const backendMovie = await getBackendMovieById(id);
+          if (!backendMovie) throw new Error('Backend movie not found');
+
+          setItem({
+            ...backendMovie,
+            id: backendMovie._id || backendMovie.id,
+            mediaType: 'movie',
+            isBackend: true,
+            isAnime: false,
+            isAnimation: false,
+            voteCount: backendMovie.rating || 0,
+            status: backendMovie.bookingEnabled ? 'Now Showing' : 'Coming Soon',
+            genres: (backendMovie.genres || []).map((genre) =>
+              typeof genre === 'string' ? { id: genre, name: genre } : genre
+            )
+          });
+          setCast([]);
+          setTrailer(null);
+          setWatchProviders(null);
+          setLoading(false);
+          return;
+        }
+
         // ========== ANIME (Jikan API) ==========
         if (mediaType === 'anime') {
           const [animeRes, charsRes] = await Promise.all([
@@ -258,7 +286,7 @@ const MovieDetails = () => {
     };
     
     fetchData();
-  }, [id, mediaType]);
+  }, [id, mediaType, isBackendMovieRoute]);
 
   const formatRuntime = (mins) => {
     if (!mins) return 'N/A';
@@ -320,11 +348,11 @@ const MovieDetails = () => {
     );
   }
 
-  const posterUrl = item.isAnime 
+  const posterUrl = item.isAnime || item.isBackend
     ? item.poster 
     : item.poster ? `${IMG_BASE}${item.poster}` : null;
   
-  const backdropUrl = item.isAnime 
+  const backdropUrl = item.isAnime || item.isBackend
     ? item.backdrop 
     : item.backdrop ? `${BACKDROP_BASE}${item.backdrop}` : null;
 

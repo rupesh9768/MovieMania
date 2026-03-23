@@ -57,14 +57,14 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-[#0a0f1a] border-b border-slate-800/50 sticky top-0 z-50 shadow-lg shadow-black/20">
+    <nav className="bg-dark-bg border-b border-[#2a2a2a] sticky top-0 z-50 shadow-lg shadow-black/30">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <span className="text-2xl font-black tracking-tighter">
-              MOVIE<span className="text-cyan-400">MANIA</span>
+              MOVIE<span className="text-[#E50914]">MANIA</span>
             </span>
           </Link>
           
@@ -73,8 +73,8 @@ const Navbar = () => {
             <li>
               <Link 
                 to="/" 
-                className={`text-sm font-medium transition-colors ${
-                  isActive('/') ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
+                className={`cinema-nav-link text-sm font-medium transition-colors ${
+                  isActive('/') ? 'is-active' : ''
                 }`}
               >
                 Home
@@ -85,8 +85,8 @@ const Navbar = () => {
             <li>
               <Link 
                 to="/upcoming" 
-                className={`text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  isUpcomingActive ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
+                className={`cinema-nav-link text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  isUpcomingActive ? 'is-active' : ''
                 }`}
               >
                 Upcoming
@@ -97,8 +97,8 @@ const Navbar = () => {
             <li className="relative" ref={browseRef}>
               <button 
                 onClick={() => setBrowseOpen(!browseOpen)}
-                className={`text-sm font-medium transition-colors flex items-center gap-1 ${
-                  isBrowseActive ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
+                className={`cinema-nav-link text-sm font-medium transition-colors flex items-center gap-1 ${
+                  isBrowseActive ? 'is-active' : ''
                 }`}
               >
                 Browse
@@ -109,61 +109,73 @@ const Navbar = () => {
               
               {/* Dropdown Overlay Box */}
               {browseOpen && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl shadow-black/50 p-4 min-w-90">
+                <div className="cinema-dropdown absolute top-full left-1/2 -translate-x-1/2 mt-5 p-4 min-w-90 z-40">
                   {/* Arrow */}
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-[#111827] border-l border-t border-slate-700 transform rotate-45"></div>
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-card-bg border-l border-t border-[#2a2a2a] transform rotate-45"></div>
                   
                   {/* Browse Options - Horizontal Layout */}
                   <div className="flex gap-3">
                     <button
                       onClick={() => handleBrowseItemClick('/movies')}
-                      className={`flex-1 px-4 py-4 rounded-xl text-center transition-all duration-200 ${
+                      className={`cinema-browse-item flex-1 px-4 py-4 text-left transition-all duration-150 ${
                         isActive('/movies')
-                          ? 'bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/40'
-                          : 'bg-slate-800/40 text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                          ? 'bg-[#242424] text-white'
+                          : ''
                       }`}
                     >
-                      <span className="text-sm font-medium">Movies</span>
+                      <span className="flex items-center gap-3">
+                        <span className="cinema-badge">M</span>
+                        <span className="text-sm font-medium">Movies</span>
+                      </span>
                     </button>
                     
                     <button
                       onClick={() => handleBrowseItemClick('/tvshows')}
-                      className={`flex-1 px-4 py-4 rounded-xl text-center transition-all duration-200 ${
+                      className={`cinema-browse-item flex-1 px-4 py-4 text-left transition-all duration-150 ${
                         isActive('/tvshows')
-                          ? 'bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/40'
-                          : 'bg-slate-800/40 text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                          ? 'bg-[#242424] text-white'
+                          : ''
                       }`}
                     >
-                      <span className="text-sm font-medium">TV Shows</span>
+                      <span className="flex items-center gap-3">
+                        <span className="cinema-badge">TV</span>
+                        <span className="text-sm font-medium">TV Shows</span>
+                      </span>
                     </button>
                     
                     <button
                       onClick={() => handleBrowseItemClick('/anime')}
-                      className={`flex-1 px-4 py-4 rounded-xl text-center transition-all duration-200 ${
+                      className={`cinema-browse-item flex-1 px-4 py-4 text-left transition-all duration-150 ${
                         isActive('/anime')
-                          ? 'bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/40'
-                          : 'bg-slate-800/40 text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                          ? 'bg-[#242424] text-white'
+                          : ''
                       }`}
                     >
-                      <span className="text-sm font-medium">Anime</span>
+                      <span className="flex items-center gap-3">
+                        <span className="cinema-badge">A</span>
+                        <span className="text-sm font-medium">Anime</span>
+                      </span>
                     </button>
                     
                     <button
                       onClick={() => handleBrowseItemClick('/animations')}
-                      className={`flex-1 px-4 py-4 rounded-xl text-center transition-all duration-200 ${
+                      className={`cinema-browse-item flex-1 px-4 py-4 text-left transition-all duration-150 ${
                         isActive('/animations')
-                          ? 'bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/40'
-                          : 'bg-slate-800/40 text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                          ? 'bg-[#242424] text-white'
+                          : ''
                       }`}
                     >
-                      <span className="text-sm font-medium">Animations</span>
+                      <span className="flex items-center gap-3">
+                        <span className="cinema-badge">AN</span>
+                        <span className="text-sm font-medium">Animations</span>
+                      </span>
                     </button>
                   </div>
                   
                   {/* Browse All Link */}
                   <button
                     onClick={() => handleBrowseItemClick('/browse')}
-                    className="w-full mt-4 py-2.5 text-center text-sm font-semibold bg-slate-800/80 hover:bg-cyan-500/20 text-cyan-400 hover:text-cyan-300 transition-all rounded-lg border border-slate-700/50"
+                    className="w-full mt-4 py-2.5 text-center text-sm font-semibold bg-transparent text-[#b3b3b3] transition-all rounded-lg border border-[#2a2a2a] hover:bg-[#242424] hover:text-white"
                   >
                     Browse All
                   </button>
@@ -174,8 +186,8 @@ const Navbar = () => {
             <li>
               <Link 
                 to="/theater" 
-                className={`text-sm font-medium transition-colors flex items-center gap-1 ${
-                  isActive('/theater') ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
+                className={`cinema-nav-link text-sm font-medium transition-colors flex items-center gap-1 ${
+                  isActive('/theater') ? 'is-active' : ''
                 }`}
               >
                 Theater
@@ -187,8 +199,8 @@ const Navbar = () => {
               <li>
                 <Link 
                   to="/admin" 
-                  className={`text-sm font-medium transition-colors ${
-                    isActive('/admin') ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
+                  className={`cinema-nav-link text-sm font-medium transition-colors ${
+                    isActive('/admin') ? 'is-active' : ''
                   }`}
                 >
                   Admin
@@ -205,13 +217,13 @@ const Navbar = () => {
                 <button 
                   onClick={() => setProfileOpen(!profileOpen)}
                   className={`flex items-center gap-2 text-sm font-medium transition-colors cursor-pointer ${
-                    isProfileActive ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
+                    isProfileActive ? 'text-white' : 'text-[#b3b3b3] hover:text-white'
                   }`}
                 >
                   {user?.avatar ? (
                     <img src={getAvatarUrl(user.avatar)} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-600" />
                   ) : (
-                    <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                    <div className="w-8 h-8 bg-[#242424] rounded-full flex items-center justify-center text-white font-bold text-xs border border-[#2a2a2a]">
                       {user?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                   )}
@@ -222,16 +234,16 @@ const Navbar = () => {
                 </button>
                 
                 {profileOpen && (
-                  <div className="absolute top-full right-0 mt-3 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl shadow-black/50 p-3 min-w-50">
+                  <div className="absolute top-full right-0 mt-3 bg-card-bg border border-[#2a2a2a] rounded-xl shadow-2xl shadow-black/35 p-3 min-w-50">
                     {/* Arrow */}
-                    <div className="absolute -top-2 right-4 w-4 h-4 bg-[#111827] border-l border-t border-slate-700 transform rotate-45"></div>
+                    <div className="absolute -top-2 right-4 w-4 h-4 bg-card-bg border-l border-t border-[#2a2a2a] transform rotate-45"></div>
                     
                     {/* User Info */}
-                    <div className="px-3 py-2 mb-2 border-b border-slate-700/50">
+                    <div className="px-3 py-2 mb-2 border-b border-[#2a2a2a]">
                       <p className="text-sm font-medium text-white truncate">{user?.name}</p>
-                      <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                      <p className="text-xs text-[#b3b3b3] truncate">{user?.email}</p>
                       {isAdmin && (
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-cyan-500/20 text-cyan-400 text-xs font-bold rounded-full">
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-[#242424] text-white text-xs font-bold rounded-full border border-[#2a2a2a]">
                           Admin
                         </span>
                       )}
@@ -242,8 +254,8 @@ const Navbar = () => {
                         to="/profile"
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
                           isActive('/profile')
-                            ? 'bg-cyan-500/15 text-cyan-400'
-                            : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                            ? 'bg-[#242424] text-white'
+                            : 'text-[#b3b3b3] hover:bg-[#242424] hover:text-white'
                         }`}
                         onClick={() => setProfileOpen(false)}
                       >
@@ -255,8 +267,8 @@ const Navbar = () => {
                         to="/watchlist"
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
                           isActive('/watchlist')
-                            ? 'bg-cyan-500/15 text-cyan-400'
-                            : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                            ? 'bg-[#242424] text-white'
+                            : 'text-[#b3b3b3] hover:bg-[#242424] hover:text-white'
                         }`}
                         onClick={() => setProfileOpen(false)}
                       >
@@ -268,8 +280,8 @@ const Navbar = () => {
                         to="/favorites"
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
                           isActive('/favorites')
-                            ? 'bg-cyan-500/15 text-cyan-400'
-                            : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                            ? 'bg-[#242424] text-white'
+                            : 'text-[#b3b3b3] hover:bg-[#242424] hover:text-white'
                         }`}
                         onClick={() => setProfileOpen(false)}
                       >
@@ -281,8 +293,8 @@ const Navbar = () => {
                         to="/booking-history"
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
                           isActive('/booking-history')
-                            ? 'bg-cyan-500/15 text-cyan-400'
-                            : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                            ? 'bg-[#242424] text-white'
+                            : 'text-[#b3b3b3] hover:bg-[#242424] hover:text-white'
                         }`}
                         onClick={() => setProfileOpen(false)}
                       >
@@ -296,8 +308,8 @@ const Navbar = () => {
                           to="/admin"
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
                             isActive('/admin')
-                              ? 'bg-cyan-500/15 text-cyan-400'
-                              : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                              ? 'bg-[#242424] text-white'
+                              : 'text-[#b3b3b3] hover:bg-[#242424] hover:text-white'
                           }`}
                           onClick={() => setProfileOpen(false)}
                         >
@@ -306,7 +318,7 @@ const Navbar = () => {
                         </Link>
                       )}
                       
-                      <div className="border-t border-slate-700 my-2"></div>
+                      <div className="border-t border-[#2a2a2a] my-2"></div>
                       
                       <button
                         onClick={() => {
@@ -328,13 +340,13 @@ const Navbar = () => {
               <div className="flex items-center gap-3">
                 <Link
                   to="/login"
-                  className="text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                  className="text-sm font-medium text-[#b3b3b3] hover:text-white transition-colors"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="text-sm font-bold bg-cyan-500 hover:bg-cyan-400 text-black px-4 py-2 rounded-lg transition-all"
+                  className="text-sm font-bold bg-[#E50914] hover:bg-[#c40812] text-white px-4 py-2 rounded-lg transition-all"
                 >
                   Sign Up
                 </Link>

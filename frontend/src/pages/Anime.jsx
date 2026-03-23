@@ -190,10 +190,10 @@ const Anime = () => {
                     <button
                       key={type.id}
                       onClick={() => setSelectedType(type.id)}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium text-left transition-all ${
+                       className={`option-chip w-full px-3 py-2 rounded-xl text-xs font-medium text-left ${
                         selectedType === type.id 
-                          ? 'bg-cyan-500 text-black' 
-                          : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+                           ? 'option-chip-active'
+                           : ''
                       }`}
                     >
                       {type.name}
@@ -211,10 +211,10 @@ const Anime = () => {
                       <button
                         key={genre.id}
                         onClick={() => setSelectedGenre(selectedGenre === genre.id ? null : genre.id)}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium text-left transition-all ${
+                         className={`option-chip w-full px-3 py-2 rounded-xl text-xs font-medium text-left ${
                           selectedGenre === genre.id 
-                            ? 'bg-cyan-500 text-black' 
-                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+                             ? 'option-chip-active'
+                             : ''
                         }`}
                       >
                         {genre.name}

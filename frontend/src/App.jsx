@@ -77,6 +77,7 @@ function App() {
               
               {/* Unified details route: /details/:mediaType/:id */}
               <Route path="/details/:mediaType/:id" element={<MovieDetails />} />
+              <Route path="/movie/backend/:id" element={<MovieDetails />} />
               {/* Legacy routes for backwards compatibility */}
               <Route path="/movie/:id" element={<MovieDetails />} />
               <Route path="/tv/:id" element={<MovieDetails />} />

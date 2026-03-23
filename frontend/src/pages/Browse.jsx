@@ -278,15 +278,15 @@ const Browse = () => {
               {/* Content Type Tabs */}
               <div>
                 <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Content Type</label>
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-1.5 flex gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {CONTENT_TYPES.map(type => (
                     <button
                       key={type.id}
                       onClick={() => setContentType(type.id)}
-                      className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
+                      className={`option-chip flex-1 min-w-[64px] py-2 px-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 ${
                         contentType === type.id
-                          ? 'bg-cyan-500 text-black shadow-lg'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                          ? 'option-chip-active'
+                          : ''
                       }`}
                     >
                       <span className="hidden sm:inline">{type.name}</span>
@@ -307,10 +307,10 @@ const Browse = () => {
                       <button
                         key={genre.id}
                         onClick={() => setSelectedGenre(selectedGenre === genre.id ? null : genre.id)}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
+                        className={`option-chip px-2.5 py-1 rounded-full text-[10px] font-medium ${
                           selectedGenre === genre.id 
-                            ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/25' 
-                            : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white'
+                            ? 'option-chip-active' 
+                            : ''
                         }`}
                       >
                         {genre.name}
@@ -331,10 +331,10 @@ const Browse = () => {
                       <button
                         key={country.code}
                         onClick={() => setSelectedCountry(selectedCountry === country.code ? null : country.code)}
-                        className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-2 ${
+                        className={`option-chip w-full text-left px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-2 ${
                           selectedCountry === country.code 
-                            ? 'bg-cyan-500 text-black' 
-                            : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                            ? 'option-chip-active' 
+                            : ''
                         }`}
                       >
                         {country.name}

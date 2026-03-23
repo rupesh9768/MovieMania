@@ -54,13 +54,15 @@ const TrendingDiscussions = () => {
   if (loading || trending.length === 0) return null;
 
   return (
-    <section className="mb-14">
-      <div className="flex items-center gap-3 mb-6">
-        <span className="w-1 h-8 bg-linear-to-b from-orange-400 to-red-500 rounded-full"></span>
-        <h2 className="text-2xl font-bold">Trending Discussions</h2>
-        <span className="text-xs font-semibold text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">
-          🔥 Hot
-        </span>
+    <section className="mt-8 mb-14">
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-3">
+          <h2 className="text-[1.85rem] font-bold tracking-tight">Trending Discussions</h2>
+          <span className="text-xs font-semibold text-[#b3b3b3] bg-[#181818] px-3 py-1 rounded-full border border-[#2a2a2a]">
+            Hot
+          </span>
+        </div>
+        <div className="h-px bg-[#2a2a2a]"></div>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
@@ -68,31 +70,31 @@ const TrendingDiscussions = () => {
           <div
             key={`${item.contentType}-${item.contentId}`}
             onClick={() => navigate(`/discussion/${item.contentType}/${item.contentId}`)}
-            className="bg-slate-900/60 border border-slate-800/50 rounded-xl p-4 hover:border-cyan-500/30 hover:bg-slate-800/40 transition-all cursor-pointer group"
+            className="bg-card-bg border border-[#2a2a2a] rounded-[14px] p-5 hover:bg-[#242424] hover:border-[#3a3a3a] transition-all duration-150 cursor-pointer group hover:-translate-y-1 hover:shadow-lg"
           >
             <div className="flex items-start gap-3">
               {item.poster ? (
                 <img
                   src={item.poster}
                   alt={item.title}
-                  className="w-12 h-18 rounded-lg object-cover border border-slate-700/50 shrink-0 group-hover:border-cyan-500/30 transition-colors"
+                  className="w-14 h-20 rounded-lg object-cover border border-[#2a2a2a] shrink-0 transition-colors"
                 />
               ) : (
-                <div className="w-12 h-18 rounded-lg bg-slate-800 border border-slate-700/50 shrink-0 flex items-center justify-center text-slate-600 text-xs">
+                <div className="w-14 h-20 rounded-lg bg-[#181818] border border-[#2a2a2a] shrink-0 flex items-center justify-center text-[#8a8a8a] text-xs">
                   N/A
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white truncate group-hover:text-cyan-400 transition-colors">
+                <p className="text-sm font-semibold text-white truncate transition-colors">
                   {item.title || `#${item.contentId}`}
                 </p>
-                <p className="text-xs text-slate-500 capitalize mt-0.5">
+                <p className="text-xs text-[#b3b3b3] capitalize mt-0.5">
                   {TYPE_LABELS[item.contentType] || item.contentType}
                 </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-xs text-cyan-400 font-medium">{item.commentCount} comments</span>
-                  <span className="text-xs text-slate-600">•</span>
-                  <span className="text-xs text-slate-400">{item.totalUpvotes} upvotes</span>
+                <div className="mt-3 pt-2 border-t border-[#2a2a2a]">
+                  <p className="text-xs text-[#b3b3b3]">
+                    {item.commentCount} comments <span className="text-[#6d6d6d]">•</span> {item.totalUpvotes} upvotes
+                  </p>
                 </div>
               </div>
             </div>

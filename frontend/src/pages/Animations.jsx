@@ -222,10 +222,10 @@ const Animations = () => {
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium text-left transition-all ${
+                      className={`option-chip w-full px-3 py-2 rounded-xl text-xs font-medium text-left ${
                         selectedCategory === cat.id 
-                          ? 'bg-cyan-500 text-black' 
-                          : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+                          ? 'option-chip-active'
+                          : ''
                       }`}
                     >
                       {cat.name}
@@ -243,10 +243,10 @@ const Animations = () => {
                       <button
                         key={genre.id}
                         onClick={() => setSelectedSubGenre(selectedSubGenre === genre.id ? null : genre.id)}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium text-left transition-all ${
+                        className={`option-chip w-full px-3 py-2 rounded-xl text-xs font-medium text-left ${
                           selectedSubGenre === genre.id 
-                            ? 'bg-cyan-500 text-black' 
-                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+                            ? 'option-chip-active'
+                            : ''
                         }`}
                       >
                         {genre.name}

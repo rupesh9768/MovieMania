@@ -204,10 +204,10 @@ const Movies = () => {
                       <button
                         key={genre.id}
                         onClick={() => setSelectedGenre(selectedGenre === genre.id ? null : genre.id)}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
+                        className={`option-chip px-2.5 py-1 text-[10px] font-medium ${
                           selectedGenre === genre.id 
-                            ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/25' 
-                            : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white'
+                            ? 'option-chip-active' 
+                            : ''
                         }`}
                       >
                         {genre.name}

@@ -8,6 +8,8 @@ import api from './axios';
  */
 const normalizeBackendMovie = (movie) => ({
   id: movie._id,
+  _id: movie._id,
+  isBackend: true,
   title: movie.title,
   description: movie.description || '',
   overview: movie.description || '',

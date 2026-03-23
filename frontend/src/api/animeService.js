@@ -1,8 +1,7 @@
 // Anime API Service (Jikan API)
-// TODO: Replace with backend API when backend is ready
 import axios from 'axios';
 
-// Jikan API Base URL (MyAnimeList unofficial API)
+// Jikan API Base URL
 const JIKAN_BASE_URL = 'https://api.jikan.moe/v4';
 
 // Create dedicated axios instance for Jikan API
@@ -13,7 +12,7 @@ const jikanApi = axios.create({
   }
 });
 
-// Rate limiting helper (Jikan has rate limits)
+// Rate limiting helper 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
