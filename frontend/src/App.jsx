@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigationType } from 'react-router-dom';
 
 // Providers
 import { AuthProvider } from './context/AuthContext';
@@ -26,6 +26,7 @@ import Theater from './pages/Theater';
 import TheaterDetails from './pages/TheaterDetails';
 import Profile from './pages/Profile';
 import Discussion from './pages/Discussion';
+import PersonDetails from './pages/PersonDetails';
 
 // Import Components (used as pages)
 import ShowtimeSelection from './components/ShowtimeSelection';
@@ -40,10 +41,37 @@ import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 
+function ScrollManager() {
+  const location = useLocation();
+  const navigationType = useNavigationType();
+
+  React.useEffect(() => {
+    const key = `scroll:${location.key}`;
+
+    if (navigationType === 'POP') {
+      const savedY = window.sessionStorage.getItem(key);
+      if (savedY !== null) {
+        window.scrollTo({ top: Number(savedY) || 0, left: 0, behavior: 'auto' });
+      } else {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      }
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+
+    return () => {
+      window.sessionStorage.setItem(key, String(window.scrollY || 0));
+    };
+  }, [location.key, navigationType]);
+
+  return null;
+}
+
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ScrollManager />
         {/* Wrapper to ensure footer pushes to bottom if content is short */}
         <div className="App min-h-screen font-sans flex flex-col bg-dark-bg text-white">
           
@@ -77,6 +105,7 @@ function App() {
               
               {/* Unified details route: /details/:mediaType/:id */}
               <Route path="/details/:mediaType/:id" element={<MovieDetails />} />
+              <Route path="/person/:id" element={<PersonDetails />} />
               <Route path="/movie/backend/:id" element={<MovieDetails />} />
               {/* Legacy routes for backwards compatibility */}
               <Route path="/movie/:id" element={<MovieDetails />} />

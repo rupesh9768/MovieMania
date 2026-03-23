@@ -16,24 +16,24 @@ const FALLBACK_MOVIES = [
   {
     id: 1,
     title: 'Sample Movie 1',
-    image: 'https://via.placeholder.com/500x750?text=Movie+1',
-    backdrop: 'https://via.placeholder.com/1280x720?text=Backdrop+1',
+    image: '/no-poster.png',
+    backdrop: '/no-poster.png',
     overview: 'A captivating story awaits you.',
     year: '2024'
   },
   {
     id: 2,
     title: 'Sample Movie 2',
-    image: 'https://via.placeholder.com/500x750?text=Movie+2',
-    backdrop: 'https://via.placeholder.com/1280x720?text=Backdrop+2',
+    image: '/no-poster.png',
+    backdrop: '/no-poster.png',
     overview: 'An exciting adventure begins.',
     year: '2024'
   },
   {
     id: 3,
     title: 'Sample Movie 3',
-    image: 'https://via.placeholder.com/500x750?text=Movie+3',
-    backdrop: 'https://via.placeholder.com/1280x720?text=Backdrop+3',
+    image: '/no-poster.png',
+    backdrop: '/no-poster.png',
     overview: 'Experience the thrill.',
     year: '2024'
   }

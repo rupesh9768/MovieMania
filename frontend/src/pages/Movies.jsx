@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import BrowseSidebarFilters from '../components/BrowseSidebarFilters';
+import { NO_POSTER_IMAGE, handleImageError } from '../utils/imageFallback';
 
 // TMDB API Configuration
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -31,8 +33,8 @@ const GENRES = [
 const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
   // Get image URL
   const getImageUrl = () => {
-    if (!item) return 'https://via.placeholder.com/300x450?text=?';
-    return item.image || (item.poster_path ? `${IMG_BASE}${item.poster_path}` : 'https://via.placeholder.com/300x450?text=No+Poster');
+    if (!item) return NO_POSTER_IMAGE;
+    return item.image || (item.poster_path ? `${IMG_BASE}${item.poster_path}` : NO_POSTER_IMAGE);
   };
 
   // Get rating
@@ -54,6 +56,7 @@ const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
               src={getImageUrl()}
               alt={item.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={handleImageError}
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent"></div>
             <div className="absolute bottom-4 left-4 right-4">
@@ -167,6 +170,8 @@ const Movies = () => {
     setCurrentPage(1);
   };
 
+  const activeFilterCount = Number(Boolean(searchQuery)) + Number(Boolean(selectedGenre));
+
   return (
     <div className="min-h-screen bg-dark-bg text-white">
       <div className="max-w-6xl mx-auto px-4 py-6">
@@ -176,58 +181,28 @@ const Movies = () => {
           <p className="text-slate-500 text-xs">Discover and explore movies from around the world</p>
         </div>
 
-        <div className="flex gap-6">
-          {/* LEFT SIDEBAR: Search + Filters */}
-          <div className="w-52 shrink-0">
-            <div className="sticky top-20 space-y-4">
-              {/* Search */}
-              <div>
-                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">Search</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search movies..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 pl-8 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:bg-slate-800 transition-all"
-                  />
-                  <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                </div>
-              </div>
-
-              {/* Genre Filter - Pill Style */}
-              <div>
-                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Genres</label>
-                <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-2.5 max-h-64 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                  <div className="flex flex-wrap gap-1.5">
-                    {GENRES.map(genre => (
-                      <button
-                        key={genre.id}
-                        onClick={() => setSelectedGenre(selectedGenre === genre.id ? null : genre.id)}
-                        className={`option-chip px-2.5 py-1 text-[10px] font-medium ${
-                          selectedGenre === genre.id 
-                            ? 'option-chip-active' 
-                            : ''
-                        }`}
-                      >
-                        {genre.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Clear Filters */}
-              {(searchQuery || selectedGenre) && (
-                <button 
-                  onClick={clearFilters}
-                  className="w-full text-xs text-slate-400 hover:text-cyan-400 py-2 border border-slate-800 rounded-lg hover:border-cyan-500/30 transition-all"
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
-          </div>
+        <div className="flex flex-col lg:flex-row gap-6">
+          <BrowseSidebarFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Search movies..."
+            groups={[
+              {
+                id: 'genre',
+                label: 'Genres',
+                options: GENRES,
+                selectedValue: selectedGenre,
+                onChange: setSelectedGenre,
+                showAllOption: true,
+                allValue: null,
+                allLabel: 'All Genres',
+                allowDeselect: true,
+              },
+            ]}
+            hasActiveFilters={Boolean(searchQuery || selectedGenre)}
+            onClear={clearFilters}
+            activeFilterCount={activeFilterCount}
+          />
 
           {/* RIGHT: Movie Grid */}
           <div className="flex-1">
@@ -261,7 +236,7 @@ const Movies = () => {
                 <div className="grid grid-cols-4 gap-5">
                   {movies.map(movie => {
                     // Handle TMDB format
-                    const imageUrl = movie.image || (movie.poster_path ? `${IMG_BASE}${movie.poster_path}` : 'https://via.placeholder.com/300x450?text=No+Poster');
+                    const imageUrl = movie.image || (movie.poster_path ? `${IMG_BASE}${movie.poster_path}` : NO_POSTER_IMAGE);
                     const year = movie.year || movie.release_date?.slice?.(0, 4) || '';
                     
                     return (
@@ -275,6 +250,7 @@ const Movies = () => {
                             src={imageUrl}
                             alt={movie.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={handleImageError}
                           />
                           <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                           <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">

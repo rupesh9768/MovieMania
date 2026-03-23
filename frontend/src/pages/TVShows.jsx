@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import BrowseSidebarFilters from '../components/BrowseSidebarFilters';
+import { NO_POSTER_IMAGE, handleImageError } from '../utils/imageFallback';
 
 // TODO: Replace with backend API when backend is ready
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -37,9 +39,10 @@ const RandomCard = ({ item, onRandomize, navigate, itemsAvailable }) => {
         >
           <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 shadow-xl border border-slate-800/50 group-hover:border-cyan-500/50 group-hover:shadow-cyan-500/20 transition-all duration-300">
             <img
-              src={item.poster_path ? `${IMG_BASE}${item.poster_path}` : '/placeholder.jpg'}
+              src={item.poster_path ? `${IMG_BASE}${item.poster_path}` : NO_POSTER_IMAGE}
               alt={item.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={handleImageError}
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent"></div>
             <div className="absolute bottom-4 left-4 right-4">
@@ -138,6 +141,8 @@ const TVShows = () => {
     setCurrentPage(1);
   };
 
+  const activeFilterCount = Number(Boolean(searchQuery)) + Number(Boolean(selectedGenre));
+
   return (
     <div className="min-h-screen bg-dark-bg text-white">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -147,58 +152,28 @@ const TVShows = () => {
           <p className="text-slate-400 text-sm">Discover and explore TV series</p>
         </div>
 
-        <div className="flex gap-6">
-          {/* LEFT SIDEBAR: Search + Filters */}
-          <div className="w-56 shrink-0">
-            <div className="sticky top-20 space-y-5">
-              {/* Search */}
-              <div>
-                <label className="text-xs font-semibold text-slate-400 mb-2 block">Search</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search TV shows..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 pl-9 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
-                  />
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                </div>
-              </div>
-
-              {/* Genre Filter */}
-              <div>
-                <label className="text-xs font-semibold text-slate-400 mb-2 block">Genres</label>
-                <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-3 max-h-72 overflow-y-auto">
-                  <div className="flex flex-col gap-1.5">
-                    {GENRES.map(genre => (
-                      <button
-                        key={genre.id}
-                        onClick={() => setSelectedGenre(selectedGenre === genre.id ? null : genre.id)}
-                        className={`option-chip px-3 py-2 rounded-xl text-xs font-medium text-left ${
-                          selectedGenre === genre.id 
-                            ? 'option-chip-active' 
-                            : ''
-                        }`}
-                      >
-                        {genre.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Clear Filters */}
-              {(searchQuery || selectedGenre) && (
-                <button 
-                  onClick={clearFilters}
-                  className="w-full text-sm text-cyan-400 hover:text-cyan-300 py-2"
-                >
-                  Clear all filters
-                </button>
-              )}
-            </div>
-          </div>
+        <div className="flex flex-col lg:flex-row gap-6">
+          <BrowseSidebarFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Search TV shows..."
+            groups={[
+              {
+                id: 'genre',
+                label: 'Genres',
+                options: GENRES,
+                selectedValue: selectedGenre,
+                onChange: setSelectedGenre,
+                showAllOption: true,
+                allValue: null,
+                allLabel: 'All Genres',
+                allowDeselect: true,
+              },
+            ]}
+            hasActiveFilters={Boolean(searchQuery || selectedGenre)}
+            onClear={clearFilters}
+            activeFilterCount={activeFilterCount}
+          />
 
           {/* RIGHT: TV Shows Grid */}
           <div className="flex-1">
@@ -232,9 +207,10 @@ const TVShows = () => {
                     >
                       <div className="relative aspect-2/3 rounded-xl overflow-hidden mb-2.5 border border-slate-800/50 group-hover:border-cyan-500/50 shadow-lg shadow-black/20 group-hover:shadow-cyan-500/10 transition-all duration-300">
                         <img
-                          src={show.poster_path ? `${IMG_BASE}${show.poster_path}` : '/placeholder.jpg'}
+                          src={show.poster_path ? `${IMG_BASE}${show.poster_path}` : NO_POSTER_IMAGE}
                           alt={show.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={handleImageError}
                         />
                         <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 

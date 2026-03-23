@@ -1,10 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import { NO_POSTER_IMAGE } from '../utils/imageFallback';
 
 const AUTO_SLIDE_MS = 9500;
 const DESCRIPTION_LIMIT = 180;
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const PLACEHOLDER_BACKDROP = NO_POSTER_IMAGE;
+const DATA_REFRESH_MS = 45000;
+const trailerKeyCache = new Map();
 
 const preloadImage = (src) => {
   if (!src) return Promise.resolve();
@@ -71,39 +75,57 @@ const hasActiveShowtime = (movie) => {
   });
 };
 
-const getBackdrop = (movie) => movie?.backdrop || movie?.poster || '';
+const getBackdrop = (movie) => movie?.backdrop || movie?.poster || PLACEHOLDER_BACKDROP;
 
 const isDirectVideo = (url) => /\.(mp4|webm|ogg)(\?.*)?$/i.test(String(url || ''));
 
 const getKnownTrailer = (movie) => {
   if (movie?.trailerUrl) {
-    return { type: isDirectVideo(movie.trailerUrl) ? 'video' : 'embed', src: movie.trailerUrl };
+    return isDirectVideo(movie.trailerUrl) ? { type: 'video', src: movie.trailerUrl } : null;
   }
   if (movie?.trailerVideoUrl) {
-    return { type: isDirectVideo(movie.trailerVideoUrl) ? 'video' : 'embed', src: movie.trailerVideoUrl };
+    return isDirectVideo(movie.trailerVideoUrl) ? { type: 'video', src: movie.trailerVideoUrl } : null;
   }
   if (movie?.trailerKey) {
     return {
       type: 'youtube',
-      src: `https://www.youtube.com/embed/${movie.trailerKey}?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1&loop=1&playlist=${movie.trailerKey}`
+      src: `https://www.youtube-nocookie.com/embed/${movie.trailerKey}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${movie.trailerKey}&rel=0&playsinline=1&iv_load_policy=3&cc_load_policy=0&disablekb=1&fs=0&autohide=1&enablejsapi=0`
     };
   }
   return null;
 };
 
+const buildYoutubeTrailer = (key) => ({
+  type: 'youtube',
+  src: `https://www.youtube-nocookie.com/embed/${key}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${key}&rel=0&playsinline=1&iv_load_policy=3&cc_load_policy=0&disablekb=1&fs=0&autohide=1&enablejsapi=0`
+});
+
 const fetchTmdbTrailerKey = async (tmdbId) => {
   if (!TMDB_API_KEY || !tmdbId) return null;
+  const cacheKey = String(tmdbId);
+  if (trailerKeyCache.has(cacheKey)) {
+    return trailerKeyCache.get(cacheKey);
+  }
+
   try {
-    const res = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/videos?api_key=${TMDB_API_KEY}`);
-    if (!res.ok) return null;
-    const data = await res.json();
+    const response = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/videos?api_key=${TMDB_API_KEY}&language=en-US`);
+    if (!response.ok) {
+      trailerKeyCache.set(cacheKey, null);
+      return null;
+    }
+
+    const data = await response.json();
     const videos = Array.isArray(data?.results) ? data.results : [];
     const trailer =
       videos.find((v) => v.site === 'YouTube' && v.type === 'Trailer') ||
       videos.find((v) => v.site === 'YouTube' && v.type === 'Teaser') ||
       videos.find((v) => v.site === 'YouTube');
-    return trailer?.key || null;
+
+    const key = trailer?.key || null;
+    trailerKeyCache.set(cacheKey, key);
+    return key;
   } catch {
+    trailerKeyCache.set(cacheKey, null);
     return null;
   }
 };
@@ -138,9 +160,21 @@ function HeroSlider() {
     const fetchNowPlaying = async () => {
       setLoading(true);
       try {
-        const response = await api.get('/movies/now-playing');
+        const response = await api.get('/movies');
         const rows = Array.isArray(response.data?.data) ? response.data.data : [];
-        const active = rows.filter((movie) => hasActiveShowtime(movie) && getBackdrop(movie));
+
+        // Include recently added theater movies, not only isNowPlaying items.
+        const active = rows
+          .filter((movie) => hasActiveShowtime(movie) || movie?.isNowPlaying || movie?.bookingEnabled)
+          .sort((a, b) => {
+            const aActive = hasActiveShowtime(a) ? 1 : 0;
+            const bActive = hasActiveShowtime(b) ? 1 : 0;
+            if (bActive !== aActive) return bActive - aActive;
+
+            const aCreated = new Date(a?.createdAt || 0).getTime();
+            const bCreated = new Date(b?.createdAt || 0).getTime();
+            return bCreated - aCreated;
+          });
 
         const withTrailers = await Promise.all(
           active.map(async (movie) => {
@@ -148,15 +182,11 @@ function HeroSlider() {
             if (known) return { ...movie, trailer: known };
 
             const trailerKey = await fetchTmdbTrailerKey(movie.tmdbId);
-            if (!trailerKey) return { ...movie, trailer: null };
+            if (trailerKey) {
+              return { ...movie, trailer: buildYoutubeTrailer(trailerKey) };
+            }
 
-            return {
-              ...movie,
-              trailer: {
-                type: 'youtube',
-                src: `https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1&loop=1&playlist=${trailerKey}`
-              }
-            };
+            return { ...movie, trailer: null };
           })
         );
 
@@ -174,6 +204,9 @@ function HeroSlider() {
     };
 
     fetchNowPlaying();
+
+    const timer = setInterval(fetchNowPlaying, DATA_REFRESH_MS);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -238,15 +271,7 @@ function HeroSlider() {
             index === currentIndex ? 'opacity-100' : 'pointer-events-none opacity-0'
           }`}
         >
-          {index === currentIndex && movie?.trailer?.type === 'youtube' ? (
-            <iframe
-              src={movie.trailer.src}
-              title={`${movie.title} trailer`}
-              className={`h-full w-full object-cover object-center ${index === currentIndex ? 'cinema-hero-bg-zoom' : ''}`}
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-            />
-          ) : index === currentIndex && movie?.trailer?.type === 'video' ? (
+          {index === currentIndex && movie?.trailer?.type === 'video' ? (
             <video
               className={`h-full w-full object-cover object-center ${index === currentIndex ? 'cinema-hero-bg-zoom' : ''}`}
               src={movie.trailer.src}
@@ -256,6 +281,18 @@ function HeroSlider() {
               playsInline
               preload="metadata"
             />
+          ) : index === currentIndex && movie?.trailer?.type === 'youtube' ? (
+            <>
+              <iframe
+                src={movie.trailer.src}
+                title={`${movie.title} trailer`}
+                className={`h-full w-full object-cover object-center pointer-events-none ${index === currentIndex ? 'cinema-hero-bg-zoom' : ''}`}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+              <div className="pointer-events-none absolute left-0 right-0 top-0 h-16 bg-black/45" />
+              <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-16 bg-black/55" />
+            </>
           ) : (
             <img
               src={getBackdrop(movie)}

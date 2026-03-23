@@ -130,6 +130,66 @@ export const checkItemInLists = async (mediaType, mediaId) => {
   }
 };
 
+// FAVORITE ACTORS OPERATIONS
+
+/**
+ * Get user's favorite actors
+ */
+export const getFavoriteActors = async () => {
+  const userId = getUserId();
+  if (!userId) throw new Error('User not logged in');
+
+  const response = await api.get(`/users/${userId}/favorite-actors`);
+  return response.data;
+};
+
+/**
+ * Add actor to favorites (max 10)
+ */
+export const addFavoriteActor = async (actor) => {
+  const userId = getUserId();
+  if (!userId) throw new Error('User not logged in');
+
+  const response = await api.post(`/users/${userId}/favorite-actors`, {
+    personId: String(actor.personId || actor.id),
+    name: actor.name,
+    profilePath: actor.profilePath || actor.profile_path || '',
+    knownForDepartment: actor.knownForDepartment || actor.known_for_department || ''
+  });
+  return response.data;
+};
+
+/**
+ * Remove actor from favorites
+ */
+export const removeFavoriteActor = async (personId) => {
+  const userId = getUserId();
+  if (!userId) throw new Error('User not logged in');
+
+  const response = await api.delete(`/users/${userId}/favorite-actors/${personId}`);
+  return response.data;
+};
+
+/**
+ * Check if actor is in favorite actors
+ */
+export const checkFavoriteActor = async (personId) => {
+  const userId = getUserId();
+  if (!userId) {
+    return { inFavoriteActors: false, count: 0, max: 10 };
+  }
+
+  try {
+    const response = await api.get(`/users/${userId}/favorite-actors/check`, {
+      params: { personId: String(personId) }
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error checking favorite actor:', error);
+    return { inFavoriteActors: false, count: 0, max: 10 };
+  }
+};
+
 export default {
   getUserId,
   isLoggedIn,
@@ -139,5 +199,9 @@ export default {
   getFavorites,
   addToFavorites,
   removeFromFavorites,
-  checkItemInLists
+  checkItemInLists,
+  getFavoriteActors,
+  addFavoriteActor,
+  removeFavoriteActor,
+  checkFavoriteActor
 };

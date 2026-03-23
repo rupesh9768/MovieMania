@@ -349,7 +349,8 @@ const Upcoming = () => {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           loading="lazy"
                           onError={(e) => { 
-                            e.target.src = 'https://via.placeholder.com/300x450?text=Coming+Soon'; 
+                            e.target.onerror = null;
+                            e.target.src = '/no-poster.png'; 
                           }}
                         />
                       ) : (

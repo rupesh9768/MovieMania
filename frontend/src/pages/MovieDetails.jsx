@@ -9,7 +9,6 @@ import {
   removeFromFavorites 
 } from '../api/userService';
 import { useAuth } from '../context/AuthContext';
-import CommentSection from '../components/CommentSection';
 
 // TMDB API Config
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -41,6 +40,7 @@ const MovieDetails = () => {
   // State
   const [item, setItem] = useState(null);
   const [cast, setCast] = useState([]);
+  const [crewDetails, setCrewDetails] = useState([]);
   const [trailer, setTrailer] = useState(null);
   const [watchProviders, setWatchProviders] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +49,10 @@ const MovieDetails = () => {
   // Watchlist and Favorites state
   const [inWatchlist, setInWatchlist] = useState(false);
   const [inFavorites, setInFavorites] = useState(false);
-  const [listLoading, setListLoading] = useState(false);
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [watchlistJustUpdated, setWatchlistJustUpdated] = useState(false);
+  const [favoriteJustUpdated, setFavoriteJustUpdated] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -80,7 +83,7 @@ const MovieDetails = () => {
     
     if (!item) return;
     
-    setListLoading(true);
+    setWatchlistLoading(true);
     try {
       if (inWatchlist) {
         await removeFromWatchlist(mediaType, id);
@@ -94,11 +97,13 @@ const MovieDetails = () => {
         });
         setInWatchlist(true);
       }
+      setWatchlistJustUpdated(true);
+      setTimeout(() => setWatchlistJustUpdated(false), 500);
     } catch (error) {
       console.error('Watchlist error:', error);
       alert(error.response?.data?.message || 'Failed to update watchlist');
     } finally {
-      setListLoading(false);
+      setWatchlistLoading(false);
     }
   };
 
@@ -111,7 +116,7 @@ const MovieDetails = () => {
     
     if (!item) return;
     
-    setListLoading(true);
+    setFavoriteLoading(true);
     try {
       if (inFavorites) {
         await removeFromFavorites(mediaType, id);
@@ -125,11 +130,13 @@ const MovieDetails = () => {
         });
         setInFavorites(true);
       }
+      setFavoriteJustUpdated(true);
+      setTimeout(() => setFavoriteJustUpdated(false), 500);
     } catch (error) {
       console.error('Favorites error:', error);
       alert(error.response?.data?.message || 'Failed to update favorites');
     } finally {
-      setListLoading(false);
+      setFavoriteLoading(false);
     }
   };
 
@@ -157,6 +164,7 @@ const MovieDetails = () => {
             )
           });
           setCast([]);
+          setCrewDetails([]);
           setTrailer(null);
           setWatchProviders(null);
           setLoading(false);
@@ -212,6 +220,7 @@ const MovieDetails = () => {
               profile_path: c.character?.images?.jpg?.image_url
             })));
           }
+          setCrewDetails([]);
           
           setLoading(false);
           return;
@@ -259,6 +268,57 @@ const MovieDetails = () => {
         if (creditsRes.ok) {
           const creditsData = await creditsRes.json();
           setCast(creditsData.cast?.slice(0, 10) || []);
+
+          const rolePriority = [
+            'Director',
+            'Writer',
+            'Screenplay',
+            'Story',
+            'Producer',
+            'Executive Producer',
+            'Original Music Composer',
+            'Director of Photography',
+            'Editor'
+          ];
+
+          const uniqueCrew = [];
+          const seenByRoleAndName = new Set();
+
+          rolePriority.forEach((role) => {
+            const matches = (creditsData.crew || []).filter((member) => member.job === role);
+            matches.forEach((member) => {
+              const key = `${role}:${member.name}`;
+              if (!seenByRoleAndName.has(key)) {
+                seenByRoleAndName.add(key);
+                uniqueCrew.push({
+                  id: member.id || member.credit_id || key,
+                  personId: member.id,
+                  role,
+                  name: member.name,
+                  profile_path: member.profile_path
+                });
+              }
+            });
+          });
+
+          // Add TV creators when available and not already included.
+          if (endpoint === 'tv' && Array.isArray(data.created_by)) {
+            data.created_by.forEach((creator) => {
+              const key = `Creator:${creator.name}`;
+              if (!seenByRoleAndName.has(key)) {
+                seenByRoleAndName.add(key);
+                uniqueCrew.push({
+                  id: creator.id || key,
+                  personId: creator.id,
+                  role: 'Creator',
+                  name: creator.name,
+                  profile_path: creator.profile_path
+                });
+              }
+            });
+          }
+
+          setCrewDetails(uniqueCrew.slice(0, 8));
         }
         
         // Videos - find trailer
@@ -280,6 +340,7 @@ const MovieDetails = () => {
       } catch (err) {
         console.error('Failed to fetch:', err);
         setItem(null);
+        setCrewDetails([]);
       } finally {
         setLoading(false);
       }
@@ -460,26 +521,34 @@ const MovieDetails = () => {
                 {trailer && (
                   <button 
                     onClick={() => setShowTrailerModal(true)}
-                    className="bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-5 rounded-full transition-all text-sm cursor-pointer"
+                    className="bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-5 rounded-full transition-all text-sm cursor-pointer active:scale-95"
                   >
                     Watch Trailer
                   </button>
                 )}
+
+                {/* Discussion Button (primary CTA) */}
+                <button
+                  onClick={() => navigate(`/discussion/${mediaType}/${id}`)}
+                  className="bg-slate-100 hover:bg-white text-slate-900 font-extrabold py-2.5 px-6 rounded-full transition-all duration-200 text-sm border border-white/80 cursor-pointer flex items-center gap-2 shadow-lg shadow-black/25 hover:shadow-black/35 hover:-translate-y-0.5 active:scale-95"
+                >
+                  💬 Join Discussion
+                </button>
                 
                 {/* Watchlist Button */}
                 <button 
                   onClick={handleWatchlistToggle}
-                  disabled={listLoading}
-                  className={`font-medium py-2.5 px-5 rounded-full transition-all text-sm border cursor-pointer flex items-center gap-2 ${
+                  disabled={watchlistLoading}
+                  className={`font-semibold py-2.5 px-5 rounded-full transition-all duration-200 text-sm border cursor-pointer flex items-center gap-2 active:scale-95 ${
                     inWatchlist 
-                      ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 hover:bg-cyan-500/30' 
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/60 shadow-[0_0_0_1px_rgba(52,211,153,0.35)]'
                       : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
-                  } ${listLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  } ${watchlistJustUpdated ? 'scale-105' : ''} ${watchlistLoading ? 'opacity-60 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
                 >
-                  {listLoading ? (
+                  {watchlistLoading ? (
                     <span className="animate-spin text-xs">...</span>
                   ) : inWatchlist ? (
-                    <>In Watchlist</>
+                    <>✓ In Watchlist</>
                   ) : (
                     <>+ Watchlist</>
                   )}
@@ -488,36 +557,22 @@ const MovieDetails = () => {
                 {/* Favorites Button */}
                 <button 
                   onClick={handleFavoritesToggle}
-                  disabled={listLoading}
-                  className={`font-medium py-2.5 px-5 rounded-full transition-all text-sm border cursor-pointer flex items-center gap-2 ${
+                  disabled={favoriteLoading}
+                  className={`font-semibold py-2.5 px-5 rounded-full transition-all duration-200 text-sm border cursor-pointer flex items-center gap-2 active:scale-95 ${
                     inFavorites 
-                      ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 hover:bg-cyan-500/30' 
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-400/60 shadow-[0_0_0_1px_rgba(251,113,133,0.35)]'
                       : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
-                  } ${listLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  } ${favoriteJustUpdated ? 'scale-105' : ''} ${favoriteLoading ? 'opacity-60 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
                 >
-                  {listLoading ? (
+                  {favoriteLoading ? (
                     <span className="animate-spin text-xs">...</span>
                   ) : inFavorites ? (
-                    <>Favorited</>
+                    <>♥ Favorited</>
                   ) : (
-                    <>Favorite</>
+                    <>♡ Favorite</>
                   )}
                 </button>
 
-                {/* Discussion Button */}
-                <button 
-                  onClick={() => navigate(`/discussion/${mediaType}/${id}`)}
-                  className="bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-5 rounded-full transition-all text-sm border border-slate-700 cursor-pointer flex items-center gap-2"
-                >
-                  💬 Discussion
-                </button>
-
-                <button 
-                  onClick={() => navigate(-1)}
-                  className="bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-5 rounded-full transition-all text-sm border border-slate-700 cursor-pointer"
-                >
-                  Back
-                </button>
               </div>
             </div>
           </div>
@@ -545,8 +600,19 @@ const MovieDetails = () => {
                 <h2 className="text-lg font-bold mb-4 text-slate-200">Cast</h2>
                 <div className="flex gap-4 overflow-x-auto pb-3" style={{ scrollbarWidth: 'none' }}>
                   {cast.map(person => (
-                    <div key={person.id} className="shrink-0 w-20 text-center">
-                      <div className="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden border-2 border-slate-700 bg-slate-800">
+                    <button
+                      key={person.id}
+                      type="button"
+                      onClick={() => {
+                        if (!item?.isAnime && !item?.isBackend && person?.id) {
+                          navigate(`/person/${person.id}`);
+                        }
+                      }}
+                      disabled={item?.isAnime || item?.isBackend || !person?.id}
+                      className="shrink-0 w-20 text-center cursor-pointer disabled:cursor-default"
+                      title={person?.id ? `View ${person.name}` : person.name}
+                    >
+                      <div className="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden border-2 border-slate-700 bg-slate-800 transition-all hover:border-cyan-500/60">
                         {person.profile_path ? (
                           <img 
                             src={item.isAnime ? person.profile_path : `${IMG_BASE}${person.profile_path}`} 
@@ -557,9 +623,46 @@ const MovieDetails = () => {
                           <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs">N/A</div>
                         )}
                       </div>
-                      <p className="text-xs font-semibold truncate">{person.name}</p>
+                      <p className="text-xs font-semibold truncate hover:text-cyan-400 transition-colors">{person.name}</p>
                       <p className="text-xs text-slate-500 truncate">{person.character}</p>
-                    </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Crew */}
+            {crewDetails.length > 0 && (
+              <section>
+                <h2 className="text-lg font-bold mb-4 text-slate-200">Crew</h2>
+                <div className="flex gap-4 overflow-x-auto pb-3" style={{ scrollbarWidth: 'none' }}>
+                  {crewDetails.map((member, index) => (
+                    <button
+                      key={member.id || `${member.role}-${member.name}-${index}`}
+                      type="button"
+                      onClick={() => {
+                        if (member?.personId) {
+                          navigate(`/person/${member.personId}`);
+                        }
+                      }}
+                      disabled={!member?.personId}
+                      className="shrink-0 w-20 text-center cursor-pointer disabled:cursor-default"
+                      title={member?.personId ? `View ${member.name}` : member.name}
+                    >
+                      <div className="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden border-2 border-slate-700 bg-slate-800 transition-all hover:border-cyan-500/60">
+                        {member.profile_path ? (
+                          <img
+                            src={`${IMG_BASE}${member.profile_path}`}
+                            alt={member.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs">N/A</div>
+                        )}
+                      </div>
+                      <p className="text-xs font-semibold truncate hover:text-cyan-400 transition-colors">{member.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{member.role}</p>
+                    </button>
                   ))}
                 </div>
               </section>
@@ -703,14 +806,6 @@ const MovieDetails = () => {
         </div>
       </div>
 
-      {/* Comment Section */}
-      <div className="max-w-6xl mx-auto px-6">
-        <CommentSection
-          contentId={String(id)}
-          contentType={mediaType === 'tv' ? 'tv' : mediaType === 'anime' ? 'anime' : 'movie'}
-          contentTitle={item.title}
-        />
-      </div>
     </div>
   );
 };

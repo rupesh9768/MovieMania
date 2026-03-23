@@ -36,6 +36,33 @@ const mediaItemSchema = new mongoose.Schema({
 }, { _id: false });
 
 /**
+ * Favorite Actor Schema (embedded)
+ * Used for favorite actors list in profile
+ */
+const favoriteActorSchema = new mongoose.Schema({
+  personId: {
+    type: String,
+    required: true
+  },
+  name: {
+    type: String,
+    required: true
+  },
+  profilePath: {
+    type: String,
+    default: ''
+  },
+  knownForDepartment: {
+    type: String,
+    default: ''
+  },
+  addedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: false });
+
+/**
  * User Schema
  * User model for authentication with watchlist and favorites
  */
@@ -106,6 +133,16 @@ const userSchema = new mongoose.Schema({
   },
   watchlist: [mediaItemSchema],
   favorites: [mediaItemSchema],
+  favoriteActors: {
+    type: [favoriteActorSchema],
+    default: [],
+    validate: {
+      validator: function (arr) {
+        return arr.length <= 10;
+      },
+      message: 'You can only have up to 10 favorite actors'
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -148,6 +185,7 @@ userSchema.methods.getResetPasswordToken = function () {
 // Compound index for faster watchlist/favorites lookups
 userSchema.index({ 'watchlist.mediaType': 1, 'watchlist.mediaId': 1 });
 userSchema.index({ 'favorites.mediaType': 1, 'favorites.mediaId': 1 });
+userSchema.index({ 'favoriteActors.personId': 1 });
 
 const User = mongoose.model('User', userSchema);
 

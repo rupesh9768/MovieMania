@@ -746,3 +746,60 @@ main {
   color: #ffffff;
 }
 
+/* Most Interested rank hover glow */
+.group:hover .most-interested-rank {
+  color: rgba(239, 68, 68, 0.95);
+  text-shadow: 0 0 14px rgba(239, 68, 68, 0.9), 0 0 28px rgba(239, 68, 68, 0.55);
+}
+
+/* =========================================
+   COMMENT MICRO-ANIMATIONS
+   ========================================= */
+.comment-enter-card {
+  animation: comment-enter-card 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
+}
+
+.reaction-count-pop {
+  animation: reaction-count-pop 260ms cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+@keyframes comment-enter-card {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes reaction-count-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.comment-focus-pulse {
+  animation: comment-focus-pulse 2s ease-out;
+}
+
+@keyframes comment-focus-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(34, 211, 238, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
+  }
+}
+

@@ -458,12 +458,16 @@ const Browse = () => {
                             alt={item.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             loading="lazy"
-                            onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }}
+                            onError={(e) => { e.target.onerror = null; e.target.src = '/no-poster.png'; }}
                           />
                         ) : (
-                          <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                            <span className="text-sm text-slate-600 font-medium">{item.mediaType === 'movie' ? 'Movie' : 'TV'}</span>
-                          </div>
+                          <img
+                            src="/no-poster.png"
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => { e.target.onerror = null; e.target.src = '/no-poster.png'; }}
+                          />
                         )}
                         
                         {/* Gradient Overlay */}

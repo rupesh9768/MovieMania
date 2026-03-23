@@ -28,6 +28,24 @@ const normalizeBackendMovie = (movie) => ({
   _raw: movie
 });
 
+const normalizeGlobalMovie = (movie) => ({
+  id: movie.id,
+  title: movie.title,
+  description: movie.overview || '',
+  overview: movie.overview || '',
+  rating: movie.rating || 0,
+  poster: movie.poster || null,
+  backdrop: movie.backdrop || null,
+  image: movie.poster || null,
+  language: movie.original_language || 'en',
+  releaseDate: movie.releaseDate || null,
+  year: movie.year || (movie.releaseDate ? new Date(movie.releaseDate).getFullYear().toString() : ''),
+  popularity: movie.popularity || 0,
+  isBackend: false,
+  bookingEnabled: false,
+  _raw: movie
+});
+
 /**
  * Get all movies from backend
  * GET /api/movies
@@ -77,6 +95,23 @@ export const getUpcomingMovies = async () => {
   } catch (error) {
     console.error('Backend API error (upcoming):', error.message);
     throw error;
+  }
+};
+
+/**
+ * Get globally showing movies from backend TMDB proxy
+ * GET /api/movies/global-showing
+ */
+export const getGlobalShowingMovies = async () => {
+  try {
+    const response = await api.get('/movies/global-showing');
+    if (response.data?.success) {
+      return response.data.data.map(normalizeGlobalMovie);
+    }
+    return [];
+  } catch (error) {
+    console.error('Backend API error (global-showing):', error.message);
+    return [];
   }
 };
 
@@ -157,6 +192,7 @@ export default {
   getBackendMovies,
   getBackendNowPlaying,
   getUpcomingMovies,
+  getGlobalShowingMovies,
   getBackendMovieById,
   checkBackendHealth,
   createMovie,

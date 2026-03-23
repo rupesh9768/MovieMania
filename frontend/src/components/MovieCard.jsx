@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom'; 
+import { NO_POSTER_IMAGE, handleImageError } from '../utils/imageFallback';
 
 const MovieCard = ({ movie, showBooking = false }) => {
   const navigate = useNavigate();
@@ -12,9 +13,10 @@ const MovieCard = ({ movie, showBooking = false }) => {
     <div className="group cursor-pointer" onClick={() => navigate(`/details/movie/${movie.id}`)}>
       <div className="relative aspect-2/3 rounded-[14px] overflow-hidden mb-3 border border-[#2a2a2a] bg-card-bg group-hover:border-[#3a3a3a] shadow-sm group-hover:shadow-lg transition-all duration-150 group-hover:-translate-y-1">
         <img 
-          src={movie.image || 'https://via.placeholder.com/300x450'} 
+          src={movie.image || NO_POSTER_IMAGE} 
           alt={movie.title} 
           className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-150" 
+          onError={handleImageError}
         />
         
         {/* Gradient overlay */}

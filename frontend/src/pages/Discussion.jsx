@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   getDiscussion,
@@ -8,9 +8,9 @@ import {
   toggleLike,
   toggleDislike,
   editComment,
-  deleteComment,
-  getTrendingDiscussions
+  deleteComment
 } from '../api/discussionService';
+import CommentSection from '../components/CommentSection';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const TMDB_BASE = 'https://api.themoviedb.org/3';
@@ -353,43 +353,6 @@ const CommentItem = ({ comment, user, depth = 0, onReply, onLike, onDislike, onD
   );
 };
 
-// ========== TRENDING SIDEBAR WIDGET ==========
-const TrendingSidebar = ({ trending, currentType, currentId }) => {
-  if (!trending || trending.length === 0) return null;
-
-  return (
-    <div className="bg-slate-900/60 border border-slate-800/50 rounded-xl p-5">
-      <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
-        <span className="text-orange-400">🔥</span> Trending Discussions
-      </h3>
-      <div className="space-y-3">
-        {trending.map((item, i) => (
-          <Link
-            key={`${item.contentType}-${item.contentId}`}
-            to={`/discussion/${item.contentType}/${item.contentId}`}
-            className={`block p-3 rounded-lg transition-all ${
-              item.contentType === currentType && item.contentId === currentId
-                ? 'bg-cyan-500/10 border border-cyan-500/30'
-                : 'hover:bg-slate-800/60 border border-transparent'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              {item.poster && (
-                <img src={item.poster} alt="" className="w-10 h-14 rounded object-cover border border-slate-700/50 shrink-0" />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-white truncate">{item.title || `${item.contentType} #${item.contentId}`}</p>
-                <p className="text-xs text-slate-500 capitalize">{item.contentType}</p>
-                <p className="text-xs text-cyan-400 mt-0.5">{item.commentCount} comments • {item.totalUpvotes} upvotes</p>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 // ========== SORT OPTIONS ==========
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest First' },
@@ -402,7 +365,10 @@ const SORT_OPTIONS = [
 const Discussion = () => {
   const { type, id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+
+  const targetCommentId = new URLSearchParams(location.search).get('commentId') || null;
 
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -421,9 +387,6 @@ const Discussion = () => {
   const [lightboxImage, setLightboxImage] = useState(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showAllImages, setShowAllImages] = useState(false);
-
-  // Trending
-  const [trending, setTrending] = useState([]);
 
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -485,43 +448,6 @@ const Discussion = () => {
     };
     fetchMeta();
   }, [type, id]);
-
-  // Fetch trending discussions with metadata
-  useEffect(() => {
-    const fetchTrending = async () => {
-      try {
-        const data = await getTrendingDiscussions();
-        if (data.success && data.trending?.length > 0) {
-          // Enrich trending items with title/poster from TMDB/Jikan
-          const enriched = await Promise.all(
-            data.trending.slice(0, 6).map(async (item) => {
-              try {
-                if (item.contentType === 'anime') {
-                  const res = await fetch(`${JIKAN_BASE}/anime/${item.contentId}`);
-                  if (res.ok) {
-                    const d = await res.json();
-                    return { ...item, title: d.data?.title, poster: d.data?.images?.jpg?.small_image_url };
-                  }
-                } else {
-                  const endpoint = item.contentType === 'tv' ? 'tv' : 'movie';
-                  const res = await fetch(`${TMDB_BASE}/${endpoint}/${item.contentId}?api_key=${TMDB_API_KEY}`);
-                  if (res.ok) {
-                    const d = await res.json();
-                    return { ...item, title: d.title || d.name, poster: d.poster_path ? `${IMG_BASE}${d.poster_path}` : null };
-                  }
-                }
-              } catch { /* skip metadata enrichment errors */ }
-              return item;
-            })
-          );
-          setTrending(enriched);
-        }
-      } catch (err) {
-        console.error('Failed to fetch trending:', err);
-      }
-    };
-    fetchTrending();
-  }, []);
 
   const fetchComments = useCallback(async () => {
     try {
@@ -681,7 +607,7 @@ const Discussion = () => {
                 <span className="text-sm text-slate-400 capitalize">{TYPE_LABELS[type] || type} Discussion</span>
               </div>
               <p className="text-slate-500 text-sm mt-2">
-                Share your thoughts, theories, and reviews. Be respectful. Use ||text|| for spoilers.
+                Share your thoughts, theories, and reviews. Be respectful. Use the spoiler toggle in comments for hidden spoilers.
               </p>
             </div>
           </div>
@@ -715,11 +641,8 @@ const Discussion = () => {
           )}
         </div>
 
-        {/* Two-column Layout: Main + Sidebar */}
-        <div className="grid lg:grid-cols-[1fr_300px] gap-8">
-
-          {/* Main Content */}
-          <div>
+        {/* Main Content */}
+        <div>
             {/* Error State */}
             {error && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
@@ -728,121 +651,13 @@ const Discussion = () => {
               </div>
             )}
 
-            {/* New Comment Box */}
-            {user ? (
-              <div className="bg-slate-900/60 border border-slate-800/50 rounded-xl p-5 mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  {user.avatar ? (
-                    <img src={getAvatarUrl(user.avatar)} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-700/50" />
-                  ) : (
-                    <div className={`w-8 h-8 rounded-full bg-linear-to-br ${getAvatarColor(user.name)} flex items-center justify-center text-white text-sm font-bold`}>
-                      {user.name?.[0]?.toUpperCase() || '?'}
-                    </div>
-                  )}
-                  <span className="text-sm font-medium text-slate-300">
-                    Commenting as <span className="text-cyan-400">{user.name}</span>
-                  </span>
-                </div>
-                <textarea
-                  ref={textareaRef}
-                  value={newComment}
-                  onChange={handleTextChange}
-                  placeholder="What are your thoughts?"
-                  className="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 resize-none min-h-15"
-                  disabled={submitting}
-                  maxLength={2000}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) handleCreateComment(); }}
-                />
-
-                {/* Image Preview */}
-                {imagePreview && (
-                  <div className="mt-2 relative inline-block">
-                    <img src={imagePreview} alt="Preview" className="max-h-32 rounded-lg border border-slate-700" />
-                    <button onClick={removeImage} className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-400">×</button>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center mt-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="text-slate-500 hover:text-cyan-400 transition-colors flex items-center gap-1 text-xs"
-                      title="Attach image"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                      Image
-                    </button>
-                    <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleImageChange} />
-                    <span className="text-[11px] text-slate-600">Ctrl+Enter to post • Use ||text|| for spoilers</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs ${newComment.length > 1800 ? 'text-amber-400' : 'text-slate-500'}`}>{newComment.length}/2000</span>
-                    <button
-                      onClick={handleCreateComment}
-                      disabled={submitting || !newComment.trim() || newComment.length > 2000}
-                      className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold text-sm px-6 py-2.5 rounded-lg transition-colors cursor-pointer"
-                    >
-                      {submitting ? 'Posting...' : 'Post Comment'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-slate-900/60 border border-slate-800/50 rounded-xl p-6 mb-6 text-center">
-                <p className="text-slate-400 text-sm mb-3">You must be logged in to join the discussion.</p>
-                <button onClick={() => navigate('/login')} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm px-6 py-2.5 rounded-lg transition-colors cursor-pointer">
-                  Login to Comment
-                </button>
-              </div>
-            )}
-
-            {/* Sort & Count Header */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-slate-200">
-                {totalCount} {totalCount === 1 ? 'Comment' : 'Comments'}
-              </h2>
-              {comments.length > 1 && (
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-800/80 border border-slate-700/50 text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/40 cursor-pointer"
-                >
-                  {SORT_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {/* Comments List */}
-            {sortedComments.length > 0 ? (
-              <div className="divide-y divide-slate-800/40">
-                {sortedComments.map(comment => (
-                  <CommentItem
-                    key={comment._id}
-                    comment={comment}
-                    user={user}
-                    depth={0}
-                    onReply={handleReply}
-                    onLike={handleLike}
-                    onDislike={handleDislike}
-                    onDelete={handleDelete}
-                    onEdit={handleEdit}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <h3 className="text-lg font-bold text-slate-400 mb-2">No comments yet</h3>
-                <p className="text-slate-500 text-sm">Be the first to start the conversation!</p>
-              </div>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <TrendingSidebar trending={trending} currentType={type} currentId={id} />
-          </div>
+            {/* Full Discussion Features (mentions, tagging, highlights, replies, sorting) */}
+            <CommentSection
+              contentId={String(id)}
+              contentType={type}
+              contentTitle={contentTitle || 'this'}
+              targetCommentId={targetCommentId}
+            />
         </div>
       </div>
 

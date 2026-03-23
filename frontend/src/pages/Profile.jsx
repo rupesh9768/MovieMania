@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getUserProfile, updateProfile, getUserComments } from '../api/profileService';
+import { getBackendMovieById } from '../api/backendService';
 import AVATARS, { getAvatarPath } from '../data/avatars';
 
 const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 const BACKEND_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const TMDB_BASE = 'https://api.themoviedb.org/3';
+const JIKAN_BASE = 'https://api.jikan.moe/v4';
 
 const getPosterUrl = (poster) => {
   if (!poster) return null;
@@ -68,6 +72,7 @@ const Profile = () => {
   // Comment history
   const [commentHistory, setCommentHistory] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentContentMeta, setCommentContentMeta] = useState({});
 
 
   useEffect(() => {
@@ -114,7 +119,7 @@ const Profile = () => {
         try {
           const data = await getUserComments(viewingUserId);
           if (data.success) {
-            setCommentHistory(data.contentItems || []);
+            setCommentHistory(data.comments || data.contentItems || []);
           }
         } catch (err) {
           console.error('Failed to load comments:', err);
@@ -125,6 +130,78 @@ const Profile = () => {
       fetchComments();
     }
   }, [activeTab, viewingUserId]);
+
+  useEffect(() => {
+    if (activeTab !== 'comments' || commentHistory.length === 0) return;
+
+    let cancelled = false;
+
+    const loadCommentMeta = async () => {
+      const uniqueKeys = Array.from(
+        new Set(
+          commentHistory
+            .filter((item) => item?.contentType && item?.contentId)
+            .map((item) => `${item.contentType}:${item.contentId}`)
+        )
+      );
+
+      const missingKeys = uniqueKeys.filter((key) => !commentContentMeta[key]);
+      if (missingKeys.length === 0) return;
+
+      const fetchedEntries = await Promise.all(
+        missingKeys.map(async (key) => {
+          const [contentType, contentId] = key.split(':');
+          try {
+            if (contentType === 'anime') {
+              const res = await fetch(`${JIKAN_BASE}/anime/${contentId}`);
+              if (!res.ok) throw new Error('Anime metadata fetch failed');
+              const data = await res.json();
+              return [key, {
+                title: data.data?.title || data.data?.title_english || `Anime #${contentId}`,
+                poster: data.data?.images?.jpg?.small_image_url || null
+              }];
+            }
+
+            if (contentType === 'theater') {
+              const movie = await getBackendMovieById(contentId);
+              return [key, {
+                title: movie?.title || `Theater #${contentId}`,
+                poster: movie?.poster || null
+              }];
+            }
+
+            const endpoint = contentType === 'tv' ? 'tv' : 'movie';
+            if (!TMDB_API_KEY) {
+              return [key, { title: `${getContentTypeLabel(contentType)} #${contentId}`, poster: null }];
+            }
+            const res = await fetch(`${TMDB_BASE}/${endpoint}/${contentId}?api_key=${TMDB_API_KEY}`);
+            if (!res.ok) throw new Error('TMDB metadata fetch failed');
+            const data = await res.json();
+            return [key, {
+              title: data.title || data.name || `${getContentTypeLabel(contentType)} #${contentId}`,
+              poster: data.poster_path ? `${IMG_BASE}${data.poster_path}` : null
+            }];
+          } catch {
+            return [key, { title: `${getContentTypeLabel(contentType)} #${contentId}`, poster: null }];
+          }
+        })
+      );
+
+      if (cancelled) return;
+
+      const nextMeta = {};
+      fetchedEntries.forEach(([key, value]) => {
+        nextMeta[key] = value;
+      });
+      setCommentContentMeta((prev) => ({ ...prev, ...nextMeta }));
+    };
+
+    loadCommentMeta();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, commentHistory, commentContentMeta]);
 
 
   const handleAvatarSelect = async (avatarFile) => {
@@ -188,9 +265,87 @@ const Profile = () => {
     if (!mediaId) return;
     if (mediaType === 'anime') {
       navigate(`/details/anime/${mediaId}`);
+    } else if (mediaType === 'theater') {
+      navigate(`/theater/${mediaId}`);
     } else {
       navigate(`/details/${mediaType || 'movie'}/${mediaId}`);
     }
+  };
+
+  const goToDiscussionComment = (item) => {
+    const mediaId = item?.contentId;
+    const mediaType = item?.contentType;
+    if (!mediaId || !mediaType) {
+      goToDetails(item);
+      return;
+    }
+
+    const commentId = item?.id;
+    if (commentId) {
+      navigate(`/discussion/${mediaType}/${mediaId}?commentId=${encodeURIComponent(commentId)}`);
+      return;
+    }
+
+    navigate(`/discussion/${mediaType}/${mediaId}`);
+  };
+
+  const renderCommentWithMentions = (item) => {
+    const text = item?.text || item?.latestComment || '';
+    const mentions = Array.isArray(item?.mentions) ? item.mentions : [];
+
+    if (!text || mentions.length === 0) return text;
+
+    const nodes = [];
+    let i = 0;
+    let buffer = '';
+
+    while (i < text.length) {
+      let matched = null;
+      let matchedLabel = '';
+
+      if (text[i] === '@') {
+        mentions.forEach((m) => {
+          const label = `@${m.name}`;
+          const candidate = text.slice(i, i + label.length);
+          const nextChar = text[i + label.length] || '';
+          const boundaryOk = !nextChar || /[\s.,!?;:)\]\}]/.test(nextChar);
+          if (boundaryOk && candidate.toLowerCase() === label.toLowerCase() && label.length > matchedLabel.length) {
+            matched = m;
+            matchedLabel = label;
+          }
+        });
+      }
+
+      if (matched) {
+        if (buffer) {
+          nodes.push(buffer);
+          buffer = '';
+        }
+
+        const href = matched.type === 'user' ? `/profile/${matched.id}` : `/person/${matched.id}`;
+        const style = matched.type === 'user'
+          ? 'text-cyan-300 bg-cyan-500/15 border-cyan-500/35 hover:bg-cyan-500/25'
+          : 'text-amber-300 bg-amber-500/15 border-amber-500/35 hover:bg-amber-500/25';
+
+        nodes.push(
+          <Link
+            key={`${item.id || item.contentId}-${matched.type}-${matched.id}-${i}`}
+            to={href}
+            onClick={(e) => e.stopPropagation()}
+            className={`inline-flex items-center rounded px-1 border transition-colors ${style}`}
+          >
+            {matchedLabel}
+          </Link>
+        );
+        i += matchedLabel.length;
+      } else {
+        buffer += text[i];
+        i += 1;
+      }
+    }
+
+    if (buffer) nodes.push(buffer);
+    return nodes;
   };
 
   // Avatar color fallback
@@ -286,6 +441,7 @@ const Profile = () => {
 
   const favoritesCount = profile.favorites?.length || 0;
   const watchlistCount = profile.watchlist?.length || 0;
+  const favoriteActorsCount = profile.favoriteActors?.length || 0;
 
   return (
     <div className="min-h-screen bg-dark-bg text-white">
@@ -316,7 +472,7 @@ const Profile = () => {
                       src={getAvatarPath(av.file)}
                       alt={av.label}
                       className="w-full h-full object-cover"
-                      onError={(e) => { e.target.src = 'https://via.placeholder.com/200?text=' + av.label; }}
+                      onError={(e) => { e.target.onerror = null; e.target.src = '/no-poster.png'; }}
                     />
                     {isSelected && (
                       <div className="absolute inset-0 bg-cyan-500/20 flex items-center justify-center">
@@ -418,6 +574,10 @@ const Profile = () => {
                 <div className="text-center">
                   <p className="text-xl font-bold text-cyan-400">{watchlistCount}</p>
                   <p className="text-[11px] text-slate-500 uppercase tracking-wide">Watchlist</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xl font-bold text-cyan-400">{favoriteActorsCount}</p>
+                  <p className="text-[11px] text-slate-500 uppercase tracking-wide">Actors</p>
                 </div>
               </div>
             </div>
@@ -617,6 +777,16 @@ const Profile = () => {
             Watchlist ({watchlistCount})
           </button>
           <button
+            onClick={() => setActiveTab('favoriteActors')}
+            className={`px-5 py-3 text-sm font-semibold transition-all border-b-2 ${
+              activeTab === 'favoriteActors'
+                ? 'border-cyan-500 text-cyan-400'
+                : 'border-transparent text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            Favorite Actors ({favoriteActorsCount})
+          </button>
+          <button
             onClick={() => setActiveTab('comments')}
             className={`px-5 py-3 text-sm font-semibold transition-all border-b-2 ${
               activeTab === 'comments'
@@ -658,7 +828,7 @@ const Profile = () => {
                           alt={item.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           loading="lazy"
-                          onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }}
+                          onError={(e) => { e.target.onerror = null; e.target.src = '/no-poster.png'; }}
                         />
                       ) : (
                         <div className="w-full h-full bg-slate-800 flex items-center justify-center">
@@ -716,7 +886,7 @@ const Profile = () => {
                           alt={item.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           loading="lazy"
-                          onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }}
+                          onError={(e) => { e.target.onerror = null; e.target.src = '/no-poster.png'; }}
                         />
                       ) : (
                         <div className="w-full h-full bg-slate-800 flex items-center justify-center">
@@ -744,6 +914,54 @@ const Profile = () => {
           </>
         )}
 
+        {/* Favorite Actors Tab */}
+        {activeTab === 'favoriteActors' && (
+          <>
+            {favoriteActorsCount === 0 ? (
+              <div className="text-center py-16">
+                <svg className="w-12 h-12 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618V19a1 1 0 01-1.447.894L15 17.618M5 8h7a2 2 0 012 2v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4a2 2 0 012-2z" /></svg>
+                <p className="text-slate-500 text-sm">
+                  {isOwnProfile ? "You haven't added favorite actors yet." : 'No favorite actors yet.'}
+                </p>
+                {isOwnProfile && (
+                  <Link to="/browse" className="inline-block mt-4 text-cyan-400 hover:text-cyan-300 text-sm">
+                    Browse and open cast pages
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {(profile.favoriteActors || []).map((actor) => {
+                  const actorImage = actor.profilePath ? `${IMG_BASE}${actor.profilePath}` : null;
+                  return (
+                    <button
+                      key={actor.personId}
+                      type="button"
+                      onClick={() => navigate(`/person/${actor.personId}`)}
+                      className="bg-slate-900/60 border border-slate-800/50 rounded-xl p-3 text-left hover:border-cyan-500/40 transition-all cursor-pointer"
+                    >
+                      <div className="aspect-2/3 rounded-lg overflow-hidden bg-slate-800 mb-2">
+                        {actorImage ? (
+                          <img
+                            src={actorImage}
+                            alt={actor.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs">N/A</div>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold truncate">{actor.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{actor.knownForDepartment || 'Actor'}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+
         {/* Comments Tab */}
         {activeTab === 'comments' && (
           <>
@@ -762,34 +980,58 @@ const Profile = () => {
             ) : (
               <div className="space-y-3">
                 {commentHistory.map((item, idx) => (
+                  (() => {
+                    const key = `${item.contentType}:${item.contentId}`;
+                    const meta = commentContentMeta[key] || {};
+                    const itemTitle = item.contentTitle || meta.title || `${getContentTypeLabel(item.contentType)} #${item.contentId}`;
+                    const itemPoster = meta.poster || null;
+
+                    return (
                   <div
-                    key={idx}
-                    onClick={() => goToDetails(item)}
+                    key={item.id || `${item.contentType}-${item.contentId}-${idx}`}
+                    onClick={() => goToDiscussionComment(item)}
                     className="bg-slate-900/60 border border-slate-800/50 rounded-xl p-4 hover:border-slate-700/60 transition-all cursor-pointer group"
                   >
                     <div className="flex items-start justify-between gap-3">
+                      {itemPoster ? (
+                        <img
+                          src={itemPoster}
+                          alt={itemTitle}
+                          className="w-11 h-16 rounded-md object-cover border border-slate-700/50 shrink-0"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-11 h-16 rounded-md bg-slate-800 border border-slate-700/50 shrink-0 flex items-center justify-center text-[10px] text-slate-500">N/A</div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1.5">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${getContentTypeColor(item.contentType)}`}>
                             {getContentTypeLabel(item.contentType)}
                           </span>
-                          <span className="text-xs text-slate-500">{timeAgo(item.lastCommentAt)}</span>
+                          {item.depth > 0 && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300">
+                              Reply
+                            </span>
+                          )}
+                          <span className="text-xs text-slate-500">{timeAgo(item.createdAt || item.lastCommentAt)}</span>
                         </div>
                         <h3 className="text-sm font-semibold text-white group-hover:text-cyan-400 transition-colors truncate">
-                          {item.contentTitle || `${getContentTypeLabel(item.contentType)} #${item.contentId}`}
+                          {itemTitle}
                         </h3>
-                        <p className="text-xs text-slate-500 mt-1 truncate">
-                          {item.commentCount} {item.commentCount === 1 ? 'comment' : 'comments'}
+                        <p className="text-xs text-slate-500 mt-1">
+                          {timeAgo(item.createdAt || item.lastCommentAt)}
+                          {item.isEdited ? ' • edited' : ''}
+                          {(item.likesCount || item.dislikesCount) ? ` • ${item.likesCount || 0} likes • ${item.dislikesCount || 0} dislikes` : ''}
                         </p>
-                        {item.latestComment && (
-                          <p className="text-xs text-slate-400 mt-1.5 line-clamp-2 italic">
-                            &quot;{item.latestComment.length > 120 ? item.latestComment.slice(0, 120) + '...' : item.latestComment}&quot;
-                          </p>
-                        )}
+                        <p className="text-xs text-slate-400 mt-1.5 line-clamp-3 italic">
+                          &quot;{renderCommentWithMentions(item)}&quot;
+                        </p>
                       </div>
                       <svg className="w-5 h-5 text-slate-600 group-hover:text-cyan-400 transition-colors shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
                     </div>
                   </div>
+                    );
+                  })()
                 ))}
               </div>
             )}

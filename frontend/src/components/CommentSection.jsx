@@ -8,10 +8,13 @@ import {
   toggleLike,
   toggleDislike,
   editComment,
-  deleteComment
+  deleteComment,
+  searchUsersForMentions,
+  searchTmdbPeopleForMentions
 } from '../api/discussionService';
 
 const BACKEND_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
+const TMDB_IMG_BASE = 'https://image.tmdb.org/t/p/w92';
 
 const getAvatarUrl = (avatar) => {
   if (!avatar) return null;
@@ -40,8 +43,263 @@ const timeAgo = (date) => {
   return `${Math.floor(days / 365)}y ago`;
 };
 
+const SpoilerText = ({ text }) => {
+  const [revealed, setRevealed] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        setRevealed((prev) => !prev);
+      }}
+      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs border transition-all ${
+        revealed
+          ? 'bg-slate-700/40 text-slate-200 border-slate-600/60'
+          : 'bg-amber-500/15 text-amber-300 border-amber-500/35 hover:bg-amber-500/25'
+      }`}
+      title={revealed ? 'Hide spoiler' : 'Reveal spoiler'}
+    >
+      <span>{revealed ? 'Hide Spoiler' : 'Show Spoiler'}</span>
+      {revealed && <span className="text-slate-300">{text}</span>}
+    </button>
+  );
+};
+
+const applySpoilerWrapper = (text, enabled) => {
+  const value = String(text || '').trim();
+  if (!value) return value;
+  if (!enabled) return value;
+
+  const hasSpoilerSyntax = /\|\|(.+?)\|\||\[spoiler\](.+?)\[\/spoiler\]/is.test(value);
+  if (hasSpoilerSyntax) return value;
+
+  return `[spoiler]${value}[/spoiler]`;
+};
+
+const sanitizeMentionsForText = (text, mentions) => {
+  const lower = String(text || '').toLowerCase();
+  return (mentions || []).filter((m) => {
+    if (!m?.name || !m?.id || !m?.type) return false;
+    return lower.includes(`@${String(m.name).toLowerCase()}`);
+  }).filter(
+    (m, index, arr) => arr.findIndex((x) => x.type === m.type && x.id === m.id) === index
+  );
+};
+
+const getMentionContext = (text, caretPosition) => {
+  const cursor = typeof caretPosition === 'number' ? caretPosition : text.length;
+  const left = text.slice(0, cursor);
+  const atIndex = left.lastIndexOf('@');
+
+  if (atIndex === -1) return null;
+
+  const prevChar = atIndex > 0 ? left[atIndex - 1] : ' ';
+  if (atIndex > 0 && !/\s|\(|\[|\{/.test(prevChar)) return null;
+
+  const query = left.slice(atIndex + 1);
+  if (query.length > 30) return null;
+  if (/\s/.test(query)) return null;
+
+  return {
+    query,
+    start: atIndex,
+    end: cursor
+  };
+};
+
+const MentionSuggestions = ({ suggestions, activeIndex, onSelect }) => {
+  if (!suggestions.length) return null;
+
+  return (
+    <div className="absolute z-50 left-0 right-0 mt-1 bg-[#0f172a] border border-slate-700/80 rounded-lg shadow-2xl overflow-hidden">
+      <div className="max-h-56 overflow-y-auto">
+        {suggestions.map((item, index) => {
+          const isActive = index === activeIndex;
+          const avatarUrl = item.type === 'user'
+            ? getAvatarUrl(item.avatar)
+            : item.profilePath
+              ? `${TMDB_IMG_BASE}${item.profilePath}`
+              : null;
+
+          return (
+            <button
+              key={`${item.type}-${item.id}`}
+              type="button"
+              onClick={() => onSelect(item)}
+              className={`w-full px-3 py-2 text-left flex items-center gap-2.5 transition-colors ${
+                isActive ? 'bg-cyan-500/15' : 'hover:bg-slate-800/80'
+              }`}
+            >
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-800 border border-slate-700/60 shrink-0">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={item.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-500">N/A</div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-white truncate">{item.name}</p>
+                <p className="text-[11px] text-slate-500 truncate">{item.type === 'user' ? 'User' : (item.subtitle || 'Actor')}</p>
+              </div>
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
+                item.type === 'user'
+                  ? 'text-cyan-300 border-cyan-500/30 bg-cyan-500/10'
+                  : 'text-amber-300 border-amber-500/30 bg-amber-500/10'
+              }`}>
+                {item.type === 'user' ? 'USER' : 'TMDB'}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const useMentionAutocomplete = ({ text, setText, inputRef, enabled, onMentionSelected }) => {
+  const [mentionContext, setMentionContext] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (!enabled || !mentionContext || mentionContext.query.length < 1) {
+      setSuggestions([]);
+      setActiveIndex(0);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const [usersRes, peopleRes] = await Promise.allSettled([
+          searchUsersForMentions(mentionContext.query),
+          searchTmdbPeopleForMentions(mentionContext.query)
+        ]);
+
+        if (cancelled) return;
+
+        const userItems = usersRes.status === 'fulfilled'
+          ? (usersRes.value.users || []).map((u) => ({
+              type: 'user',
+              id: String(u.id),
+              name: u.name,
+              avatar: u.avatar
+            }))
+          : [];
+
+        const actorItems = peopleRes.status === 'fulfilled'
+          ? (peopleRes.value.results || []).slice(0, 6).map((p) => ({
+              type: 'actor',
+              id: String(p.id),
+              name: p.name,
+              subtitle: p.known_for_department,
+              profilePath: p.profile_path
+            }))
+          : [];
+
+        const merged = [...userItems, ...actorItems];
+        const unique = merged.filter((item, idx, arr) => arr.findIndex((x) => x.type === item.type && x.id === item.id) === idx);
+        setSuggestions(unique.slice(0, 8));
+        setActiveIndex(0);
+      } catch {
+        if (!cancelled) setSuggestions([]);
+      }
+    }, 220);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [enabled, mentionContext]);
+
+  const updateContextFrom = (value, caret) => {
+    if (!enabled) {
+      setMentionContext(null);
+      return;
+    }
+    const ctx = getMentionContext(value, caret);
+    setMentionContext(ctx);
+  };
+
+  const handleChange = (e) => {
+    const value = e.target.value;
+    const caret = e.target.selectionStart;
+    setText(value);
+    updateContextFrom(value, caret);
+  };
+
+  const selectSuggestion = (item) => {
+    if (!mentionContext) return;
+
+    const mentionText = `@${item.name}`;
+    const nextValue =
+      text.slice(0, mentionContext.start) + mentionText + ' ' + text.slice(mentionContext.end);
+
+    const nextCursor = mentionContext.start + mentionText.length + 1;
+    setText(nextValue);
+    if (onMentionSelected) {
+      onMentionSelected({
+        type: item.type === 'user' ? 'user' : 'actor',
+        id: String(item.id),
+        name: item.name
+      });
+    }
+    setMentionContext(null);
+    setSuggestions([]);
+
+    setTimeout(() => {
+      if (inputRef?.current) {
+        inputRef.current.focus();
+        inputRef.current.setSelectionRange(nextCursor, nextCursor);
+      }
+    }, 0);
+  };
+
+  const handleKeyDown = (e) => {
+    if (!suggestions.length) return false;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev + 1) % suggestions.length);
+      return true;
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+      return true;
+    }
+
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      selectSuggestion(suggestions[activeIndex]);
+      return true;
+    }
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setSuggestions([]);
+      setMentionContext(null);
+      return true;
+    }
+
+    return false;
+  };
+
+  return {
+    showSuggestions: suggestions.length > 0,
+    suggestions,
+    activeIndex,
+    handleChange,
+    handleKeyDown,
+    selectSuggestion,
+    updateContextFrom
+  };
+};
+
 // Single comment component (recursive for replies)
-const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, depth = 0 }) => {
+const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, depth = 0, targetCommentId = null }) => {
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [replyImage, setReplyImage] = useState(null);
@@ -50,42 +308,121 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
   const [saving, setSaving] = useState(false);
-  const [showReplies, setShowReplies] = useState(depth < 2);
+  const [showReplies, setShowReplies] = useState(targetCommentId ? true : depth < 2);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [showSpoiler, setShowSpoiler] = useState(false);
+  const [replyAsSpoiler, setReplyAsSpoiler] = useState(false);
+  const [replyMentions, setReplyMentions] = useState([]);
   const replyInputRef = useRef(null);
   const replyFileRef = useRef(null);
+  const mentionReply = useMentionAutocomplete({
+    text: replyText,
+    setText: setReplyText,
+    inputRef: replyInputRef,
+    enabled: Boolean(user),
+    onMentionSelected: (mention) => {
+      setReplyMentions((prev) => {
+        if (prev.some((m) => m.type === mention.type && m.id === mention.id)) return prev;
+        return [...prev, mention];
+      });
+    }
+  });
 
   const isOwner = user && comment.user?._id === user._id;
   const isAdmin = user?.role === 'admin';
   const userLiked = user && comment.likes?.includes(user._id);
   const userDisliked = user && comment.dislikes?.includes(user._id);
+  const likeCount = comment.likes?.length || 0;
+  const dislikeCount = comment.dislikes?.length || 0;
   const hasReplies = comment.replies && comment.replies.length > 0;
+  const isTargetComment = targetCommentId && String(comment._id) === String(targetCommentId);
+  const [likePop, setLikePop] = useState(false);
+  const [dislikePop, setDislikePop] = useState(false);
+  const isFirstRenderRef = useRef(true);
+  const prevLikeCountRef = useRef(likeCount);
+  const prevDislikeCountRef = useRef(dislikeCount);
 
-  // Check if the comment contains spoiler tags
+  // Render mentions and spoiler segments.
   const renderText = (text) => {
-    // Support ||spoiler|| syntax
-    const parts = text.split(/\|\|(.+?)\|\|/g);
-    return parts.map((part, i) => {
-      if (i % 2 === 1) {
-        // This is a spoiler
-        return (
-          <span
-            key={i}
-            onClick={(e) => { e.stopPropagation(); setShowSpoiler(!showSpoiler); }}
-            className={`cursor-pointer rounded px-1 transition-all ${
-              showSpoiler
-                ? 'bg-slate-700/50 text-white'
-                : 'bg-slate-600 text-transparent hover:bg-slate-500 select-none'
-            }`}
-            title={showSpoiler ? 'Click to hide spoiler' : 'Click to reveal spoiler'}
-          >
-            {part}
-          </span>
-        );
+    const mentions = Array.isArray(comment.mentions) ? comment.mentions : [];
+
+    const renderMentionsInSegment = (segment, segmentKey) => {
+      if (!mentions.length || !segment) return segment;
+
+      const tokens = [];
+      let i = 0;
+      let buffer = '';
+
+      while (i < segment.length) {
+        let matched = null;
+        let matchedLabel = '';
+
+        if (segment[i] === '@') {
+          mentions.forEach((m) => {
+            const label = `@${m.name}`;
+            const candidate = segment.slice(i, i + label.length);
+            const nextChar = segment[i + label.length] || '';
+            const boundaryOk = !nextChar || /[\s.,!?;:)\]\}]/.test(nextChar);
+
+            if (boundaryOk && candidate.toLowerCase() === label.toLowerCase() && label.length > matchedLabel.length) {
+              matched = m;
+              matchedLabel = label;
+            }
+          });
+        }
+
+        if (matched) {
+          if (buffer) {
+            tokens.push(buffer);
+            buffer = '';
+          }
+
+          const to = matched.type === 'user' ? `/profile/${matched.id}` : `/person/${matched.id}`;
+          const style = matched.type === 'user'
+            ? 'text-cyan-300 bg-cyan-500/15 border-cyan-500/35 hover:bg-cyan-500/25'
+            : 'text-amber-300 bg-amber-500/15 border-amber-500/35 hover:bg-amber-500/25';
+
+          tokens.push(
+            <Link
+              key={`${segmentKey}-mention-${i}-${matched.type}-${matched.id}`}
+              to={to}
+              className={`inline-flex items-center rounded px-1 border transition-colors ${style}`}
+            >
+              {matchedLabel}
+            </Link>
+          );
+          i += matchedLabel.length;
+        } else {
+          buffer += segment[i];
+          i += 1;
+        }
       }
-      return <span key={i}>{part}</span>;
-    });
+
+      if (buffer) tokens.push(buffer);
+      return tokens;
+    };
+
+    const parts = [];
+    const spoilerRegex = /\[spoiler\]([\s\S]*?)\[\/spoiler\]|\|\|(.+?)\|\|/gi;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = spoilerRegex.exec(text)) !== null) {
+      const normal = text.slice(lastIndex, match.index);
+      if (normal) {
+        parts.push(<span key={`normal-${lastIndex}`}>{renderMentionsInSegment(normal, `segment-${lastIndex}`)}</span>);
+      }
+
+      const spoilerBody = match[1] || match[2] || '';
+      parts.push(<SpoilerText key={`spoiler-${match.index}`} text={spoilerBody} />);
+      lastIndex = spoilerRegex.lastIndex;
+    }
+
+    const tail = text.slice(lastIndex);
+    if (tail) {
+      parts.push(<span key={`tail-${lastIndex}`}>{renderMentionsInSegment(tail, `segment-${lastIndex}`)}</span>);
+    }
+
+    return parts.length ? parts : text;
   };
 
   const handleReplyImageChange = (e) => {
@@ -100,8 +437,12 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
     if (!replyText.trim()) return;
     setReplying(true);
     try {
-      await onReply(comment._id, replyText.trim(), replyImage);
+      const payloadText = applySpoilerWrapper(replyText, replyAsSpoiler);
+      const mentions = sanitizeMentionsForText(payloadText, replyMentions);
+      await onReply(comment._id, payloadText, replyImage, mentions);
       setReplyText('');
+      setReplyAsSpoiler(false);
+      setReplyMentions([]);
       setReplyImage(null);
       setReplyImagePreview(null);
       setShowReplyBox(false);
@@ -135,6 +476,31 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
     }
   }, [showReplyBox]);
 
+  useEffect(() => {
+    if (isFirstRenderRef.current) return;
+    if (likeCount === prevLikeCountRef.current) return;
+
+    setLikePop(true);
+    prevLikeCountRef.current = likeCount;
+    const t = setTimeout(() => setLikePop(false), 260);
+    return () => clearTimeout(t);
+  }, [likeCount]);
+
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      prevLikeCountRef.current = likeCount;
+      prevDislikeCountRef.current = dislikeCount;
+      isFirstRenderRef.current = false;
+      return;
+    }
+    if (dislikeCount === prevDislikeCountRef.current) return;
+
+    setDislikePop(true);
+    prevDislikeCountRef.current = dislikeCount;
+    const t = setTimeout(() => setDislikePop(false), 260);
+    return () => clearTimeout(t);
+  }, [dislikeCount, likeCount]);
+
   // Avatar colors based on username
   const getAvatarColor = (name) => {
     const colors = [
@@ -153,8 +519,16 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
   const maxDepthReached = depth >= 4;
 
   return (
-    <div className={`group ${depth > 0 ? 'ml-4 sm:ml-8 pl-3 sm:pl-4 border-l-2 border-slate-800/60 hover:border-slate-700/80 transition-colors' : ''}`}>
+    <div
+      data-comment-id={comment._id}
+      className={`group ${depth > 0 ? 'ml-4 sm:ml-8 pl-3 sm:pl-4 border-l-2 border-slate-800/60 hover:border-slate-700/80 transition-colors' : ''}`}
+    >
       <div className="py-3">
+        <div className={`bg-slate-900/45 border rounded-xl p-3.5 transition-all comment-enter-card ${
+          isTargetComment
+            ? 'border-cyan-400/60 shadow-[0_0_0_1px_rgba(34,211,238,0.35),0_12px_30px_rgba(0,0,0,0.35)]'
+            : 'border-slate-800/60 hover:border-slate-700/70'
+        }`}>
         {/* Comment Header */}
         <div className="flex items-start gap-2.5">
           {/* Avatar */}
@@ -241,29 +615,31 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                 {/* Like */}
                 <button
                   onClick={() => user ? onLike(comment._id) : null}
-                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all ${
+                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition-all ${
                     userLiked
-                      ? 'text-cyan-400 bg-cyan-500/10'
-                      : 'text-slate-500 hover:text-cyan-400 hover:bg-slate-800/60'
+                      ? 'text-cyan-300 bg-cyan-500/10 border-cyan-500/35'
+                      : 'text-slate-400 border-slate-700/60 hover:text-cyan-400 hover:bg-slate-800/60'
                   } ${!user ? 'cursor-default opacity-60' : 'cursor-pointer'}`}
                   title={user ? (userLiked ? 'Remove like' : 'Like') : 'Login to like'}
                 >
-                  <span>{userLiked ? '+' : '+'}</span>
-                  <span>{comment.likes?.length || 0}</span>
+                  <svg className="w-3.5 h-3.5" fill={userLiked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 9V5a3 3 0 00-6 0v4M5 11h14l-1 9H6l-1-9z" /></svg>
+                  <span>Like</span>
+                  <span className={likePop ? 'reaction-count-pop' : ''}>{likeCount}</span>
                 </button>
 
                 {/* Dislike */}
                 <button
                   onClick={() => user ? onDislike(comment._id) : null}
-                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all ${
+                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition-all ${
                     userDisliked
-                      ? 'text-red-400 bg-red-500/10'
-                      : 'text-slate-500 hover:text-red-400 hover:bg-slate-800/60'
+                      ? 'text-rose-300 bg-rose-500/10 border-rose-500/35'
+                      : 'text-slate-400 border-slate-700/60 hover:text-rose-300 hover:bg-slate-800/60'
                   } ${!user ? 'cursor-default opacity-60' : 'cursor-pointer'}`}
                   title={user ? (userDisliked ? 'Remove dislike' : 'Dislike') : 'Login to dislike'}
                 >
-                  <span>{userDisliked ? '-' : '-'}</span>
-                  <span>{comment.dislikes?.length || 0}</span>
+                  <svg className="w-3.5 h-3.5" fill={userDisliked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 15v4a3 3 0 006 0v-4m3-2H5l1-9h12l1 9z" /></svg>
+                  <span>Dislike</span>
+                  <span className={dislikePop ? 'reaction-count-pop' : ''}>{dislikeCount}</span>
                 </button>
 
                 {/* Reply button */}
@@ -321,31 +697,57 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
             {/* Reply Input */}
             {showReplyBox && (
               <div className="mt-3 space-y-2">
-                <div className="flex gap-2">
-                  <input
-                    ref={replyInputRef}
-                    type="text"
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleReply()}
-                    placeholder={`Reply to ${comment.user?.name}...`}
-                    className="flex-1 bg-slate-800/80 border border-slate-700/60 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/40 focus:border-cyan-500/40"
-                    maxLength={2000}
-                  />
+                <div className="relative">
+                  <div className="flex gap-2">
+                    <input
+                      ref={replyInputRef}
+                      type="text"
+                      value={replyText}
+                      onChange={mentionReply.handleChange}
+                      onKeyDown={(e) => {
+                        if (mentionReply.handleKeyDown(e)) return;
+                        if (e.key === 'Enter' && !e.shiftKey) handleReply();
+                      }}
+                      onClick={(e) => mentionReply.updateContextFrom(e.target.value, e.target.selectionStart)}
+                      placeholder={`Reply to ${comment.user?.name}... Use @ to mention`}
+                      className="flex-1 bg-slate-800/80 border border-slate-700/60 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/40 focus:border-cyan-500/40"
+                      maxLength={2000}
+                    />
+                    <button
+                      onClick={() => replyFileRef.current?.click()}
+                      className="text-slate-500 hover:text-cyan-400 px-2 transition-colors"
+                      title="Attach image"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    </button>
+                    <input ref={replyFileRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleReplyImageChange} />
+                    <button
+                      onClick={handleReply}
+                      disabled={replying || !replyText.trim()}
+                      className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors shrink-0"
+                    >
+                      {replying ? '...' : 'Reply'}
+                    </button>
+                  </div>
+                  {mentionReply.showSuggestions && (
+                    <MentionSuggestions
+                      suggestions={mentionReply.suggestions}
+                      activeIndex={mentionReply.activeIndex}
+                      onSelect={mentionReply.selectSuggestion}
+                    />
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => replyFileRef.current?.click()}
-                    className="text-slate-500 hover:text-cyan-400 px-2 transition-colors"
-                    title="Attach image"
+                    type="button"
+                    onClick={() => setReplyAsSpoiler((prev) => !prev)}
+                    className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+                      replyAsSpoiler
+                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/35'
+                        : 'text-slate-500 border-slate-700/60 hover:text-amber-300 hover:border-amber-500/25'
+                    }`}
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                  </button>
-                  <input ref={replyFileRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleReplyImageChange} />
-                  <button
-                    onClick={handleReply}
-                    disabled={replying || !replyText.trim()}
-                    className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors shrink-0"
-                  >
-                    {replying ? '...' : 'Reply'}
+                    Spoiler Reply
                   </button>
                 </div>
                 {replyImagePreview && (
@@ -357,6 +759,7 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
 
@@ -392,6 +795,7 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                   onDelete={onDelete}
                   onEdit={onEdit}
                   depth={depth + 1}
+                  targetCommentId={targetCommentId}
                 />
               ))}
             </>
@@ -410,7 +814,7 @@ const SORT_OPTIONS = [
 ];
 
 // Main comment section component
-const CommentSection = ({ contentId, contentType, contentTitle }) => {
+const CommentSection = ({ contentId, contentType, contentTitle, targetCommentId = null }) => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -418,13 +822,27 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [newComment, setNewComment] = useState('');
+  const [newCommentAsSpoiler, setNewCommentAsSpoiler] = useState(false);
   const [commentImage, setCommentImage] = useState(null);
   const [commentImagePreview, setCommentImagePreview] = useState(null);
+  const [newCommentMentions, setNewCommentMentions] = useState([]);
   const [posting, setPosting] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [charCount, setCharCount] = useState(0);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const mentionMain = useMentionAutocomplete({
+    text: newComment,
+    setText: setNewComment,
+    inputRef: textareaRef,
+    enabled: isAuthenticated,
+    onMentionSelected: (mention) => {
+      setNewCommentMentions((prev) => {
+        if (prev.some((m) => m.type === mention.type && m.id === mention.id)) return prev;
+        return [...prev, mention];
+      });
+    }
+  });
 
 
   const fetchComments = async () => {
@@ -495,8 +913,12 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
     if (!newComment.trim()) return;
     setPosting(true);
     try {
-      await createComment({ contentId, contentType, text: newComment.trim(), image: commentImage });
+      const payloadText = applySpoilerWrapper(newComment, newCommentAsSpoiler);
+      const mentions = sanitizeMentionsForText(payloadText, newCommentMentions);
+      await createComment({ contentId, contentType, text: payloadText, image: commentImage, mentions });
       setNewComment('');
+      setNewCommentAsSpoiler(false);
+      setNewCommentMentions([]);
       setCharCount(0);
       removeImage();
       await fetchComments();
@@ -508,8 +930,8 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
   };
 
 
-  const handleReply = async (parentId, text, image) => {
-    await replyToComment(parentId, text, image);
+  const handleReply = async (parentId, text, image, mentions = []) => {
+    await replyToComment(parentId, text, image, mentions);
     await fetchComments();
   };
 
@@ -554,15 +976,34 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
   };
 
   // Auto-resize textarea
-  const handleTextChange = (e) => {
-    const val = e.target.value;
-    setNewComment(val);
-    setCharCount(val.length);
+  const resizeTextarea = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
   };
+
+  useEffect(() => {
+    setCharCount(newComment.length);
+    resizeTextarea();
+  }, [newComment]);
+
+  useEffect(() => {
+    if (!targetCommentId || loading || comments.length === 0) return;
+
+    const run = () => {
+      const selector = `[data-comment-id="${String(targetCommentId).replace(/"/g, '\\\"')}"]`;
+      const targetEl = document.querySelector(selector);
+      if (!targetEl) return;
+
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      targetEl.classList.add('comment-focus-pulse');
+      setTimeout(() => targetEl.classList.remove('comment-focus-pulse'), 2200);
+    };
+
+    const t = setTimeout(run, 120);
+    return () => clearTimeout(t);
+  }, [targetCommentId, loading, comments]);
 
   return (
     <section className="mt-10 mb-8">
@@ -599,18 +1040,29 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
             </div>
 
             <div className="flex-1">
-              <textarea
-                ref={textareaRef}
-                value={newComment}
-                onChange={handleTextChange}
-                placeholder={`Share your thoughts about ${contentTitle || 'this'}... (Wrap text in || for spoilers)`}
-                className="w-full bg-slate-800/60 border border-slate-700/40 rounded-xl p-3 text-sm text-white placeholder-slate-500 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-500/40 focus:border-cyan-500/40 min-h-12 transition-all"
-                rows={1}
-                maxLength={2000}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.ctrlKey) handlePost();
-                }}
-              />
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  value={newComment}
+                  onChange={mentionMain.handleChange}
+                  placeholder={`Share your thoughts about ${contentTitle || 'this'}... Use @ to tag users or actors`}
+                  className="w-full bg-slate-800/60 border border-slate-700/40 rounded-xl p-3 text-sm text-white placeholder-slate-500 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-500/40 focus:border-cyan-500/40 min-h-12 transition-all"
+                  rows={1}
+                  maxLength={2000}
+                  onClick={(e) => mentionMain.updateContextFrom(e.target.value, e.target.selectionStart)}
+                  onKeyDown={(e) => {
+                    if (mentionMain.handleKeyDown(e)) return;
+                    if (e.key === 'Enter' && e.ctrlKey) handlePost();
+                  }}
+                />
+                {mentionMain.showSuggestions && (
+                  <MentionSuggestions
+                    suggestions={mentionMain.suggestions}
+                    activeIndex={mentionMain.activeIndex}
+                    onSelect={mentionMain.selectSuggestion}
+                  />
+                )}
+              </div>
 
               {/* Image Preview */}
               {commentImagePreview && (
@@ -630,9 +1082,21 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     Image
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewCommentAsSpoiler((prev) => !prev)}
+                    className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+                      newCommentAsSpoiler
+                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/35'
+                        : 'text-slate-500 border-slate-700/60 hover:text-amber-300 hover:border-amber-500/25'
+                    }`}
+                    title="Mark the whole comment as spoiler"
+                  >
+                    Spoiler
+                  </button>
                   <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleImageChange} />
                   <p className="text-[11px] text-slate-600">
-                    Ctrl+Enter to post • Use ||text|| for spoilers
+                    Ctrl+Enter to post • Use @ to mention • Use the Spoiler button for easy spoiler comments
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -713,6 +1177,7 @@ const CommentSection = ({ contentId, contentType, contentTitle }) => {
                   onDislike={handleDislike}
                   onDelete={handleDelete}
                   onEdit={handleEdit}
+                  targetCommentId={targetCommentId}
                 />
               ))}
             </div>

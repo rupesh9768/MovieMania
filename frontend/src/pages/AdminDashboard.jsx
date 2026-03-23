@@ -349,7 +349,7 @@ const AdminDashboard = () => {
                         {movie.image ? (
                           <img src={movie.image} alt={movie.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }} />
+                            onError={(e) => { e.target.onerror = null; e.target.src = '/no-poster.png'; }} />
                         ) : (
                           <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-600 text-sm">No Poster</div>
                         )}
@@ -431,10 +431,10 @@ const AdminDashboard = () => {
                             <td className="p-4">
                               <div className="flex items-center gap-3">
                                 <img
-                                  src={movie.poster || movie.image || '/placeholder.jpg'}
+                                  src={movie.poster || movie.image || '/no-poster.png'}
                                   alt={movie.title}
                                   className="w-12 h-16 object-cover rounded"
-                                  onError={(e) => { e.target.src = '/placeholder.jpg'; }}
+                                  onError={(e) => { e.target.onerror = null; e.target.src = '/no-poster.png'; }}
                                 />
                                 <div>
                                   <span className="font-semibold block">{movie.title}</span>
