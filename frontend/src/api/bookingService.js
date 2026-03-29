@@ -106,6 +106,31 @@ export const cancelBooking = async (bookingId) => {
   throw new Error(response.data?.message || 'Failed to cancel booking');
 };
 
+/**
+ * Initiate Khalti Payment
+ * POST /api/payments/khalti/initiate
+ * @param {string} bookingId
+ * @returns {Promise} - { pidx, payment_url }
+ */
+export const initiateKhaltiPayment = async (bookingId) => {
+  const response = await api.post('/payments/khalti/initiate', { bookingId });
+  if (response.data?.success) return response.data.data;
+  throw new Error(response.data?.message || 'Failed to initiate payment');
+};
+
+/**
+ * Verify Khalti Payment
+ * POST /api/payments/khalti/verify
+ * @param {string} pidx
+ * @param {string} bookingId
+ * @returns {Promise} - Confirmed booking
+ */
+export const verifyKhaltiPayment = async (pidx, bookingId) => {
+  const response = await api.post('/payments/khalti/verify', { pidx, bookingId });
+  if (response.data?.success) return response.data.data;
+  throw new Error(response.data?.message || 'Failed to verify payment');
+};
+
 // Export all functions as default object
 export default {
   createBooking,
@@ -115,5 +140,7 @@ export default {
   getMyBookings,
   getBookingsByUserId,
   getBookingById,
-  cancelBooking
+  cancelBooking,
+  initiateKhaltiPayment,
+  verifyKhaltiPayment
 };

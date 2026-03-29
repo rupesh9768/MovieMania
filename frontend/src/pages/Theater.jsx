@@ -7,35 +7,52 @@ const Theater = () => {
   const navigate = useNavigate();
   
   const [movies, setMovies] = useState([]);
+  const [theaters, setTheaters] = useState([]);
+  const [selectedTheaterId, setSelectedTheaterId] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
 
   useEffect(() => {
-    const fetchTheaterMovies = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // Get now playing movies from backend
-        const nowPlaying = await backendApi.getBackendNowPlaying();
-        console.log('Theater movies:', nowPlaying);
+        const [nowPlaying, theaterList] = await Promise.all([
+          backendApi.getBackendNowPlaying(),
+          backendApi.getTheaters(true)
+        ]);
         setMovies(nowPlaying);
+        setTheaters(theaterList || []);
         
       } catch (err) {
-        console.error('Failed to fetch theater movies:', err);
+        console.error('Failed to fetch theater data:', err);
         setError('Failed to load movies. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
     
-    fetchTheaterMovies();
+    fetchData();
   }, []);
 
+  // Filter movies to only those that have showtimes at the selected theater
+  const filteredMovies = selectedTheaterId === 'all'
+    ? movies
+    : movies.filter((movie) => {
+        const showtimes = movie._raw?.showtimes || [];
+        return showtimes.some((st) => st.theater === selectedTheaterId);
+      });
 
   const handleBookNow = (movie) => {
-    navigate(`/theater/${movie.id}`, { state: { movie } });
+    const state = { movie };
+    if (selectedTheaterId !== 'all') {
+      state.selectedTheaterId = selectedTheaterId;
+      const theater = theaters.find((t) => t._id === selectedTheaterId);
+      if (theater) state.selectedTheaterName = theater.name;
+    }
+    navigate(`/theater/${movie.id}`, { state });
   };
 
   if (loading) {
@@ -76,6 +93,39 @@ const Theater = () => {
 
       {/* Movies Grid */}
       <section className="max-w-6xl mx-auto px-6 pb-16">
+
+        {/* Theater Selector */}
+        {theaters.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Select Theater</h2>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => setSelectedTheaterId('all')}
+                className={`py-2.5 px-5 rounded-xl text-sm font-semibold transition-all border ${
+                  selectedTheaterId === 'all'
+                    ? 'bg-red-600 border-red-500 text-white'
+                    : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
+                }`}
+              >
+                All Theaters
+              </button>
+              {theaters.map((theater) => (
+                <button
+                  key={theater._id}
+                  onClick={() => setSelectedTheaterId(theater._id)}
+                  className={`py-2.5 px-5 rounded-xl text-sm font-semibold transition-all border ${
+                    selectedTheaterId === theater._id
+                      ? 'bg-red-600 border-red-500 text-white'
+                      : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
+                  }`}
+                >
+                  <span>{theater.name}</span>
+                  <span className="block text-xs opacity-70">{theater.location}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Error State */}
         {error && (
@@ -91,24 +141,18 @@ const Theater = () => {
         )}
 
         {/* No Movies */}
-        {!error && movies.length === 0 && (
+        {!error && filteredMovies.length === 0 && (
           <div className="text-center py-20">
             <div className="text-5xl mb-4 text-slate-600">Film</div>
-            <h2 className="text-2xl font-bold mb-2">No Movies Currently Showing</h2>
-            <p className="text-slate-400 mb-6">Check back later for new releases!</p>
-            <button 
-              onClick={() => navigate('/admin')}
-              className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-full transition-all"
-            >
-              Admin: Add Movies
-            </button>
+            <h2 className="text-2xl font-bold mb-2">{selectedTheaterId !== 'all' ? 'No Movies at This Theater' : 'No Movies Currently Showing'}</h2>
+            <p className="text-slate-400 mb-6">{selectedTheaterId !== 'all' ? 'Try selecting a different theater or check back later.' : 'Check back later for new releases!'}</p>
           </div>
         )}
 
         {/* Movies Grid */}
-        {movies.length > 0 && (
+        {filteredMovies.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {movies.map((movie) => (
+            {filteredMovies.map((movie) => (
               <div 
                 key={movie.id} 
                 className="group relative bg-slate-900/50 rounded-xl overflow-hidden border border-slate-800/50 hover:border-red-500/50 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-red-500/10"

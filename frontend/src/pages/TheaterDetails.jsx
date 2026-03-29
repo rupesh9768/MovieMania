@@ -16,6 +16,10 @@ const TheaterDetails = () => {
   const [showtimes, setShowtimes] = useState([]);
   const [showtimesLoading, setShowtimesLoading] = useState(true);
 
+  // Theater filter from navigation state
+  const selectedTheaterId = location.state?.selectedTheaterId || null;
+  const selectedTheaterName = location.state?.selectedTheaterName || null;
+
   // Generate next 7 days
   const dates = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
@@ -58,11 +62,13 @@ const TheaterDetails = () => {
     fetchShowtimes();
   }, [id]);
 
-  // Filter showtimes for selected date
+  // Filter showtimes for selected date and theater
   const selectedDateStr = dates[selectedDate].toISOString().split('T')[0];
   const filteredShowtimes = showtimes.filter(st => {
     const stDate = new Date(st.date).toISOString().split('T')[0];
-    return stDate === selectedDateStr;
+    if (stDate !== selectedDateStr) return false;
+    if (selectedTheaterId && st.theater && st.theater !== selectedTheaterId) return false;
+    return true;
   });
 
 
@@ -221,11 +227,16 @@ const TheaterDetails = () => {
             
             {/* Select Showtime */}
             <div>
-              <h2 className="text-lg font-bold mb-3">Select Showtime</h2>
+              <h2 className="text-lg font-bold mb-3">
+                Select Showtime
+                {selectedTheaterName && (
+                  <span className="text-sm font-normal text-red-400 ml-2">at {selectedTheaterName}</span>
+                )}
+              </h2>
               {showtimesLoading ? (
                 <p className="text-slate-500 text-sm">Loading showtimes...</p>
               ) : filteredShowtimes.length === 0 ? (
-                <p className="text-slate-500 text-sm">No showtimes available for this date.</p>
+                <p className="text-slate-500 text-sm">No showtimes available for this date{selectedTheaterName ? ` at ${selectedTheaterName}` : ''}.</p>
               ) : (
                 <div className="flex flex-wrap gap-3">
                   {filteredShowtimes.map((st, idx) => (
@@ -239,7 +250,9 @@ const TheaterDetails = () => {
                       }`}
                     >
                       <span className="block">{st.time}</span>
-                      <span className="block text-xs mt-1 opacity-70">{st.hall} - NPR {st.price}</span>
+                      <span className="block text-xs mt-1 opacity-70">
+                        {st.theaterName ? `${st.theaterName} - ` : ''}{st.hall} - NPR {st.price}
+                      </span>
                     </button>
                   ))}
                 </div>

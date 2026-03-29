@@ -157,6 +157,19 @@ const MentionSuggestions = ({ suggestions, activeIndex, onSelect }) => {
   );
 };
 
+const normalizeId = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') return String(value._id || value.id || '');
+  return String(value);
+};
+
+const listIncludesUser = (list, userId) => {
+  if (!Array.isArray(list) || !userId) return false;
+  const normalizedUserId = normalizeId(userId);
+  return list.some((entry) => normalizeId(entry) === normalizedUserId);
+};
+
 const useMentionAutocomplete = ({ text, setText, inputRef, enabled, onMentionSelected }) => {
   const [mentionContext, setMentionContext] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
@@ -310,6 +323,7 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
   const [saving, setSaving] = useState(false);
   const [showReplies, setShowReplies] = useState(targetCommentId ? true : depth < 2);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const [replyAsSpoiler, setReplyAsSpoiler] = useState(false);
   const [replyMentions, setReplyMentions] = useState([]);
   const replyInputRef = useRef(null);
@@ -327,16 +341,23 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
     }
   });
 
-  const isOwner = user && comment.user?._id === user._id;
+  const currentUserId = user?._id || user?.id;
+  const isOwner = Boolean(currentUserId) && normalizeId(comment.user?._id || comment.user?.id) === normalizeId(currentUserId);
   const isAdmin = user?.role === 'admin';
-  const userLiked = user && comment.likes?.includes(user._id);
-  const userDisliked = user && comment.dislikes?.includes(user._id);
+  const userLiked = listIncludesUser(comment.likes, currentUserId);
+  const userDisliked = listIncludesUser(comment.dislikes, currentUserId);
+  const userVote = userLiked ? 'upvote' : userDisliked ? 'downvote' : null;
+  const isUpvoted = userVote === 'upvote';
+  const isDownvoted = userVote === 'downvote';
   const likeCount = comment.likes?.length || 0;
   const dislikeCount = comment.dislikes?.length || 0;
+  const voteCount = likeCount - dislikeCount;
   const hasReplies = comment.replies && comment.replies.length > 0;
   const isTargetComment = targetCommentId && String(comment._id) === String(targetCommentId);
   const [likePop, setLikePop] = useState(false);
   const [dislikePop, setDislikePop] = useState(false);
+  const [upvotePressed, setUpvotePressed] = useState(false);
+  const [downvotePressed, setDownvotePressed] = useState(false);
   const isFirstRenderRef = useRef(true);
   const prevLikeCountRef = useRef(likeCount);
   const prevDislikeCountRef = useRef(dislikeCount);
@@ -468,6 +489,32 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
   const handleDelete = async () => {
     await onDelete(comment._id);
     setConfirmDelete(false);
+  };
+
+  const handleUpvoteClick = () => {
+    if (!user) return;
+    setUpvotePressed(true);
+    setTimeout(() => setUpvotePressed(false), 160);
+    onLike(comment._id);
+  };
+
+  const handleDownvoteClick = () => {
+    if (!user) return;
+    setDownvotePressed(true);
+    setTimeout(() => setDownvotePressed(false), 160);
+    onDislike(comment._id);
+  };
+
+  const handleShare = async () => {
+    try {
+      const shareUrl = new URL(window.location.href);
+      shareUrl.searchParams.set('comment', comment._id);
+      await navigator.clipboard.writeText(shareUrl.toString());
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 1400);
+    } catch (err) {
+      console.error('Failed to copy share link:', err);
+    }
   };
 
   useEffect(() => {
@@ -611,53 +658,65 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
 
             {/* Action Bar */}
             {!isEditing && (
-              <div className="flex items-center gap-1 mt-2 flex-wrap">
-                {/* Like */}
-                <button
-                  onClick={() => user ? onLike(comment._id) : null}
-                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition-all ${
-                    userLiked
-                      ? 'text-cyan-300 bg-cyan-500/10 border-cyan-500/35'
-                      : 'text-slate-400 border-slate-700/60 hover:text-cyan-400 hover:bg-slate-800/60'
-                  } ${!user ? 'cursor-default opacity-60' : 'cursor-pointer'}`}
-                  title={user ? (userLiked ? 'Remove like' : 'Like') : 'Login to like'}
-                >
-                  <svg className="w-3.5 h-3.5" fill={userLiked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 9V5a3 3 0 00-6 0v4M5 11h14l-1 9H6l-1-9z" /></svg>
-                  <span>Like</span>
-                  <span className={likePop ? 'reaction-count-pop' : ''}>{likeCount}</span>
-                </button>
-
-                {/* Dislike */}
-                <button
-                  onClick={() => user ? onDislike(comment._id) : null}
-                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition-all ${
-                    userDisliked
-                      ? 'text-rose-300 bg-rose-500/10 border-rose-500/35'
-                      : 'text-slate-400 border-slate-700/60 hover:text-rose-300 hover:bg-slate-800/60'
-                  } ${!user ? 'cursor-default opacity-60' : 'cursor-pointer'}`}
-                  title={user ? (userDisliked ? 'Remove dislike' : 'Dislike') : 'Login to dislike'}
-                >
-                  <svg className="w-3.5 h-3.5" fill={userDisliked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 15v4a3 3 0 006 0v-4m3-2H5l1-9h12l1 9z" /></svg>
-                  <span>Dislike</span>
-                  <span className={dislikePop ? 'reaction-count-pop' : ''}>{dislikeCount}</span>
-                </button>
+              <div className="mt-2 flex items-center gap-2 flex-wrap rounded-xl border border-slate-300/20 bg-slate-200/10 px-2 py-1.5">
+                {/* Reddit-style vote rail */}
+                <div className={`flex flex-col items-center justify-center rounded-lg border border-slate-300/25 bg-slate-100/10 px-2 py-1.5 ${!user ? 'opacity-70' : ''}`}>
+                  <button
+                    onClick={handleUpvoteClick}
+                    className={`text-sm leading-none transition-all duration-200 ${
+                      isUpvoted ? 'text-red-500 scale-110' : 'text-slate-400 hover:text-red-400'
+                    } ${upvotePressed ? 'scale-125' : ''} ${
+                      !user ? 'cursor-default' : 'cursor-pointer active:scale-95'
+                    }`}
+                    title={user ? (isUpvoted ? 'Remove upvote' : 'Upvote') : 'Login to vote'}
+                    aria-label={user ? (isUpvoted ? 'Remove upvote' : 'Upvote') : 'Login to vote'}
+                  >
+                    ▲
+                  </button>
+                  <span className={`text-xs font-semibold transition-all duration-200 ${isUpvoted ? 'text-red-500' : isDownvoted ? 'text-blue-500' : 'text-slate-300'} ${likePop || dislikePop ? 'reaction-count-pop' : ''}`}>
+                    {voteCount}
+                  </span>
+                  <button
+                    onClick={handleDownvoteClick}
+                    className={`text-sm leading-none transition-all duration-200 ${
+                      isDownvoted ? 'text-blue-500 scale-110' : 'text-slate-400 hover:text-blue-400'
+                    } ${downvotePressed ? 'scale-125' : ''} ${
+                      !user ? 'cursor-default' : 'cursor-pointer active:scale-95'
+                    }`}
+                    title={user ? (isDownvoted ? 'Remove downvote' : 'Downvote') : 'Login to vote'}
+                    aria-label={user ? (isDownvoted ? 'Remove downvote' : 'Downvote') : 'Login to vote'}
+                  >
+                    ▼
+                  </button>
+                </div>
 
                 {/* Reply button */}
                 {user && !maxDepthReached && (
                   <button
                     onClick={() => setShowReplyBox(!showReplyBox)}
-                    className="text-xs text-slate-500 hover:text-white px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all"
+                    className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-100/10 transition-all duration-200 active:scale-95"
                   >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h11M3 6h18M3 14h7m8 0l3 3m0 0l-3 3m3-3H10" /></svg>
                     Reply
                   </button>
                 )}
+
+                <button
+                  onClick={handleShare}
+                  className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-100/10 transition-all duration-200 active:scale-95"
+                  title="Copy link to this comment"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342a3 3 0 010-4.243l2.122-2.122a3 3 0 014.243 4.243l-.707.707M15.316 10.658a3 3 0 010 4.243l-2.122 2.122a3 3 0 11-4.243-4.243l.707-.707" /></svg>
+                  {shareCopied ? 'Copied' : 'Share'}
+                </button>
 
                 {/* Edit button (owner only) */}
                 {isOwner && (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="text-xs text-slate-500 hover:text-cyan-400 px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all"
+                    className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-cyan-300 px-2.5 py-1.5 rounded-lg hover:bg-slate-100/10 transition-all duration-200 active:scale-95"
                   >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M16.5 3.5a2.121 2.121 0 113 3L12 14l-4 1 1-4 7.5-7.5z" /></svg>
                     Edit
                   </button>
                 )}
@@ -666,17 +725,17 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                 {(isOwner || isAdmin) && (
                   <>
                     {confirmDelete ? (
-                      <div className="flex items-center gap-1 ml-1">
-                        <span className="text-xs text-red-400">Delete?</span>
+                      <div className="flex items-center gap-1 ml-1 rounded-lg bg-red-500/10 border border-red-500/20 px-1.5 py-1">
+                        <span className="text-xs text-red-300">Delete?</span>
                         <button
                           onClick={handleDelete}
-                          className="text-xs text-red-400 hover:text-red-300 bg-red-500/10 px-2 py-1 rounded-md font-medium"
+                          className="text-xs text-red-200 hover:text-white bg-red-500/20 px-2 py-1 rounded-md font-medium transition-all duration-200 active:scale-95"
                         >
                           Yes
                         </button>
                         <button
                           onClick={() => setConfirmDelete(false)}
-                          className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded-md"
+                          className="text-xs text-slate-300 hover:text-white px-2 py-1 rounded-md transition-all duration-200 active:scale-95"
                         >
                           No
                         </button>
@@ -684,8 +743,9 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                     ) : (
                       <button
                         onClick={() => setConfirmDelete(true)}
-                        className="text-xs text-slate-500 hover:text-red-400 px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all"
+                        className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-red-300 px-2.5 py-1.5 rounded-lg hover:bg-slate-100/10 transition-all duration-200 active:scale-95"
                       >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-7 0h8" /></svg>
                         Delete
                       </button>
                     )}

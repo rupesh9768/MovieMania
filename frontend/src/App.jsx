@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, useLocation, useNavigationType } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigationType } from 'react-router-dom';
 
 // Providers
 import { AuthProvider } from './context/AuthContext';
@@ -20,6 +20,12 @@ import Upcoming from './pages/Upcoming';
 import Watchlist from './pages/Watchlist';
 import Favorites from './pages/Favorites';
 import AdminDashboard from './pages/AdminDashboard';
+import DashboardOverview from './pages/admin/DashboardOverview';
+import MoviesAdmin from './pages/admin/MoviesAdmin';
+import BookingsAdmin from './pages/admin/BookingsAdmin';
+import AnalyticsAdmin from './pages/admin/AnalyticsAdmin';
+import UsersAdmin from './pages/admin/UsersAdmin';
+import TheatersAdmin from './pages/admin/TheatersAdmin';
 import Booking from './pages/Booking';
 import BookingHistory from './pages/BookingHistory';
 import Theater from './pages/Theater';
@@ -27,6 +33,7 @@ import TheaterDetails from './pages/TheaterDetails';
 import Profile from './pages/Profile';
 import Discussion from './pages/Discussion';
 import PersonDetails from './pages/PersonDetails';
+import KhaltiCallback from './pages/KhaltiCallback';
 
 // Import Components (used as pages)
 import ShowtimeSelection from './components/ShowtimeSelection';
@@ -129,6 +136,11 @@ function App() {
               {/* Theater Routes - Movies in our halls */}
               <Route path="/theater" element={<Theater />} />
               <Route path="/theater/:id" element={<TheaterDetails />} />
+
+              {/* Khalti Payment Callback */}
+              <Route path="/payment/khalti/callback" element={
+                <ProtectedRoute><KhaltiCallback /></ProtectedRoute>
+              } />
               
               {/* Profile Routes */}
               <Route path="/profile" element={
@@ -142,7 +154,15 @@ function App() {
               {/* Admin Routes (Protected — admin only) */}
               <Route path="/admin" element={
                 <AdminRoute><AdminDashboard /></AdminRoute>
-              } />
+              }>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<DashboardOverview />} />
+                <Route path="movies" element={<MoviesAdmin />} />
+                <Route path="theaters" element={<TheatersAdmin />} />
+                <Route path="bookings" element={<BookingsAdmin />} />
+                <Route path="users" element={<UsersAdmin />} />
+                <Route path="analytics" element={<AnalyticsAdmin />} />
+              </Route>
               
               {/* 404 Fallback */}
               <Route path="*" element={

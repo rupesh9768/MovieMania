@@ -17,6 +17,9 @@ import userRoutes from './routes/user.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import discussionRoutes from './routes/discussion.routes.js';
 import bookingRoutes from './routes/booking.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
+import theaterRoutes from './routes/theater.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 // Create Express app
 const app = express();
@@ -77,6 +80,15 @@ app.use('/api/discussion', discussionRoutes);
 // Bookings API
 app.use('/api/bookings', bookingRoutes);
 
+// Payments API (Khalti)
+app.use('/api/payments', paymentRoutes);
+
+// Theaters API
+app.use('/api/theaters', theaterRoutes);
+
+// Admin analytics API
+app.use('/api/admin', adminRoutes);
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
@@ -86,7 +98,8 @@ app.get('/', (req, res) => {
       health: '/api/health',
       auth: '/api/auth',
       movies: '/api/movies',
-      users: '/api/users'
+      users: '/api/users',
+      admin: '/api/admin'
     }
   });
 });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getBackendMovieById } from '../api/backendService';
+import { toggleMovieInterest } from '../api/backendService';
 import { 
   checkItemInLists, 
   addToWatchlist, 
@@ -23,7 +24,7 @@ const MovieDetails = () => {
   const { id, mediaType: routeMediaType } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const isBackendMovieRoute = location.pathname.startsWith('/movie/backend/');
   
   // Determine media type from URL
@@ -53,6 +54,11 @@ const MovieDetails = () => {
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [watchlistJustUpdated, setWatchlistJustUpdated] = useState(false);
   const [favoriteJustUpdated, setFavoriteJustUpdated] = useState(false);
+  
+  // Interest state (for upcoming backend movies)
+  const [isInterested, setIsInterested] = useState(false);
+  const [interestedCount, setInterestedCount] = useState(0);
+  const [interestLoading, setInterestLoading] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -163,6 +169,15 @@ const MovieDetails = () => {
               typeof genre === 'string' ? { id: genre, name: genre } : genre
             )
           });
+          
+          // Set interest data
+          setInterestedCount(backendMovie.interestedCount || 0);
+          if (user && backendMovie.interestedUsers?.length > 0) {
+            setIsInterested(backendMovie.interestedUsers.some(
+              (uid) => uid.toString() === user._id?.toString() || uid.toString() === user.id?.toString()
+            ));
+          }
+          
           setCast([]);
           setCrewDetails([]);
           setTrailer(null);
@@ -369,6 +384,28 @@ const MovieDetails = () => {
     return 'Movie';
   };
 
+  const handleInterestToggle = async () => {
+    if (!isAuthenticated) {
+      alert('Please login to mark interest');
+      navigate('/login');
+      return;
+    }
+    if (!item?.isBackend || item?.isNowPlaying) return;
+
+    setInterestLoading(true);
+    try {
+      const movieId = item._id || item.id;
+      const result = await toggleMovieInterest(movieId);
+      setIsInterested(result.interested);
+      setInterestedCount(result.interestedCount);
+    } catch (error) {
+      console.error('Interest toggle error:', error);
+      alert(error.response?.data?.error || 'Failed to update interest');
+    } finally {
+      setInterestLoading(false);
+    }
+  };
+
   const handleGenreClick = (genre) => {
     if (item?.isAnime) {
       navigate('/anime', { state: { genreId: genre.id, genreName: genre.name } });
@@ -572,6 +609,34 @@ const MovieDetails = () => {
                     <>♡ Favorite</>
                   )}
                 </button>
+
+                {/* Interest Button (only for upcoming backend movies) */}
+                {item.isBackend && !item.isNowPlaying && (
+                  <button 
+                    onClick={handleInterestToggle}
+                    disabled={interestLoading}
+                    className={`font-semibold py-2.5 px-5 rounded-full transition-all duration-200 text-sm border cursor-pointer flex items-center gap-2 active:scale-95 ${
+                      isInterested 
+                        ? 'bg-orange-500/20 text-orange-300 border-orange-400/60 shadow-[0_0_0_1px_rgba(251,146,60,0.35)]'
+                        : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                    } ${interestLoading ? 'opacity-60 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
+                  >
+                    {interestLoading ? (
+                      <span className="animate-spin text-xs">...</span>
+                    ) : isInterested ? (
+                      <>🔥 Interested</>
+                    ) : (
+                      <>🔥 Mark Interested</>
+                    )}
+                  </button>
+                )}
+
+                {/* Interest Count (for backend movies) */}
+                {item.isBackend && interestedCount > 0 && (
+                  <span className="text-sm text-orange-400 font-medium flex items-center gap-1 ml-1">
+                    🔥 {interestedCount} {interestedCount === 1 ? 'person' : 'people'} interested
+                  </span>
+                )}
 
               </div>
             </div>

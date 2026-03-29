@@ -25,6 +25,8 @@ const normalizeBackendMovie = (movie) => ({
   year: movie.releaseDate ? new Date(movie.releaseDate).getFullYear().toString() : '',
   isNowPlaying: movie.isNowPlaying || false,
   bookingEnabled: movie.bookingEnabled || false,
+  interestedCount: movie.interestedCount || 0,
+  interestedUsers: movie.interestedUsers || [],
   _raw: movie
 });
 
@@ -187,6 +189,103 @@ export const removeShowtime = async (movieId, showtimeId) => {
   throw new Error('Failed to remove showtime');
 };
 
+// Admin: Dashboard analytics
+export const getAdminDashboardAnalytics = async (days = 30) => {
+  const response = await api.get('/admin/dashboard', {
+    params: { days }
+  });
+
+  if (response.data?.success) {
+    return response.data.data;
+  }
+
+  throw new Error('Failed to fetch admin dashboard analytics');
+};
+
+// Admin: Get all bookings
+export const getAdminBookings = async () => {
+  const response = await api.get('/bookings');
+  if (response.data?.success) {
+    return response.data.data || [];
+  }
+  throw new Error('Failed to fetch admin bookings');
+};
+
+// ====================================
+// Theater API
+// ====================================
+
+// Get all theaters
+export const getTheaters = async (activeOnly = false) => {
+  const params = activeOnly ? { active: 'true' } : {};
+  const response = await api.get('/theaters', { params });
+  if (response.data?.success) return response.data.data;
+  return [];
+};
+
+// Get single theater
+export const getTheaterById = async (id) => {
+  const response = await api.get(`/theaters/${id}`);
+  if (response.data?.success) return response.data.data;
+  return null;
+};
+
+// Admin: Create theater
+export const createTheater = async (data) => {
+  const response = await api.post('/theaters', data);
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to create theater');
+};
+
+// Admin: Update theater
+export const updateTheater = async (id, data) => {
+  const response = await api.put(`/theaters/${id}`, data);
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to update theater');
+};
+
+// Admin: Delete theater
+export const deleteTheater = async (id) => {
+  const response = await api.delete(`/theaters/${id}`);
+  if (response.data?.success) return true;
+  throw new Error('Failed to delete theater');
+};
+
+// Admin: Add hall to theater
+export const addHallToTheater = async (theaterId, hallData) => {
+  const response = await api.post(`/theaters/${theaterId}/halls`, hallData);
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to add hall');
+};
+
+// Admin: Remove hall from theater
+export const removeHallFromTheater = async (theaterId, hallId) => {
+  const response = await api.delete(`/theaters/${theaterId}/halls/${hallId}`);
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to remove hall');
+};
+
+// Toggle interest on an upcoming movie
+export const toggleMovieInterest = async (movieId) => {
+  const response = await api.post(`/movies/${movieId}/interest`);
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to toggle interest');
+};
+
+// Get most interested upcoming movies
+export const getMostInterestedMovies = async () => {
+  try {
+    const response = await api.get('/movies/most-interested');
+    if (response.data?.success) {
+      return response.data.data.map(normalizeBackendMovie);
+    }
+    return [];
+  } catch (error) {
+    console.error('Backend API error (most-interested):', error.message);
+    return [];
+  }
+};
+
 // Export all functions
 export default {
   getBackendMovies,
@@ -195,10 +294,21 @@ export default {
   getGlobalShowingMovies,
   getBackendMovieById,
   checkBackendHealth,
+  toggleMovieInterest,
+  getMostInterestedMovies,
   createMovie,
   updateMovie,
   deleteMovie,
   getMovieShowtimes,
   addShowtime,
-  removeShowtime
+  removeShowtime,
+  getAdminDashboardAnalytics,
+  getAdminBookings,
+  getTheaters,
+  getTheaterById,
+  createTheater,
+  updateTheater,
+  deleteTheater,
+  addHallToTheater,
+  removeHallFromTheater
 };

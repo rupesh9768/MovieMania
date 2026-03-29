@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getNepaliMovies, getIndianMovies, getUpcomingBigMovies, getTrendingMovies } from '../api/movieService';
 import { getTrendingTV } from '../api/tvService';
 import { getTopAnime } from '../api/animeService';
-import { getBackendNowPlaying, getGlobalShowingMovies } from '../api/backendService';
+import { getBackendNowPlaying, getGlobalShowingMovies, getMostInterestedMovies } from '../api/backendService';
 import TrendingDiscussions from '../components/TrendingDiscussions';
 import HeroSlider from '../components/HeroSlider';
 import { NO_POSTER_IMAGE, handleImageError } from '../utils/imageFallback';
@@ -27,7 +27,6 @@ const Home = () => {
   const [trendingTVShows, setTrendingTVShows] = useState([]);
   const [trendingAnime, setTrendingAnime] = useState([]);
   const [mostInterested, setMostInterested] = useState([]);
-  const [interestedIds, setInterestedIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -134,7 +133,8 @@ const Home = () => {
           upcomingResult,
           trendingResult,
           trendingTVResult,
-          topAnimeResult
+          topAnimeResult,
+          mostInterestedResult
         ] = await Promise.allSettled([
           getBackendNowPlaying(),
           getGlobalShowingMovies(),
@@ -147,7 +147,8 @@ const Home = () => {
           getUpcomingBigMovies(12),
           getTrendingMovies('week', false),
           getTrendingTV('week'),
-          getTopAnime({ page: 1, limit: 15, filter: 'bypopularity' })
+          getTopAnime({ page: 1, limit: 15, filter: 'bypopularity' }),
+          getMostInterestedMovies()
         ]);
 
         const backendNowPlaying = backendNowPlayingResult.status === 'fulfilled' ? backendNowPlayingResult.value : [];
@@ -162,6 +163,7 @@ const Home = () => {
         const trending = trendingResult.status === 'fulfilled' ? trendingResult.value : [];
         const trendingTV = trendingTVResult.status === 'fulfilled' ? trendingTVResult.value : [];
         const topAnime = topAnimeResult.status === 'fulfilled' ? topAnimeResult.value?.data || [] : [];
+        const mostInterestedData = mostInterestedResult.status === 'fulfilled' ? mostInterestedResult.value : [];
         
         console.log('Homepage data results:', {
           backendNowPlaying: backendNowPlaying.length,
@@ -207,40 +209,8 @@ const Home = () => {
           }))
         );
         
-        // Most Interested = Upcoming movies the user marked as interested
-        let savedIds = [];
-        try {
-          savedIds = JSON.parse(localStorage.getItem('interestedUpcoming') || '[]');
-        } catch { savedIds = []; }
-        
-        // Clean: only keep IDs that exist in the upcoming list and haven't released
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const upcomingIdSet = new Set(upcoming.map(m => m.id));
-        const validIds = savedIds.filter(id => {
-          if (!upcomingIdSet.has(id)) return false;
-          const movie = upcoming.find(m => m.id === id);
-          if (!movie || !movie.releaseDate) return true;
-          return new Date(movie.releaseDate) >= today;
-        });
-        
-        if (validIds.length !== savedIds.length) {
-          localStorage.setItem('interestedUpcoming', JSON.stringify(validIds));
-        }
-        setInterestedIds(validIds);
-        
-        const interestedUpcoming = upcoming.filter(m => validIds.includes(m.id));
-        
-        // If user has interested movies, show those; otherwise show top upcoming by popularity
-        if (interestedUpcoming.length > 0) {
-          setMostInterested(interestedUpcoming.slice(0, 15));
-        } else {
-          // Fallback: show top upcoming by popularity
-          const topUpcoming = [...upcoming]
-            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
-            .slice(0, 10);
-          setMostInterested(topUpcoming);
-        }
+        // Most Interested = upcoming movies sorted by interest count from backend
+        setMostInterested(mostInterestedData.slice(0, 15));
         
       } catch (err) {
         console.error('Failed to load homepage data:', err);
@@ -286,8 +256,6 @@ const Home = () => {
 
   // Reusable movie card with fire emoji
   const MovieCardRow = ({ movie, rank, sectionBadge, showRating = false }) => {
-    const movieIsInterested = interestedIds.includes(movie.id);
-    
     return (
       <div 
         key={movie.id} 
@@ -303,10 +271,10 @@ const Home = () => {
           />
           <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-150"></div>
 
-          {/* Interested badge on hover */}
-          {movieIsInterested && (
-            <div className="absolute top-2 right-2 bg-orange-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              🔥 Interested
+          {/* Interested count badge */}
+          {movie.interestedCount > 0 && (
+            <div className="absolute top-2 right-2 bg-orange-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+              🔥 {movie.interestedCount}
             </div>
           )}
 

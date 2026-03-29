@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUpcomingBigMovies, getGenres } from '../api/movieService';
+import { getUpcomingMovies as getBackendUpcoming, toggleMovieInterest } from '../api/backendService';
+import { useAuth } from '../context/AuthContext';
 
 const Upcoming = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   
   // State
   const [movies, setMovies] = useState([]);
@@ -15,7 +18,7 @@ const Upcoming = () => {
   const [selectedFilter, setSelectedFilter] = useState('all'); // all, thisMonth, nextMonth, interested
   const [sortBy, setSortBy] = useState('popularity'); // popularity, date, title
   
-  // Interested movies (localStorage) - initialized empty, will sync after movies load
+  // Interested movies - backend movie IDs user is interested in
   const [interestedMovies, setInterestedMovies] = useState([]);
 
   // Current time for countdown (update every minute)
@@ -32,38 +35,28 @@ const Upcoming = () => {
         setLoading(true);
         setError(null);
         
-        const [upcomingMovies, genreData] = await Promise.all([
-          getUpcomingBigMovies(12), // Look 12 months ahead
-          getGenres()
+        const [upcomingMovies, genreData, backendUpcoming] = await Promise.all([
+          getUpcomingBigMovies(12),
+          getGenres(),
+          getBackendUpcoming()
         ]);
         
-        console.log('Upcoming: Fetched', upcomingMovies.length, 'big movies');
+        // Merge backend upcoming movies on top (they have interest data)
+        // Deduplicate by title to avoid showing same movie from both sources
+        const backendTitles = new Set(backendUpcoming.map(m => m.title?.toLowerCase()));
+        const filteredTmdb = upcomingMovies.filter(m => !backendTitles.has(m.title?.toLowerCase()));
+        const merged = [...backendUpcoming, ...filteredTmdb];
         
-        setMovies(upcomingMovies);
+        setMovies(merged);
         setGenres(genreData);
         
-        // Clean up interested list: remove released movies & invalid IDs
-        try {
-          const saved = JSON.parse(localStorage.getItem('interestedUpcoming') || '[]');
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const upcomingIds = new Set(upcomingMovies.map(m => m.id));
-          
-          // Keep only IDs that exist in upcoming list AND haven't released yet
-          const cleaned = saved.filter(id => {
-            if (!upcomingIds.has(id)) return false;
-            const movie = upcomingMovies.find(m => m.id === id);
-            if (!movie || !movie.releaseDate) return true; // keep if no date info
-            return new Date(movie.releaseDate) >= today;
-          });
-          
-          if (cleaned.length !== saved.length) {
-            localStorage.setItem('interestedUpcoming', JSON.stringify(cleaned));
-            console.log(`Cleaned interested list: ${saved.length} → ${cleaned.length}`);
-          }
-          setInterestedMovies(cleaned);
-        } catch {
-          setInterestedMovies([]);
+        // Build interested list from backend movies the current user has marked
+        if (user) {
+          const userId = user._id || user.id;
+          const interested = backendUpcoming
+            .filter(m => m.interestedUsers?.some(uid => uid.toString() === userId?.toString()))
+            .map(m => m.id);
+          setInterestedMovies(interested);
         }
       } catch (err) {
         console.error('Failed to fetch upcoming movies:', err);
@@ -74,7 +67,7 @@ const Upcoming = () => {
     };
     
     fetchData();
-  }, []);
+  }, [user]);
 
   const filteredMovies = useMemo(() => {
     let filtered = [...movies];
@@ -129,16 +122,35 @@ const Upcoming = () => {
     return counts;
   }, [movies]);
 
-  const toggleInterested = (movieId) => {
-    setInterestedMovies(prev => {
-      const isCurrentlyInterested = prev.includes(movieId);
-      const updated = isCurrentlyInterested 
-        ? prev.filter(id => id !== movieId)
-        : [...prev, movieId];
+  const toggleInterested = async (movie) => {
+    // Only backend upcoming movies can be marked as interested
+    if (!movie.isBackend) return;
+    
+    if (!isAuthenticated) {
+      alert('Please login to mark interest');
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      const result = await toggleMovieInterest(movie.id);
       
-      localStorage.setItem('interestedUpcoming', JSON.stringify(updated));
-      return updated;
-    });
+      setInterestedMovies(prev => {
+        if (result.interested) {
+          return [...prev, movie.id];
+        }
+        return prev.filter(mid => mid !== movie.id);
+      });
+      
+      // Update the movie's interestedCount in the local state
+      setMovies(prev => prev.map(m => 
+        m.id === movie.id 
+          ? { ...m, interestedCount: result.interestedCount }
+          : m
+      ));
+    } catch (error) {
+      console.error('Interest toggle error:', error);
+    }
   };
 
   const isInterested = (movieId) => interestedMovies.includes(movieId);
@@ -340,7 +352,7 @@ const Upcoming = () => {
                     {/* Card */}
                     <div 
                       className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-cyan-500/50 shadow-lg transition-all duration-300 cursor-pointer"
-                      onClick={() => navigate(`/details/movie/${movie.id}`)}
+                      onClick={() => navigate(movie.isBackend ? `/movie/backend/${movie.id}` : `/details/movie/${movie.id}`)}
                     >
                       {movie.image ? (
                         <img
@@ -369,21 +381,25 @@ const Upcoming = () => {
                           <span className="sm:inline">{movie.language}</span>
                         </div>
                         
-                        {/* Interest Button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleInterested(movie.id);
-                          }}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer text-base ${
-                            isInterested(movie.id)
-                              ? 'bg-orange-500/90 scale-110'
-                              : 'bg-black/60 hover:bg-orange-500/80 hover:scale-110'
-                          }`}
-                          title={isInterested(movie.id) ? 'Remove interest' : 'Mark as interested'}
-                        >
-                          🔥
-                        </button>
+                        {/* Interest Button - only for backend upcoming movies */}
+                        {movie.isBackend ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleInterested(movie);
+                            }}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer text-base ${
+                              isInterested(movie.id)
+                                ? 'bg-orange-500/90 scale-110'
+                                : 'bg-black/60 hover:bg-orange-500/80 hover:scale-110'
+                            }`}
+                            title={isInterested(movie.id) ? 'Remove interest' : 'Mark as interested'}
+                          >
+                            🔥
+                          </button>
+                        ) : (
+                          <div className="w-8 h-8" />
+                        )}
                       </div>
                       
                       {/* Countdown Badge (bottom left) */}
@@ -396,14 +412,19 @@ const Upcoming = () => {
                       {/* Bottom Info */}
                       <div className="absolute bottom-0 left-0 right-0 p-3">
                         <p className="text-white font-bold text-sm truncate">{movie.title}</p>
-                        <p className="text-cyan-300 text-xs">{formatDate(movie.releaseDate)}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-cyan-300 text-xs">{formatDate(movie.releaseDate)}</p>
+                          {movie.isBackend && movie.interestedCount > 0 && (
+                            <span className="text-orange-400 text-xs font-bold">🔥 {movie.interestedCount}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     
                     {/* Title below card */}
                     <h3 
                       className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/details/movie/${movie.id}`)}
+                      onClick={() => navigate(movie.isBackend ? `/movie/backend/${movie.id}` : `/details/movie/${movie.id}`)}
                     >
                       {movie.title}
                     </h3>

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import SeatSelection from '../components/SeatSelection';
-import { cancelBooking, confirmBooking, reserveBooking } from '../api/bookingService';
+import { cancelBooking, confirmBooking, reserveBooking, initiateKhaltiPayment } from '../api/bookingService';
 import { backendApi } from '../api';
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
@@ -167,6 +167,21 @@ function Booking() {
     setConfirming(true);
 
     try {
+      if (bookingData.paymentMethod === 'khalti') {
+        // Initiate Khalti payment — user will be redirected to Khalti
+        const { payment_url } = await initiateKhaltiPayment(bookingData.reservationId);
+        // Store booking context in sessionStorage so we can restore after redirect
+        sessionStorage.setItem('khalti_booking', JSON.stringify({
+          reservationId: bookingData.reservationId,
+          seats: bookingData.seats,
+          price: bookingData.price,
+          movieMeta
+        }));
+        window.location.href = payment_url;
+        return;
+      }
+
+      // Non-Khalti fallback: direct confirm
       const booking = await confirmBooking(bookingData.reservationId, {
         totalPrice: bookingData.price,
         paymentMethod: bookingData.paymentMethod
@@ -304,7 +319,7 @@ function Booking() {
               </div>
 
               <div className="mt-6 border-t border-slate-800 pt-5">
-                <label className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Payment Method (for future integration)</label>
+                <label className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Payment Method</label>
                 <div className="grid sm:grid-cols-2 gap-3 mt-3">
                   <button
                     onClick={() => setBookingData((prev) => ({ ...prev, paymentMethod: 'khalti' }))}
@@ -340,7 +355,7 @@ function Booking() {
                 disabled={confirming}
                 className="w-full bg-cyan-500 hover:bg-cyan-400 disabled:opacity-60 text-black font-bold py-3.5 rounded-xl transition-all"
               >
-                {confirming ? 'Confirming...' : 'Confirm Booking'}
+                {confirming ? 'Redirecting to Khalti...' : bookingData.paymentMethod === 'khalti' ? 'Pay with Khalti' : 'Confirm Booking'}
               </button>
 
               <button
