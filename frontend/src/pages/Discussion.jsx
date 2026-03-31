@@ -1,15 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import {
-  getDiscussion,
-  createComment,
-  replyToComment,
-  toggleLike,
-  toggleDislike,
-  editComment,
-  deleteComment
-} from '../api/discussionService';
+import { getDiscussion } from '../api/discussionService';
 import CommentSection from '../components/CommentSection';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -17,7 +8,6 @@ const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 const IMG_ORIGINAL = 'https://image.tmdb.org/t/p/original';
 const JIKAN_BASE = 'https://api.jikan.moe/v4';
-const BACKEND_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
 
 const TYPE_LABELS = {
   movie: 'Movie',
@@ -26,358 +16,22 @@ const TYPE_LABELS = {
   theater: 'Theater'
 };
 
-const getAvatarUrl = (avatar) => {
-  if (!avatar) return null;
-  if (avatar.startsWith('http')) return avatar;
-  if (avatar.startsWith('/avatars/') || !avatar.startsWith('/')) {
-    return avatar.startsWith('/') ? avatar : `/avatars/${encodeURIComponent(avatar)}`;
-  }
-  return `${BACKEND_URL}${avatar}`;
+const TYPE_COLORS = {
+  movie: 'bg-red-500/20 text-red-400 border-red-500/30',
+  tv: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  anime: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+  theater: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
 };
 
-const timeAgo = (dateStr) => {
-  const seconds = Math.floor((Date.now() - new Date(dateStr)) / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  const weeks = Math.floor(days / 7);
-  if (weeks < 4) return `${weeks}w ago`;
-  const months = Math.floor(days / 30);
-  if (months < 12) return `${months}mo ago`;
-  return `${Math.floor(days / 365)}y ago`;
-};
-
-const getAvatarColor = (name) => {
-  const colors = [
-    'from-cyan-500 to-blue-600',
-    'from-cyan-400 to-teal-600',
-    'from-teal-500 to-cyan-600',
-    'from-sky-500 to-cyan-600',
-    'from-cyan-500 to-sky-600',
-    'from-blue-500 to-cyan-600',
-    'from-cyan-600 to-blue-500',
-  ];
-  return colors[(name || '').charCodeAt(0) % colors.length];
-};
-
-// Spoiler text rendering
-const renderText = (text) => {
-  const parts = text.split(/\|\|(.+?)\|\|/g);
-  return parts.map((part, i) => {
-    if (i % 2 === 1) {
-      return <SpoilerTag key={i} text={part} />;
-    }
-    return <span key={i}>{part}</span>;
-  });
-};
-
-const SpoilerTag = ({ text }) => {
-  const [revealed, setRevealed] = useState(false);
-  return (
-    <span
-      onClick={(e) => { e.stopPropagation(); setRevealed(!revealed); }}
-      className={`cursor-pointer rounded px-1 transition-all ${
-        revealed ? 'bg-slate-700/50 text-white' : 'bg-slate-600 text-transparent hover:bg-slate-500 select-none'
-      }`}
-      title={revealed ? 'Click to hide spoiler' : 'Click to reveal spoiler'}
-    >
-      {text}
-    </span>
-  );
-};
-
-// ========== COMMENT COMPONENT ==========
-const CommentItem = ({ comment, user, depth = 0, onReply, onLike, onDislike, onDelete, onEdit }) => {
-  const [showReplyBox, setShowReplyBox] = useState(false);
-  const [replyText, setReplyText] = useState('');
-  const [replyImage, setReplyImage] = useState(null);
-  const [replyImagePreview, setReplyImagePreview] = useState(null);
-  const [replying, setReplying] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(comment.text);
-  const [saving, setSaving] = useState(false);
-  const [showReplies, setShowReplies] = useState(depth < 2);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const replyInputRef = useRef(null);
-  const replyFileRef = useRef(null);
-
-  const isOwner = user && comment.user?._id === user._id;
-  const isAdmin = user?.role === 'admin';
-  const userLiked = user && comment.likes?.includes(user._id);
-  const userDisliked = user && comment.dislikes?.includes(user._id);
-  const hasReplies = comment.replies && comment.replies.length > 0;
-  const maxDepthReached = depth >= 3;
-
-  const handleReplyImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setReplyImage(file);
-      setReplyImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleReply = async () => {
-    if (!replyText.trim()) return;
-    setReplying(true);
-    try {
-      await onReply(comment._id, replyText.trim(), replyImage);
-      setReplyText('');
-      setReplyImage(null);
-      setReplyImagePreview(null);
-      setShowReplyBox(false);
-    } finally {
-      setReplying(false);
-    }
-  };
-
-  const handleEdit = async () => {
-    if (!editText.trim() || editText.trim() === comment.text) {
-      setIsEditing(false);
-      return;
-    }
-    setSaving(true);
-    try {
-      await onEdit(comment._id, editText.trim());
-      setIsEditing(false);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    await onDelete(comment._id);
-    setConfirmDelete(false);
-  };
-
-  useEffect(() => {
-    if (showReplyBox && replyInputRef.current) replyInputRef.current.focus();
-  }, [showReplyBox]);
-
-  return (
-    <div className={`group ${depth > 0 ? 'ml-4 sm:ml-8 pl-3 sm:pl-4 border-l-2 border-slate-800/60 hover:border-slate-700/80 transition-colors' : ''}`}>
-      <div className="py-3">
-        <div className="flex items-start gap-2.5">
-          {/* Avatar */}
-          <div className="shrink-0">
-            {comment.user?.avatar ? (
-              <img src={getAvatarUrl(comment.user.avatar)} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-700/50 shadow-md" />
-            ) : (
-              <div className={`w-8 h-8 rounded-full bg-linear-to-br ${getAvatarColor(comment.user?.name)} flex items-center justify-center text-white text-xs font-bold shadow-md`}>
-                {comment.user?.name?.charAt(0)?.toUpperCase() || '?'}
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            {/* Name & Meta */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-sm text-white">
-                {comment.user?.name || 'Unknown'}
-              </span>
-              {comment.user?.role === 'admin' && (
-                <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">Admin</span>
-              )}
-              {isOwner && (
-                <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">You</span>
-              )}
-              <span className="text-xs text-slate-500">{timeAgo(comment.createdAt)}</span>
-              {comment.isEdited && <span className="text-[10px] text-slate-600 italic">(edited)</span>}
-            </div>
-
-            {/* Comment Body */}
-            {isEditing ? (
-              <div className="mt-2">
-                <textarea
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  className="w-full bg-slate-800/80 border border-slate-700 rounded-lg p-3 text-sm text-white resize-none focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
-                  rows={3}
-                  maxLength={2000}
-                />
-                <div className="flex items-center gap-2 mt-2">
-                  <button onClick={handleEdit} disabled={saving || !editText.trim()} className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
-                    {saving ? 'Saving...' : 'Save'}
-                  </button>
-                  <button onClick={() => { setIsEditing(false); setEditText(comment.text); }} className="text-slate-400 hover:text-white text-xs px-3 py-1.5 transition-colors">
-                    Cancel
-                  </button>
-                  <span className="text-xs text-slate-600 ml-auto">{editText.length}/2000</span>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p className="text-sm text-slate-300 mt-1 leading-relaxed whitespace-pre-wrap wrap-break-word">
-                  {renderText(comment.text)}
-                </p>
-                {comment.imageUrl && (
-                  <div className="mt-2">
-                    <img
-                      src={comment.imageUrl}
-                      alt="Comment attachment"
-                      className="max-w-xs max-h-64 rounded-lg border border-slate-700/50 cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => window.open(comment.imageUrl, '_blank')}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Action Bar */}
-            {!isEditing && (
-              <div className="flex items-center gap-1 mt-2 flex-wrap">
-                <button
-                  onClick={() => user ? onLike(comment._id) : null}
-                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all ${
-                    userLiked ? 'text-cyan-400 bg-cyan-500/10' : 'text-slate-500 hover:text-cyan-400 hover:bg-slate-800/60'
-                  } ${!user ? 'cursor-default opacity-60' : 'cursor-pointer'}`}
-                >
-                  <svg className="w-3.5 h-3.5" fill={userLiked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" /></svg>
-                  <span>{comment.likes?.length || 0}</span>
-                </button>
-
-                <button
-                  onClick={() => user ? onDislike(comment._id) : null}
-                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all ${
-                    userDisliked ? 'text-red-400 bg-red-500/10' : 'text-slate-500 hover:text-red-400 hover:bg-slate-800/60'
-                  } ${!user ? 'cursor-default opacity-60' : 'cursor-pointer'}`}
-                >
-                  <svg className="w-3.5 h-3.5" fill={userDisliked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                  <span>{comment.dislikes?.length || 0}</span>
-                </button>
-
-                {user && !maxDepthReached && (
-                  <button onClick={() => setShowReplyBox(!showReplyBox)} className="text-xs text-slate-500 hover:text-white px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all">
-                    Reply
-                  </button>
-                )}
-
-                {isOwner && (
-                  <button onClick={() => setIsEditing(true)} className="text-xs text-slate-500 hover:text-cyan-400 px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all">
-                    Edit
-                  </button>
-                )}
-
-                {(isOwner || isAdmin) && (
-                  <>
-                    {confirmDelete ? (
-                      <div className="flex items-center gap-1 ml-1">
-                        <span className="text-xs text-red-400">Delete?</span>
-                        <button onClick={handleDelete} className="text-xs text-red-400 hover:text-red-300 bg-red-500/10 px-2 py-1 rounded-md font-medium">Yes</button>
-                        <button onClick={() => setConfirmDelete(false)} className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded-md">No</button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setConfirmDelete(true)} className="text-xs text-slate-500 hover:text-red-400 px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all">
-                        Delete
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Reply Input */}
-            {showReplyBox && (
-              <div className="mt-3 space-y-2">
-                <div className="flex gap-2">
-                  <input
-                    ref={replyInputRef}
-                    type="text"
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleReply()}
-                    placeholder={`Reply to ${comment.user?.name}...`}
-                    className="flex-1 bg-slate-800/80 border border-slate-700/60 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
-                    maxLength={2000}
-                  />
-                  <button
-                    onClick={() => replyFileRef.current?.click()}
-                    className="text-slate-500 hover:text-cyan-400 px-2 transition-colors"
-                    title="Attach image"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                  </button>
-                  <input ref={replyFileRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleReplyImageChange} />
-                  <button onClick={handleReply} disabled={replying || !replyText.trim()} className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors shrink-0">
-                    {replying ? '...' : 'Reply'}
-                  </button>
-                </div>
-                {replyImagePreview && (
-                  <div className="relative inline-block">
-                    <img src={replyImagePreview} alt="Preview" className="max-h-24 rounded-lg border border-slate-700" />
-                    <button onClick={() => { setReplyImage(null); setReplyImagePreview(null); }} className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-400">×</button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Nested Replies */}
-      {hasReplies && (
-        <>
-          {!showReplies && (
-            <button onClick={() => setShowReplies(true)} className="text-xs text-cyan-400 hover:text-cyan-300 mb-2 ml-10 flex items-center gap-1 transition-colors">
-              + Show {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
-            </button>
-          )}
-          {showReplies && (
-            <>
-              {comment.replies.length > 2 && (
-                <button onClick={() => setShowReplies(false)} className="text-xs text-slate-500 hover:text-slate-300 mb-1 ml-10 flex items-center gap-1 transition-colors">
-                  − Hide replies
-                </button>
-              )}
-              {comment.replies.map((reply) => (
-                <CommentItem
-                  key={reply._id}
-                  comment={reply}
-                  user={user}
-                  onReply={onReply}
-                  onLike={onLike}
-                  onDislike={onDislike}
-                  onDelete={onDelete}
-                  onEdit={onEdit}
-                  depth={depth + 1}
-                />
-              ))}
-            </>
-          )}
-        </>
-      )}
-    </div>
-  );
-};
-
-// ========== SORT OPTIONS ==========
-const SORT_OPTIONS = [
-  { value: 'newest', label: 'Newest First' },
-  { value: 'oldest', label: 'Oldest First' },
-  { value: 'popular', label: 'Most Liked' },
-  { value: 'controversial', label: 'Most Discussed' },
-];
-
-// ========== MAIN DISCUSSION PAGE ==========
 const Discussion = () => {
   const { type, id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
-
   const targetCommentId = new URLSearchParams(location.search).get('commentId') || null;
 
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newComment, setNewComment] = useState('');
-  const [commentImage, setCommentImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState('newest');
 
   // Content metadata
   const [contentTitle, setContentTitle] = useState('');
@@ -388,10 +42,7 @@ const Discussion = () => {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showAllImages, setShowAllImages] = useState(false);
 
-  const textareaRef = useRef(null);
-  const fileInputRef = useRef(null);
-
-  // Fetch content metadata (title + poster) and images from TMDB/Jikan
+  // Fetch content metadata from TMDB/Jikan
   useEffect(() => {
     const fetchMeta = async () => {
       try {
@@ -404,7 +55,6 @@ const Discussion = () => {
             const year = data.data?.aired?.from?.split('-')[0];
             setContentYear(year || '');
           }
-          // Fetch anime pictures
           try {
             const picRes = await fetch(`${JIKAN_BASE}/anime/${id}/pictures`);
             if (picRes.ok) {
@@ -425,7 +75,6 @@ const Discussion = () => {
             setContentPoster(data.poster_path ? `${IMG_BASE}${data.poster_path}` : '');
             setContentYear((data.release_date || data.first_air_date || '').split('-')[0]);
           }
-          // Fetch images (backdrops + posters)
           try {
             const imgRes = await fetch(`${TMDB_BASE}/${endpoint}/${id}/images?api_key=${TMDB_API_KEY}`);
             if (imgRes.ok) {
@@ -453,9 +102,7 @@ const Discussion = () => {
     try {
       setError(null);
       const data = await getDiscussion(type, id);
-      if (data.success) {
-        setComments(data.comments);
-      }
+      if (data.success) setComments(data.comments);
     } catch (err) {
       console.error('Failed to fetch discussion:', err);
       setError('Failed to load discussion. Please try again.');
@@ -466,17 +113,6 @@ const Discussion = () => {
 
   useEffect(() => { fetchComments(); }, [fetchComments]);
 
-  // Sort comments
-  const sortedComments = [...comments].sort((a, b) => {
-    switch (sortBy) {
-      case 'oldest': return new Date(a.createdAt) - new Date(b.createdAt);
-      case 'popular': return (b.likes?.length || 0) - (a.likes?.length || 0);
-      case 'controversial': return ((b.replies?.length || 0) + (b.likes?.length || 0) + (b.dislikes?.length || 0)) - ((a.replies?.length || 0) + (a.likes?.length || 0) + (a.dislikes?.length || 0));
-      default: return new Date(b.createdAt) - new Date(a.createdAt);
-    }
-  });
-
-  // Count total including nested
   const countAll = (list) => {
     let total = 0;
     for (const c of list) {
@@ -487,75 +123,14 @@ const Discussion = () => {
   };
   const totalCount = countAll(comments);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setCommentImage(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const removeImage = () => {
-    setCommentImage(null);
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleCreateComment = async () => {
-    if (!newComment.trim() || submitting) return;
-    setSubmitting(true);
-    try {
-      await createComment({
-        contentId: id,
-        contentType: type,
-        text: newComment.trim(),
-        image: commentImage
-      });
-      setNewComment('');
-      removeImage();
-      await fetchComments();
-    } catch (err) {
-      console.error('Failed to post comment:', err);
-      alert(err.response?.data?.message || 'Failed to post comment');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleReply = async (parentId, text, image) => {
-    await replyToComment(parentId, text, image);
-    await fetchComments();
-  };
-
-  const handleLike = async (commentId) => {
-    try { await toggleLike(commentId); await fetchComments(); } catch (err) { console.error('Like failed:', err); }
-  };
-
-  const handleDislike = async (commentId) => {
-    try { await toggleDislike(commentId); await fetchComments(); } catch (err) { console.error('Dislike failed:', err); }
-  };
-
-  const handleEdit = async (commentId, text) => {
-    try { await editComment(commentId, text); await fetchComments(); } catch (err) { console.error('Edit failed:', err); }
-  };
-
-  const handleDelete = async (commentId) => {
-    try { await deleteComment(commentId); await fetchComments(); } catch (err) { console.error('Delete failed:', err); alert(err.response?.data?.message || 'Failed to delete comment'); }
-  };
-
-  const handleTextChange = (e) => {
-    setNewComment(e.target.value);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-red-500/20"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-red-500 animate-spin"></div>
+          </div>
           <p className="text-slate-400 text-sm">Loading discussion...</p>
         </div>
       </div>
@@ -563,51 +138,50 @@ const Discussion = () => {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg text-white">
-
-      {/* Header Bar */}
-      <div className="sticky top-16 z-40 bg-[#0a0f1a]/95 backdrop-blur-sm border-b border-slate-800/30">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+    <div className="min-h-screen bg-[#0a0a0f] text-white">
+      {/* Sticky Header Bar */}
+      <div className="sticky top-16 z-40 bg-[#0a0a0f]/95 backdrop-blur-md border-b border-slate-800/40">
+        <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
           <button
             onClick={() => {
               const detailPath = type === 'anime' ? `/details/anime/${id}` : type === 'theater' ? `/theater/${id}` : `/${type}/${id}`;
               navigate(detailPath);
             }}
-            className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-sm cursor-pointer"
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm cursor-pointer group"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+            <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
             Back to {TYPE_LABELS[type] || 'Details'}
           </button>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase px-2 py-0.5 rounded-full border bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-              {TYPE_LABELS[type] || type}
-            </span>
-          </div>
+          <span className={`text-[11px] font-bold uppercase px-2.5 py-1 rounded-lg border ${TYPE_COLORS[type] || 'bg-slate-500/20 text-slate-400 border-slate-500/30'}`}>
+            {TYPE_LABELS[type] || type}
+          </span>
         </div>
       </div>
 
-      {/* Content Header - Poster + Title + Photos */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* Content Header */}
+      <div className="max-w-5xl mx-auto px-6 py-8">
         <div className="flex flex-col lg:flex-row items-start gap-6 mb-8">
           {/* Left: Poster + Info */}
           <div className="flex items-start gap-5 flex-1 min-w-0">
             {contentPoster && (
-              <img
-                src={contentPoster}
-                alt={contentTitle}
-                className="w-24 sm:w-32 rounded-xl shadow-2xl border border-slate-700/30 shrink-0"
-              />
+              <img src={contentPoster} alt={contentTitle}
+                className="w-24 sm:w-32 rounded-xl shadow-2xl border border-slate-700/30 shrink-0" />
             )}
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl md:text-3xl font-black mb-1">{contentTitle || 'Discussion'}</h1>
+              <h1 className="text-2xl md:text-3xl font-black mb-1.5">{contentTitle || 'Discussion'}</h1>
               {contentYear && <p className="text-slate-500 text-sm mb-3">{contentYear}</p>}
-              <div className="flex items-center gap-4 flex-wrap">
-                <span className="text-sm text-slate-400">{totalCount} {totalCount === 1 ? 'comment' : 'comments'}</span>
-                <span className="text-xs text-slate-600">•</span>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                  </svg>
+                  <span className="text-sm text-slate-400">{totalCount} {totalCount === 1 ? 'comment' : 'comments'}</span>
+                </div>
+                <span className="text-xs text-slate-700">|</span>
                 <span className="text-sm text-slate-400 capitalize">{TYPE_LABELS[type] || type} Discussion</span>
               </div>
-              <p className="text-slate-500 text-sm mt-2">
-                Share your thoughts, theories, and reviews. Be respectful. Use the spoiler toggle in comments for hidden spoilers.
+              <p className="text-slate-500 text-sm mt-3 leading-relaxed">
+                Share your thoughts, theories, and reviews. Be respectful. Use the spoiler toggle for hidden spoilers.
               </p>
             </div>
           </div>
@@ -615,24 +189,24 @@ const Discussion = () => {
           {/* Right: Photos */}
           {contentImages.length > 0 && (
             <div className="w-full lg:w-auto lg:max-w-sm xl:max-w-md shrink-0">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-slate-300">Photos</h3>
+              <div className="flex items-center justify-between mb-2.5">
+                <h3 className="text-sm font-bold text-slate-300 flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Photos
+                </h3>
                 {contentImages.length > 4 && (
-                  <button
-                    onClick={() => setShowAllImages(!showAllImages)}
-                    className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
-                  >
+                  <button onClick={() => setShowAllImages(!showAllImages)}
+                    className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer">
                     {showAllImages ? 'Show less' : `All ${contentImages.length}`}
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {contentImages.slice(0, showAllImages ? contentImages.length : 4).map((img, i) => (
-                  <button
-                    key={i}
-                    onClick={() => { setLightboxIndex(i); setLightboxImage(img.full); }}
-                    className="aspect-video rounded-lg overflow-hidden border border-slate-700/40 hover:border-cyan-500/50 transition-all cursor-pointer group"
-                  >
+                  <button key={i} onClick={() => { setLightboxIndex(i); setLightboxImage(img.full); }}
+                    className="aspect-video rounded-lg overflow-hidden border border-slate-700/40 hover:border-red-500/40 transition-all cursor-pointer group">
                     <img src={img.thumb} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                   </button>
                 ))}
@@ -643,21 +217,19 @@ const Discussion = () => {
 
         {/* Main Content */}
         <div>
-            {/* Error State */}
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
-                <p className="text-red-400 text-sm">{error}</p>
-                <button onClick={fetchComments} className="text-red-300 hover:text-white text-xs mt-2 underline cursor-pointer">Try again</button>
-              </div>
-            )}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
+              <p className="text-red-400 text-sm">{error}</p>
+              <button onClick={fetchComments} className="text-red-300 hover:text-white text-xs mt-2 underline cursor-pointer">Try again</button>
+            </div>
+          )}
 
-            {/* Full Discussion Features (mentions, tagging, highlights, replies, sorting) */}
-            <CommentSection
-              contentId={String(id)}
-              contentType={type}
-              contentTitle={contentTitle || 'this'}
-              targetCommentId={targetCommentId}
-            />
+          <CommentSection
+            contentId={String(id)}
+            contentType={type}
+            contentTitle={contentTitle || 'this'}
+            targetCommentId={targetCommentId}
+          />
         </div>
       </div>
 
@@ -677,7 +249,7 @@ const Discussion = () => {
   );
 };
 
-// Lightbox overlay with navigation arrows
+// Lightbox overlay with navigation
 const ImageLightbox = ({ src, onClose, images, currentIndex, onNavigate }) => {
   if (!src) return null;
   const hasMultiple = images && images.length > 1;
@@ -689,48 +261,31 @@ const ImageLightbox = ({ src, onClose, images, currentIndex, onNavigate }) => {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
-      onClick={onClose}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-      ref={(el) => el?.focus()}
-    >
-      {/* Close */}
-      <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl cursor-pointer z-10 backdrop-blur-sm transition-colors">✕</button>
+    <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+      onClick={onClose} onKeyDown={handleKeyDown} tabIndex={0} ref={(el) => el?.focus()}>
+      <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white cursor-pointer z-10 backdrop-blur-sm transition-colors">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
 
-      {/* Counter */}
       {hasMultiple && (
         <div className="absolute top-4 left-4 text-sm text-white/60 bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">
           {currentIndex + 1} / {images.length}
         </div>
       )}
 
-      {/* Prev */}
       {hasMultiple && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onNavigate(-1); }}
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-2xl cursor-pointer z-10 backdrop-blur-sm transition-colors"
-        >
-          ‹
+        <button onClick={(e) => { e.stopPropagation(); onNavigate(-1); }}
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white cursor-pointer z-10 backdrop-blur-sm transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
         </button>
       )}
 
-      {/* Image */}
-      <img
-        src={src}
-        alt=""
-        className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      />
+      <img src={src} alt="" className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
 
-      {/* Next */}
       {hasMultiple && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onNavigate(1); }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-2xl cursor-pointer z-10 backdrop-blur-sm transition-colors"
-        >
-          ›
+        <button onClick={(e) => { e.stopPropagation(); onNavigate(1); }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white cursor-pointer z-10 backdrop-blur-sm transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
         </button>
       )}
     </div>

@@ -568,14 +568,9 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
   return (
     <div
       data-comment-id={comment._id}
-      className={`group ${depth > 0 ? 'ml-4 sm:ml-8 pl-3 sm:pl-4 border-l-2 border-slate-800/60 hover:border-slate-700/80 transition-colors' : ''}`}
+      className={`group ${depth > 0 ? 'ml-4 sm:ml-8 pl-3 sm:pl-4 border-l-2 border-slate-700/50 hover:border-red-500/40 transition-colors' : ''}`}
     >
-      <div className="py-3">
-        <div className={`bg-slate-900/45 border rounded-xl p-3.5 transition-all comment-enter-card ${
-          isTargetComment
-            ? 'border-cyan-400/60 shadow-[0_0_0_1px_rgba(34,211,238,0.35),0_12px_30px_rgba(0,0,0,0.35)]'
-            : 'border-slate-800/60 hover:border-slate-700/70'
-        }`}>
+      <div className={`py-3 transition-all ${isTargetComment ? 'bg-cyan-500/5 rounded-lg -mx-2 px-2' : ''}`}>
         {/* Comment Header */}
         <div className="flex items-start gap-2.5">
           {/* Avatar */}
@@ -656,65 +651,67 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
               </>
             )}
 
-            {/* Action Bar */}
+            {/* Action Bar - Reddit flat style */}
             {!isEditing && (
-              <div className="mt-2 flex items-center gap-2 flex-wrap rounded-xl border border-slate-300/20 bg-slate-200/10 px-2 py-1.5">
-                {/* Reddit-style vote rail */}
-                <div className={`flex flex-col items-center justify-center rounded-lg border border-slate-300/25 bg-slate-100/10 px-2 py-1.5 ${!user ? 'opacity-70' : ''}`}>
+              <div className="mt-1.5 flex items-center gap-0.5 flex-wrap">
+                {/* Inline vote buttons */}
+                <div className={`inline-flex items-center gap-1 ${!user ? 'opacity-70' : ''}`}>
                   <button
                     onClick={handleUpvoteClick}
-                    className={`text-sm leading-none transition-all duration-200 ${
-                      isUpvoted ? 'text-red-500 scale-110' : 'text-slate-400 hover:text-red-400'
+                    className={`p-1 rounded-md leading-none transition-all duration-200 hover:bg-slate-800/60 ${
+                      isUpvoted ? 'text-red-500' : 'text-slate-500 hover:text-red-400'
                     } ${upvotePressed ? 'scale-125' : ''} ${
                       !user ? 'cursor-default' : 'cursor-pointer active:scale-95'
                     }`}
                     title={user ? (isUpvoted ? 'Remove upvote' : 'Upvote') : 'Login to vote'}
                     aria-label={user ? (isUpvoted ? 'Remove upvote' : 'Upvote') : 'Login to vote'}
                   >
-                    ▲
+                    <svg className="w-4 h-4" fill={isUpvoted ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" /></svg>
                   </button>
-                  <span className={`text-xs font-semibold transition-all duration-200 ${isUpvoted ? 'text-red-500' : isDownvoted ? 'text-blue-500' : 'text-slate-300'} ${likePop || dislikePop ? 'reaction-count-pop' : ''}`}>
+                  <span className={`text-xs font-bold min-w-[1ch] text-center transition-all duration-200 ${isUpvoted ? 'text-red-500' : isDownvoted ? 'text-blue-500' : 'text-slate-400'} ${likePop || dislikePop ? 'reaction-count-pop' : ''}`}>
                     {voteCount}
                   </span>
                   <button
                     onClick={handleDownvoteClick}
-                    className={`text-sm leading-none transition-all duration-200 ${
-                      isDownvoted ? 'text-blue-500 scale-110' : 'text-slate-400 hover:text-blue-400'
+                    className={`p-1 rounded-md leading-none transition-all duration-200 hover:bg-slate-800/60 ${
+                      isDownvoted ? 'text-blue-500' : 'text-slate-500 hover:text-blue-400'
                     } ${downvotePressed ? 'scale-125' : ''} ${
                       !user ? 'cursor-default' : 'cursor-pointer active:scale-95'
                     }`}
                     title={user ? (isDownvoted ? 'Remove downvote' : 'Downvote') : 'Login to vote'}
                     aria-label={user ? (isDownvoted ? 'Remove downvote' : 'Downvote') : 'Login to vote'}
                   >
-                    ▼
+                    <svg className="w-4 h-4" fill={isDownvoted ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                   </button>
                 </div>
+
+                <span className="text-slate-800 mx-1">|</span>
 
                 {/* Reply button */}
                 {user && !maxDepthReached && (
                   <button
                     onClick={() => setShowReplyBox(!showReplyBox)}
-                    className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-100/10 transition-all duration-200 active:scale-95"
+                    className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-white px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all duration-200 active:scale-95"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h11M3 6h18M3 14h7m8 0l3 3m0 0l-3 3m3-3H10" /></svg>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                     Reply
                   </button>
                 )}
 
                 <button
                   onClick={handleShare}
-                  className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-100/10 transition-all duration-200 active:scale-95"
+                  className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-white px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all duration-200 active:scale-95"
                   title="Copy link to this comment"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342a3 3 0 010-4.243l2.122-2.122a3 3 0 014.243 4.243l-.707.707M15.316 10.658a3 3 0 010 4.243l-2.122 2.122a3 3 0 11-4.243-4.243l.707-.707" /></svg>
-                  {shareCopied ? 'Copied' : 'Share'}
+                  {shareCopied ? 'Copied!' : 'Share'}
                 </button>
 
                 {/* Edit button (owner only) */}
                 {isOwner && (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-cyan-300 px-2.5 py-1.5 rounded-lg hover:bg-slate-100/10 transition-all duration-200 active:scale-95"
+                    className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-300 px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all duration-200 active:scale-95"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M16.5 3.5a2.121 2.121 0 113 3L12 14l-4 1 1-4 7.5-7.5z" /></svg>
                     Edit
@@ -725,17 +722,17 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                 {(isOwner || isAdmin) && (
                   <>
                     {confirmDelete ? (
-                      <div className="flex items-center gap-1 ml-1 rounded-lg bg-red-500/10 border border-red-500/20 px-1.5 py-1">
-                        <span className="text-xs text-red-300">Delete?</span>
+                      <div className="inline-flex items-center gap-1 ml-1">
+                        <span className="text-xs text-red-400">Delete?</span>
                         <button
                           onClick={handleDelete}
-                          className="text-xs text-red-200 hover:text-white bg-red-500/20 px-2 py-1 rounded-md font-medium transition-all duration-200 active:scale-95"
+                          className="text-xs text-red-400 hover:text-red-300 px-1.5 py-0.5 rounded font-medium transition-all duration-200 active:scale-95"
                         >
                           Yes
                         </button>
                         <button
                           onClick={() => setConfirmDelete(false)}
-                          className="text-xs text-slate-300 hover:text-white px-2 py-1 rounded-md transition-all duration-200 active:scale-95"
+                          className="text-xs text-slate-400 hover:text-white px-1.5 py-0.5 rounded transition-all duration-200 active:scale-95"
                         >
                           No
                         </button>
@@ -743,7 +740,7 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
                     ) : (
                       <button
                         onClick={() => setConfirmDelete(true)}
-                        className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-red-300 px-2.5 py-1.5 rounded-lg hover:bg-slate-100/10 transition-all duration-200 active:scale-95"
+                        className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 px-2 py-1 rounded-md hover:bg-slate-800/60 transition-all duration-200 active:scale-95"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-7 0h8" /></svg>
                         Delete
@@ -819,7 +816,6 @@ const Comment = ({ comment, user, onReply, onLike, onDislike, onDelete, onEdit, 
               </div>
             )}
           </div>
-        </div>
         </div>
       </div>
 
@@ -1092,7 +1088,7 @@ const CommentSection = ({ contentId, contentType, contentTitle, targetCommentId 
 
       {/* Comment Input */}
       {isAuthenticated ? (
-        <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl p-4 mb-6">
+        <div className="border-b border-slate-800/50 pb-6 mb-4">
           <div className="flex items-start gap-3">
             {/* User Avatar */}
             <div className="w-9 h-9 rounded-full bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-md">
@@ -1183,7 +1179,7 @@ const CommentSection = ({ contentId, contentType, contentTitle, targetCommentId 
           </div>
         </div>
       ) : (
-        <div className="bg-slate-900/40 border border-slate-800/40 rounded-xl p-6 mb-6 text-center">
+        <div className="bg-slate-900/30 border border-slate-800/40 rounded-xl p-6 mb-4 text-center">
           <p className="text-slate-400 text-sm mb-3">Sign in to join the conversation</p>
           <button
             onClick={() => navigate('/login')}
