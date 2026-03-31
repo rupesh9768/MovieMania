@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigationType 
 
 // Providers
 import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 
 // Import Pages
 import Home from './pages/Home';
@@ -78,6 +79,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <SocketProvider>
         <ScrollManager />
         {/* Wrapper to ensure footer pushes to bottom if content is short */}
         <div className="App min-h-screen font-sans flex flex-col bg-dark-bg text-white">
@@ -180,6 +182,7 @@ function App() {
           <Footer />
           
         </div>
+        </SocketProvider>
       </AuthProvider>
     </BrowserRouter>
   );

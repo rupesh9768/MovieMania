@@ -163,9 +163,9 @@ function HeroSlider() {
         const response = await api.get('/movies');
         const rows = Array.isArray(response.data?.data) ? response.data.data : [];
 
-        // Include recently added theater movies, not only isNowPlaying items.
+        // Include theater movies that are now_playing or have active showtimes.
         const active = rows
-          .filter((movie) => hasActiveShowtime(movie) || movie?.isNowPlaying || movie?.bookingEnabled)
+          .filter((movie) => hasActiveShowtime(movie) || movie?.status === 'now_playing' || movie?.isNowPlaying || movie?.bookingEnabled)
           .sort((a, b) => {
             const aActive = hasActiveShowtime(a) ? 1 : 0;
             const bActive = hasActiveShowtime(b) ? 1 : 0;
@@ -321,13 +321,21 @@ function HeroSlider() {
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={() => navigate(`/booking/${activeMovie._id}`)}
-                className="rounded-2xl border border-red-500/75 bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-red-900/35 transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-500"
-              >
-                Book Now
-              </button>
+              {(() => {
+                const movieStatus = activeMovie?.status || (activeMovie?.isNowPlaying ? 'now_playing' : 'coming_soon');
+                if (movieStatus === 'now_playing') {
+                  return (
+                    <span className="rounded-2xl border border-cyan-500/50 bg-cyan-500/20 px-5 py-2.5 text-sm font-bold text-cyan-300 backdrop-blur-md">
+                      Now Showing
+                    </span>
+                  );
+                }
+                return (
+                  <span className="rounded-2xl border border-amber-500/50 bg-amber-500/20 px-5 py-2.5 text-sm font-bold text-amber-300 backdrop-blur-md">
+                    Coming Soon
+                  </span>
+                );
+              })()}
               <button
                 type="button"
                 onClick={() => navigate(`/movie/backend/${activeMovie._id}`)}

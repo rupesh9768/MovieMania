@@ -1,25 +1,69 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getBookedSeats } from '../api/bookingService';
+import { backendApi } from '../api';
+
+const rowLabel = (r) => {
+  if (r < 26) return String.fromCharCode(65 + r);
+  return String.fromCharCode(65 + Math.floor(r / 26) - 1) + String.fromCharCode(65 + (r % 26));
+};
 
 /**
  * SeatSelection Component
  * Props:
- * - onNext: function to call when user reserves selection (seats, totalPrice)
+ * - onNext: (seats, totalPrice) => void
  * - basePrice: price per ticket (default 350)
- * - movieId: ID of the movie (for fetching booked seats)
- * - showtimeId: ID of the showtime (for fetching booked seats)
+ * - movieId, showtimeId: for fetching booked seats
+ * - theaterId: optional — theater ObjectId to fetch layout
+ * - hallName: optional — hall name string (e.g. "Hall A - Standard")
  */
-const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => { 
-  
-  // CONFIGURATION: Rows & Seats
-  const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-  const seatsPerRow = 10;
+const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId, theaterId, hallName }) => {
 
-  // STATE
+  // Default grid config (fallback when no custom layout)
+  const DEFAULT_ROWS = 10;
+  const DEFAULT_COLS = 10;
+
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [bookedSeats, setBookedSeats] = useState([]);
   const [reservedSeats, setReservedSeats] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Custom layout state
+  const [customLayout, setCustomLayout] = useState(null); // { seatLayout, layoutRows, layoutCols }
+  const [layoutLoading, setLayoutLoading] = useState(false);
+
+  // Fetch custom layout from backend
+  useEffect(() => {
+    const loadLayout = async () => {
+      if (!theaterId) return;
+
+      setLayoutLoading(true);
+      try {
+        // Get the theater to find the matching hall
+        const theater = await backendApi.getTheaterById(theaterId);
+        if (!theater?.halls?.length) return;
+
+        // Find hall by matching the hallName (e.g. "Hall A - Standard")
+        const hall = theater.halls.find((h) => {
+          const fullName = `${h.name} - ${h.type}`;
+          return fullName === hallName || h.name === hallName;
+        });
+
+        if (hall?.seatLayout?.length > 0 && hall.layoutRows > 0 && hall.layoutCols > 0) {
+          setCustomLayout({
+            seatLayout: hall.seatLayout,
+            layoutRows: hall.layoutRows,
+            layoutCols: hall.layoutCols
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load seat layout:', err);
+      } finally {
+        setLayoutLoading(false);
+      }
+    };
+
+    loadLayout();
+  }, [theaterId, hallName]);
 
   // Fetch occupied seats from backend API
   useEffect(() => {
@@ -32,7 +76,6 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => {
       }
 
       setLoading(true);
-      
       try {
         const seatState = await getBookedSeats(movieId, showtimeId);
         setBookedSeats(Array.isArray(seatState?.bookedSeats) ? seatState.bookedSeats : []);
@@ -42,29 +85,65 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => {
         setBookedSeats([]);
         setReservedSeats([]);
       }
-      
       setLoading(false);
     };
-    
+
     loadOccupiedSeats();
   }, [movieId, showtimeId]);
 
-  const toggleSeat = (id) => {
-    if (bookedSeats.includes(id) || reservedSeats.includes(id)) return;
-
-    if (selectedSeats.includes(id)) {
-      setSelectedSeats(selectedSeats.filter(s => s !== id));
-    } else {
-      setSelectedSeats([...selectedSeats, id]);
+  // Build the grid from custom layout or default
+  const { grid, gridRows, gridCols, hasVip, hasPremium, hasWheelchair } = useMemo(() => {
+    if (customLayout) {
+      const { seatLayout, layoutRows, layoutCols } = customLayout;
+      const g = Array.from({ length: layoutRows }, () =>
+        Array.from({ length: layoutCols }, () => ({ type: 'empty', label: '' }))
+      );
+      let vipFound = false;
+      let premFound = false;
+      let wcFound = false;
+      seatLayout.forEach((cell) => {
+        if (cell.row < layoutRows && cell.col < layoutCols) {
+          g[cell.row][cell.col] = { type: cell.type, label: cell.label || '' };
+          if (cell.type === 'vip') vipFound = true;
+          if (cell.type === 'premium') premFound = true;
+          if (cell.type === 'wheelchair') wcFound = true;
+        }
+      });
+      return { grid: g, gridRows: layoutRows, gridCols: layoutCols, hasVip: vipFound, hasPremium: premFound, hasWheelchair: wcFound };
     }
+
+    // Default grid
+    const defaultRows = Array.from({ length: DEFAULT_ROWS }, (_, r) =>
+      Array.from({ length: DEFAULT_COLS }, (_, c) => ({
+        type: 'seat',
+        label: `${rowLabel(r)}${c + 1}`
+      }))
+    );
+    return { grid: defaultRows, gridRows: DEFAULT_ROWS, gridCols: DEFAULT_COLS, hasVip: false, hasPremium: false, hasWheelchair: false };
+  }, [customLayout]);
+
+  const toggleSeat = (label) => {
+    if (bookedSeats.includes(label) || reservedSeats.includes(label)) return;
+    setSelectedSeats((prev) =>
+      prev.includes(label) ? prev.filter((s) => s !== label) : [...prev, label]
+    );
   };
 
-  // Calculate total
+  // Count totals
+  const allSeatLabels = useMemo(() => {
+    const labels = [];
+    grid.forEach((row) => row.forEach((cell) => {
+      if (['seat', 'vip', 'premium', 'wheelchair'].includes(cell.type) && cell.label) labels.push(cell.label);
+    }));
+    return labels;
+  }, [grid]);
+
   const totalPrice = selectedSeats.length * basePrice;
   const unavailableSeats = [...new Set([...bookedSeats, ...reservedSeats])];
+  const availableCount = allSeatLabels.filter((l) => !unavailableSeats.includes(l)).length;
   const sortedSelectedSeats = [...selectedSeats].sort();
 
-  if (loading) {
+  if (loading || layoutLoading) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center">
@@ -96,14 +175,11 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => {
           </button>
         )}
       </div>
-      
+
       {/* --- THE CURVED SCREEN --- */}
       <div className="relative w-full max-w-5xl mb-12 perspective-normal z-10">
-        {/* Glow Effect */}
         <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-3/4 h-16 bg-cyan-500/40 blur-[60px] rounded-full pointer-events-none"></div>
-        {/* Actual Screen Arc */}
         <div className="h-16 w-full border-t-[6px] border-cyan-300/70 rounded-[50%] shadow-[0_-10px_40px_rgba(34,211,238,0.4)] bg-linear-to-b from-cyan-500/15 to-transparent"></div>
-        
         <div className="text-center mt-4">
           <p className="text-cyan-400/50 tracking-[0.8em] text-[10px] font-bold uppercase">Cinema Screen</p>
           <p className="text-slate-400 text-xs mt-1">Ticket Price: NPR {basePrice}</p>
@@ -111,49 +187,58 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => {
       </div>
 
       {/* --- SEATING GRID --- */}
-      <div className="mb-14 perspective-[1000px] z-10 w-full max-w-5xl bg-slate-900/50 border border-slate-800/70 rounded-2xl p-5 sm:p-8 shadow-2xl backdrop-blur-sm">
+      <div className="mb-14 perspective-[1000px] z-10 w-full max-w-5xl bg-slate-900/50 border border-slate-800/70 rounded-2xl p-5 sm:p-8 shadow-2xl backdrop-blur-sm overflow-x-auto">
         <div className="grid gap-2 sm:gap-3 transform origin-top">
-          {rows.map((row) => (
-            <div key={row} className="flex gap-2 sm:gap-3 items-center justify-center">
+          {grid.map((row, r) => (
+            <div key={r} className="flex gap-2 sm:gap-3 items-center justify-center">
               {/* Row Label Left */}
-              <span className="text-cyan-200/80 text-[10px] font-bold w-5 text-center bg-slate-800 rounded-md py-1">{row}</span>
-              
-              {/* Seats */}
+              <span className="text-cyan-200/80 text-[10px] font-bold w-5 text-center bg-slate-800 rounded-md py-1">{rowLabel(r)}</span>
+
               <div className="flex gap-1.5 sm:gap-2">
-                {Array.from({ length: seatsPerRow }).map((_, i) => {
-                  const seatNum = i + 1;
-                  const seatId = `${row}${seatNum}`;
-                  
+                {row.map((cell, c) => {
+                  if (cell.type === 'empty' || cell.type === 'aisle') {
+                    return (
+                      <div
+                        key={c}
+                        className={`w-9 h-9 sm:w-10 sm:h-10 ${cell.type === 'aisle' ? 'w-4 sm:w-5' : ''}`}
+                      />
+                    );
+                  }
+
+                  const seatId = cell.label;
                   const isBooked = bookedSeats.includes(seatId);
                   const isReserved = reservedSeats.includes(seatId);
                   const isSelected = selectedSeats.includes(seatId);
+                  const isVip = cell.type === 'vip';
+                  const isPremium = cell.type === 'premium';
+                  const isWheelchair = cell.type === 'wheelchair';
 
-                  // Determine Color & Style based on state
                   let seatStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-400/30 hover:bg-emerald-500/30 hover:text-emerald-200";
+                  if (isVip) seatStyle = "bg-amber-500/20 text-amber-300 border-amber-400/30 hover:bg-amber-500/30 hover:text-amber-200";
+                  if (isPremium) seatStyle = "bg-purple-500/20 text-purple-300 border-purple-400/30 hover:bg-purple-500/30 hover:text-purple-200";
+                  if (isWheelchair) seatStyle = "bg-blue-500/20 text-blue-300 border-blue-400/30 hover:bg-blue-500/30 hover:text-blue-200";
                   if (isSelected) seatStyle = "bg-sky-500 text-slate-950 border-sky-300 shadow-[0_0_18px_rgba(56,189,248,0.8)] scale-105 -translate-y-0.5 font-bold";
                   if (isReserved) seatStyle = "bg-amber-400/25 text-amber-200 border-amber-300/40 cursor-not-allowed";
                   if (isBooked) seatStyle = "bg-red-500/25 text-red-200/70 border-red-400/40 cursor-not-allowed line-through";
 
+                  const typeLabel = isVip ? ' (VIP)' : isPremium ? ' (Premium)' : isWheelchair ? ' (Wheelchair)' : '';
+
                   return (
                     <button
-                      key={seatId}
+                      key={c}
                       disabled={isBooked || isReserved}
                       onClick={() => toggleSeat(seatId)}
-                      className={`
-                        w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-[10px] transition-all duration-200 flex items-center justify-center border
-                        ${seatStyle}
-                        ${seatNum === 5 ? 'mr-4' : ''}
-                      `}
-                      title={isBooked ? 'This seat is already booked' : isReserved ? 'This seat is currently reserved' : `Seat ${seatId}`}
+                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-[10px] transition-all duration-200 flex items-center justify-center border ${seatStyle}`}
+                      title={isBooked ? 'This seat is already booked' : isReserved ? 'This seat is currently reserved' : `Seat ${seatId}${typeLabel}`}
                     >
-                      {seatNum}
+                      {seatId.replace(/^[A-Z]/, '')}
                     </button>
                   );
                 })}
               </div>
 
               {/* Row Label Right */}
-              <span className="text-cyan-200/80 text-[10px] font-bold w-5 text-center bg-slate-800 rounded-md py-1">{row}</span>
+              <span className="text-cyan-200/80 text-[10px] font-bold w-5 text-center bg-slate-800 rounded-md py-1">{rowLabel(r)}</span>
             </div>
           ))}
         </div>
@@ -162,26 +247,44 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => {
       {/* --- LEGEND --- */}
       <div className="flex flex-wrap justify-center gap-4 text-[11px] text-slate-200 mb-6 z-10 bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-emerald-500/30 border border-emerald-400/40"></div> 
-          <span>🟩 Available</span>
+          <div className="w-4 h-4 rounded bg-emerald-500/30 border border-emerald-400/40"></div>
+          <span>Available</span>
+        </div>
+        {hasVip && (
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-amber-500/30 border border-amber-400/40"></div>
+            <span className="text-amber-300">VIP</span>
+          </div>
+        )}
+        {hasPremium && (
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-purple-500/30 border border-purple-400/40"></div>
+            <span className="text-purple-300">Premium</span>
+          </div>
+        )}
+        {hasWheelchair && (
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-blue-500/30 border border-blue-400/40"></div>
+            <span className="text-blue-300">Wheelchair</span>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.8)]"></div>
+          <span className="text-sky-300 font-bold">Selected</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.8)]"></div> 
-          <span className="text-sky-300 font-bold">🟦 Selected</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-red-500/30 border border-red-400/40"></div> 
-          <span className="text-red-300">🟥 Booked</span>
+          <div className="w-4 h-4 rounded bg-red-500/30 border border-red-400/40"></div>
+          <span className="text-red-300">Booked</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-amber-400/30 border border-amber-300/40"></div>
-          <span className="text-amber-200">🟨 Reserved</span>
+          <span className="text-amber-200">Reserved</span>
         </div>
       </div>
 
       {/* --- SEAT STATS --- */}
       <div className="text-center mb-8 text-sm text-slate-300 z-10">
-        <p>Available: {(rows.length * seatsPerRow) - unavailableSeats.length} seats</p>
+        <p>Available: {availableCount} seats</p>
         <p>Booked: {bookedSeats.length} seats</p>
         <p>Reserved: {reservedSeats.length} seats</p>
       </div>
@@ -196,7 +299,7 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => {
                 {sortedSelectedSeats.join(', ')}
               </span>
             </div>
-            
+
             <div className="h-8 w-px bg-white/10"></div>
 
             <div className="flex flex-col min-w-20">
@@ -204,7 +307,7 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => {
               <span className="text-lg font-black text-white">NPR {totalPrice}</span>
             </div>
 
-            <button 
+            <button
               onClick={() => onNext(selectedSeats, totalPrice)}
               className="bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold py-3 px-6 rounded-xl transition-transform active:scale-95 shadow-[0_8px_30px_rgba(34,211,238,0.35)]"
             >
@@ -218,5 +321,3 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId }) => {
 };
 
 export default SeatSelection;
-
-

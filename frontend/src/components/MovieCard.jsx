@@ -7,7 +7,8 @@ const MovieCard = ({ movie, showBooking = false }) => {
 
   if (!movie) return <div className="movie-card shadow">Loading...</div>;
 
-  const canBook = showBooking || movie.source === 'theatre' || movie.isNowPlaying;
+  const movieStatus = movie.status || (movie.isNowPlaying ? 'now_playing' : (movie.source === 'theatre' ? 'coming_soon' : null));
+  const canBook = showBooking || movie.source === 'theatre' || movieStatus === 'now_playing' || movie.isNowPlaying;
 
   return (
     <div className="group cursor-pointer" onClick={() => navigate(`/details/movie/${movie.id}`)}>
@@ -21,8 +22,18 @@ const MovieCard = ({ movie, showBooking = false }) => {
         
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/20 to-transparent opacity-60 group-hover:opacity-85 transition-opacity duration-150"></div>
-        
 
+        {/* Status Badge */}
+        {movieStatus === 'now_playing' && (
+          <div className="absolute top-2 left-2">
+            <span className="bg-cyan-500/90 text-black text-[10px] font-bold px-2 py-0.5 rounded-full">NOW SHOWING</span>
+          </div>
+        )}
+        {movieStatus === 'coming_soon' && (
+          <div className="absolute top-2 left-2">
+            <span className="bg-amber-500/90 text-black text-[10px] font-bold px-2 py-0.5 rounded-full">COMING SOON</span>
+          </div>
+        )}
         
         {/* Bottom info on hover */}
         <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-all duration-150 translate-y-1.5 group-hover:translate-y-0">

@@ -51,7 +51,8 @@ function Booking() {
     hall: state?.hall || 'Hall 1',
     time: state?.time || '',
     date: state?.date || '',
-    price: state?.price || 350
+    price: state?.price || 350,
+    theaterId: state?.theaterId || null
   });
 
   useEffect(() => {
@@ -290,6 +291,8 @@ function Booking() {
           basePrice={movieMeta.price || 350}
           movieId={movieId}
           showtimeId={showtimeId}
+          theaterId={movieMeta.theaterId}
+          hallName={movieMeta.hall}
         />
       )}
 

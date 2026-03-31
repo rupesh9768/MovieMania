@@ -19,7 +19,9 @@ import discussionRoutes from './routes/discussion.routes.js';
 import bookingRoutes from './routes/booking.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import theaterRoutes from './routes/theater.routes.js';
+import cityRoutes from './routes/city.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 
 // Create Express app
 const app = express();
@@ -86,8 +88,12 @@ app.use('/api/payments', paymentRoutes);
 // Theaters API
 app.use('/api/theaters', theaterRoutes);
 
+// Cities API
+app.use('/api/cities', cityRoutes);
+
 // Admin analytics API
 app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

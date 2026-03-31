@@ -67,7 +67,8 @@ const ShowtimeSelection = () => {
           time: selectedHall.time,
           hall: selectedHall.hall,
           price: selectedHall.price,
-          date: dates[selectedDate].full
+          date: dates[selectedDate].full,
+          theaterId: selectedHall.theater || null
         } 
       });
     } else {

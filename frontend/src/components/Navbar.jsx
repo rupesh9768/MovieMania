@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
+import NotificationPanel from './NotificationPanel';
 
 const BACKEND_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
 
@@ -18,11 +20,14 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const browseRef = useRef(null);
   const profileRef = useRef(null);
+  const notifRef = useRef(null);
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { unreadCount } = useSocket();
 
   const isActive = (path) => location.pathname === path;
   const isBrowseActive = ['/browse', '/movies', '/tvshows', '/animations', '/anime'].includes(location.pathname);
@@ -38,6 +43,9 @@ const Navbar = () => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setProfileOpen(false);
       }
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setNotifOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -48,6 +56,7 @@ const Navbar = () => {
   useEffect(() => {
     setBrowseOpen(false);
     setProfileOpen(false);
+    setNotifOpen(false);
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
@@ -102,85 +111,83 @@ const Navbar = () => {
                 }`}
               >
                 Browse
-                <svg className={`w-4 h-4 transition-transform ${browseOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${browseOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               
-              {/* Dropdown Overlay Box */}
-              {browseOpen && (
-                <div className="cinema-dropdown absolute top-full left-1/2 -translate-x-1/2 mt-5 p-4 min-w-90 z-40">
+              {/* Dropdown */}
+              <div 
+                className={`absolute top-full left-1/2 -translate-x-1/2 mt-4 z-40 transition-all duration-200 origin-top ${
+                  browseOpen 
+                    ? 'opacity-100 scale-100 pointer-events-auto translate-y-0' 
+                    : 'opacity-0 scale-95 pointer-events-none -translate-y-2'
+                }`}
+              >
+                <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl shadow-2xl shadow-black/50 p-2 w-52 backdrop-blur-xl">
                   {/* Arrow */}
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-card-bg border-l border-t border-[#2a2a2a] transform rotate-45"></div>
+                  <div className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#1a1a1a] border-l border-t border-[#2a2a2a] rotate-45"></div>
                   
-                  {/* Browse Options - Horizontal Layout */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => handleBrowseItemClick('/movies')}
-                      className={`cinema-browse-item flex-1 px-4 py-4 text-left transition-all duration-150 ${
-                        isActive('/movies')
-                          ? 'bg-[#242424] text-white'
-                          : ''
-                      }`}
-                    >
-                      <span className="flex items-center gap-3">
-                        <span className="cinema-badge">M</span>
-                        <span className="text-sm font-medium">Movies</span>
-                      </span>
-                    </button>
-                    
-                    <button
-                      onClick={() => handleBrowseItemClick('/tvshows')}
-                      className={`cinema-browse-item flex-1 px-4 py-4 text-left transition-all duration-150 ${
-                        isActive('/tvshows')
-                          ? 'bg-[#242424] text-white'
-                          : ''
-                      }`}
-                    >
-                      <span className="flex items-center gap-3">
-                        <span className="cinema-badge">TV</span>
-                        <span className="text-sm font-medium">TV Shows</span>
-                      </span>
-                    </button>
-                    
-                    <button
-                      onClick={() => handleBrowseItemClick('/anime')}
-                      className={`cinema-browse-item flex-1 px-4 py-4 text-left transition-all duration-150 ${
-                        isActive('/anime')
-                          ? 'bg-[#242424] text-white'
-                          : ''
-                      }`}
-                    >
-                      <span className="flex items-center gap-3">
-                        <span className="cinema-badge">A</span>
-                        <span className="text-sm font-medium">Anime</span>
-                      </span>
-                    </button>
-                    
-                    <button
-                      onClick={() => handleBrowseItemClick('/animations')}
-                      className={`cinema-browse-item flex-1 px-4 py-4 text-left transition-all duration-150 ${
-                        isActive('/animations')
-                          ? 'bg-[#242424] text-white'
-                          : ''
-                      }`}
-                    >
-                      <span className="flex items-center gap-3">
-                        <span className="cinema-badge">AN</span>
-                        <span className="text-sm font-medium">Animations</span>
-                      </span>
-                    </button>
+                  {/* Items */}
+                  <div className="space-y-0.5">
+                    {[
+                      { path: '/movies', label: 'Movies', icon: (
+                        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="1.8">
+                          <rect x="2" y="4" width="20" height="16" rx="3" />
+                          <path d="M2 8h20M2 16h20M8 4v16M16 4v16" opacity="0.5" />
+                        </svg>
+                      )},
+                      { path: '/tvshows', label: 'TV Shows', icon: (
+                        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="1.8">
+                          <rect x="2" y="3" width="20" height="14" rx="2" />
+                          <path d="M8 21h8M12 17v4" />
+                        </svg>
+                      )},
+                      { path: '/anime', label: 'Anime', icon: (
+                        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="1.8">
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M8 9.05a2.5 2.5 0 0 1 2.5 0M13.5 9.05a2.5 2.5 0 0 1 2.5 0M8 15c1.333 1 2.667 1.5 4 1.5s2.667-.5 4-1.5" />
+                        </svg>
+                      )},
+                      { path: '/animations', label: 'Animations', icon: (
+                        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="1.8">
+                          <path d="M15 4.5l-4 7.5 4 7.5" />
+                          <path d="M9 4.5l4 7.5-4 7.5" />
+                          <circle cx="12" cy="12" r="10" />
+                        </svg>
+                      )}
+                    ].map((item) => (
+                      <button
+                        key={item.path}
+                        onClick={() => handleBrowseItemClick(item.path)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+                          isActive(item.path)
+                            ? 'bg-white/10 text-white'
+                            : 'text-[#999] hover:bg-white/[0.06] hover:text-white'
+                        }`}
+                      >
+                        <span className={`${isActive(item.path) ? 'text-[#E50914]' : 'text-[#666]'} transition-colors`}>
+                          {item.icon}
+                        </span>
+                        {item.label}
+                      </button>
+                    ))}
                   </div>
                   
-                  {/* Browse All Link */}
-                  <button
-                    onClick={() => handleBrowseItemClick('/browse')}
-                    className="w-full mt-4 py-2.5 text-center text-sm font-semibold bg-transparent text-[#b3b3b3] transition-all rounded-lg border border-[#2a2a2a] hover:bg-[#242424] hover:text-white"
-                  >
-                    Browse All
-                  </button>
+                  {/* Divider + Browse All */}
+                  <div className="border-t border-[#2a2a2a] mt-1.5 pt-1.5">
+                    <button
+                      onClick={() => handleBrowseItemClick('/browse')}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-[#888] hover:bg-white/[0.06] hover:text-white transition-all duration-150"
+                    >
+                      Browse All
+                      <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              )}
+              </div>
             </li>
 
             <li>
@@ -212,7 +219,26 @@ const Navbar = () => {
           {/* Right Side - Auth Buttons / Profile Dropdown */}
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated ? (
-              /* Profile Dropdown - Logged In */
+              <>
+              {/* Notification Bell */}
+              <div className="relative" ref={notifRef}>
+                <button
+                  onClick={() => setNotifOpen(!notifOpen)}
+                  className="relative p-2 text-[#b3b3b3] hover:text-white transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-[#E50914] text-white text-[10px] font-bold rounded-full px-1">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+                <NotificationPanel isOpen={notifOpen} onClose={() => setNotifOpen(false)} />
+              </div>
+
+              {/* Profile Dropdown - Logged In */}
               <div className="relative" ref={profileRef}>
                 <button 
                   onClick={() => setProfileOpen(!profileOpen)}
@@ -335,6 +361,7 @@ const Navbar = () => {
                   </div>
                 )}
               </div>
+              </>
             ) : (
               /* Login / Register Buttons - Logged Out */
               <div className="flex items-center gap-3">

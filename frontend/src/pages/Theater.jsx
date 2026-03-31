@@ -8,6 +8,8 @@ const Theater = () => {
   
   const [movies, setMovies] = useState([]);
   const [theaters, setTheaters] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [selectedCityId, setSelectedCityId] = useState('all');
   const [selectedTheaterId, setSelectedTheaterId] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,12 +21,14 @@ const Theater = () => {
         setLoading(true);
         setError(null);
         
-        const [nowPlaying, theaterList] = await Promise.all([
+        const [nowPlaying, theaterList, cityList] = await Promise.all([
           backendApi.getBackendNowPlaying(),
-          backendApi.getTheaters(true)
+          backendApi.getTheaters(true),
+          backendApi.getCities()
         ]);
         setMovies(nowPlaying);
         setTheaters(theaterList || []);
+        setCities(cityList || []);
         
       } catch (err) {
         console.error('Failed to fetch theater data:', err);
@@ -37,13 +41,34 @@ const Theater = () => {
     fetchData();
   }, []);
 
-  // Filter movies to only those that have showtimes at the selected theater
-  const filteredMovies = selectedTheaterId === 'all'
-    ? movies
-    : movies.filter((movie) => {
+  // Filter theaters by selected city
+  const filteredTheaters = selectedCityId === 'all'
+    ? theaters
+    : theaters.filter((t) => t.city?._id === selectedCityId || t.city === selectedCityId);
+
+  // Reset theater selection when city changes
+  const handleCityChange = (cityId) => {
+    setSelectedCityId(cityId);
+    setSelectedTheaterId('all');
+  };
+
+  // Filter movies: by selected theater or by all theaters in selected city
+  const filteredMovies = (() => {
+    if (selectedTheaterId !== 'all') {
+      return movies.filter((movie) => {
         const showtimes = movie._raw?.showtimes || [];
         return showtimes.some((st) => st.theater === selectedTheaterId);
       });
+    }
+    if (selectedCityId !== 'all') {
+      const theaterIdsInCity = new Set(filteredTheaters.map((t) => t._id));
+      return movies.filter((movie) => {
+        const showtimes = movie._raw?.showtimes || [];
+        return showtimes.some((st) => theaterIdsInCity.has(st.theater));
+      });
+    }
+    return movies;
+  })();
 
   const handleBookNow = (movie) => {
     const state = { movie };
@@ -94,8 +119,39 @@ const Theater = () => {
       {/* Movies Grid */}
       <section className="max-w-6xl mx-auto px-6 pb-16">
 
-        {/* Theater Selector */}
-        {theaters.length > 0 && (
+        {/* City & Theater Selector */}
+        {cities.length > 0 && (
+          <div className="mb-4">
+            <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Select City</h2>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => handleCityChange('all')}
+                className={`py-2.5 px-5 rounded-xl text-sm font-semibold transition-all border ${
+                  selectedCityId === 'all'
+                    ? 'bg-red-600 border-red-500 text-white'
+                    : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
+                }`}
+              >
+                All Cities
+              </button>
+              {cities.map((city) => (
+                <button
+                  key={city._id}
+                  onClick={() => handleCityChange(city._id)}
+                  className={`py-2.5 px-5 rounded-xl text-sm font-semibold transition-all border ${
+                    selectedCityId === city._id
+                      ? 'bg-red-600 border-red-500 text-white'
+                      : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
+                  }`}
+                >
+                  {city.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {filteredTheaters.length > 0 && (
           <div className="mb-8">
             <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Select Theater</h2>
             <div className="flex flex-wrap gap-3">
@@ -109,7 +165,7 @@ const Theater = () => {
               >
                 All Theaters
               </button>
-              {theaters.map((theater) => (
+              {filteredTheaters.map((theater) => (
                 <button
                   key={theater._id}
                   onClick={() => setSelectedTheaterId(theater._id)}

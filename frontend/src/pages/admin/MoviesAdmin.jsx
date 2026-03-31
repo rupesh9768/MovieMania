@@ -2,6 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { backendApi } from '../../api';
 import { getUpcomingBigMovies, getMovieDetails } from '../../api/movieService';
 
+const STATUS_OPTIONS = [
+  { value: 'coming_soon', label: 'Coming Soon', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
+  { value: 'now_playing', label: 'Now Playing', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
+  { value: 'archived', label: 'Archived', color: 'bg-slate-700/50 text-slate-400 border-slate-600' }
+];
+
+const getStatusBadge = (status) => {
+  const opt = STATUS_OPTIONS.find((o) => o.value === status) || STATUS_OPTIONS[0];
+  return opt;
+};
+
 const MoviesAdmin = () => {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +31,7 @@ const MoviesAdmin = () => {
   const [formData, setFormData] = useState({
     title: '', genre: '', description: '', poster: '', backdrop: '',
     language: 'ne', country: 'Nepal', runtime: 120, rating: 7.5,
-    releaseDate: '', tmdbId: null, isNowPlaying: true, bookingEnabled: true
+    releaseDate: '', tmdbId: null, status: 'coming_soon'
   });
 
   const [showtimeMovie, setShowtimeMovie] = useState(null);
@@ -29,7 +40,6 @@ const MoviesAdmin = () => {
   });
   const [showtimeSaving, setShowtimeSaving] = useState(false);
 
-  // Theaters from backend
   const [theaters, setTheaters] = useState([]);
   const [selectedTheaterId, setSelectedTheaterId] = useState('');
 
@@ -96,9 +106,7 @@ const MoviesAdmin = () => {
       try {
         const full = await getMovieDetails(tmdbMovie.id);
         if (full) details = full;
-      } catch (_) {
-        // Ignore detail fetch failure, fallback to list data.
-      }
+      } catch (_) {}
 
       const movieData = {
         title: details.title || '',
@@ -112,8 +120,7 @@ const MoviesAdmin = () => {
         rating: details.rating ? Math.round(details.rating * 10) / 10 : 0,
         releaseDate: tmdbMovie.releaseDate || tmdbMovie.rawReleaseDate || null,
         tmdbId: details.id || tmdbMovie.id,
-        isNowPlaying: false,
-        bookingEnabled: false
+        status: 'coming_soon'
       };
 
       const created = await backendApi.createMovie(movieData);
@@ -134,7 +141,7 @@ const MoviesAdmin = () => {
     setFormData({
       title: '', genre: '', description: '', poster: '', backdrop: '',
       language: 'ne', country: 'Nepal', runtime: 120, rating: 7.5,
-      releaseDate: '', tmdbId: null, isNowPlaying: true, bookingEnabled: true
+      releaseDate: '', tmdbId: null, status: 'coming_soon'
     });
     setShowForm(false);
     setEditingMovie(null);
@@ -161,8 +168,7 @@ const MoviesAdmin = () => {
       rating: movie.rating || 7.5,
       releaseDate: movie.releaseDate ? movie.releaseDate.split('T')[0] : '',
       tmdbId: movie._raw?.tmdbId || null,
-      isNowPlaying: movie.isNowPlaying !== false,
-      bookingEnabled: movie.bookingEnabled !== false
+      status: movie.status || (movie.isNowPlaying ? 'now_playing' : 'coming_soon')
     });
     setShowForm(true);
   };
@@ -186,8 +192,7 @@ const MoviesAdmin = () => {
       rating: parseFloat(formData.rating) || 7.5,
       releaseDate: formData.releaseDate || null,
       tmdbId: formData.tmdbId || null,
-      isNowPlaying: formData.isNowPlaying,
-      bookingEnabled: formData.bookingEnabled
+      status: formData.status
     };
 
     try {
@@ -221,6 +226,18 @@ const MoviesAdmin = () => {
       await fetchMovies();
     } catch (err) {
       setError('Failed to delete movie');
+    }
+  };
+
+  // Quick status change
+  const handleQuickStatus = async (movie, newStatus) => {
+    setError(null);
+    try {
+      await backendApi.updateMovie(movie._raw?._id || movie.id, { status: newStatus });
+      setSuccessMsg(`"${movie.title}" marked as ${newStatus.replace('_', ' ')}`);
+      await fetchMovies();
+    } catch (err) {
+      setError('Failed to update status');
     }
   };
 
@@ -376,6 +393,8 @@ const MoviesAdmin = () => {
               <tbody>
                 {movies.map((movie) => {
                   const showtimeCount = movie._raw?.showtimes?.length || 0;
+                  const movieStatus = movie.status || (movie.isNowPlaying ? 'now_playing' : 'coming_soon');
+                  const badge = getStatusBadge(movieStatus);
                   return (
                     <tr key={movie.id} className="border-t border-slate-800 hover:bg-slate-800/30">
                       <td className="p-4">
@@ -389,14 +408,9 @@ const MoviesAdmin = () => {
                       </td>
                       <td className="p-4 text-slate-400">{movie.country || 'N/A'}</td>
                       <td className="p-4">
-                        <div className="flex flex-col gap-1">
-                          {movie.isNowPlaying ? (
-                            <span className="inline-block bg-cyan-500/20 text-cyan-400 text-xs px-2 py-1 rounded">Now Playing</span>
-                          ) : (
-                            <span className="inline-block bg-slate-700/50 text-slate-400 text-xs px-2 py-1 rounded">Upcoming</span>
-                          )}
-                          {movie.bookingEnabled && <span className="inline-block bg-cyan-500/20 text-cyan-400 text-xs px-2 py-1 rounded">Bookable</span>}
-                        </div>
+                        <span className={`inline-block text-xs px-2.5 py-1 rounded-full font-medium border ${badge.color}`}>
+                          {badge.label}
+                        </span>
                       </td>
                       <td className="p-4">
                         <span className={`text-sm font-medium ${showtimeCount > 0 ? 'text-cyan-400' : 'text-slate-500'}`}>
@@ -405,10 +419,26 @@ const MoviesAdmin = () => {
                       </td>
                       <td className="p-4"><span className="bg-slate-800 px-2 py-1 rounded text-sm">{movie.rating?.toFixed(1) || 'N/A'}</span></td>
                       <td className="p-4">
-                        <div className="flex justify-end gap-2">
-                          <button onClick={() => openShowtimeManager(movie)} className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 px-3 py-2 rounded-lg text-sm font-semibold transition-all">Showtimes</button>
-                          <button onClick={() => handleEdit(movie)} className="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-lg text-sm font-semibold transition-all">Edit</button>
-                          <button onClick={() => handleDelete(movie)} className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-2 rounded-lg text-sm font-semibold transition-all">Delete</button>
+                        <div className="flex justify-end gap-2 flex-wrap">
+                          {/* Quick status actions */}
+                          {movieStatus !== 'now_playing' && (
+                            <button onClick={() => handleQuickStatus(movie, 'now_playing')} className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all" title="Mark as Now Playing">
+                              Now Playing
+                            </button>
+                          )}
+                          {movieStatus !== 'archived' && (
+                            <button onClick={() => handleQuickStatus(movie, 'archived')} className="bg-slate-700/50 hover:bg-slate-700 text-slate-400 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all" title="Archive">
+                              Archive
+                            </button>
+                          )}
+                          {movieStatus === 'archived' && (
+                            <button onClick={() => handleQuickStatus(movie, 'coming_soon')} className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all" title="Unarchive">
+                              Restore
+                            </button>
+                          )}
+                          <button onClick={() => openShowtimeManager(movie)} className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all">Showtimes</button>
+                          <button onClick={() => handleEdit(movie)} className="bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all">Edit</button>
+                          <button onClick={() => handleDelete(movie)} className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all">Delete</button>
                         </div>
                       </td>
                     </tr>
@@ -420,6 +450,7 @@ const MoviesAdmin = () => {
         </div>
       )}
 
+      {/* Create/Edit Movie Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
@@ -481,15 +512,25 @@ const MoviesAdmin = () => {
                   <input type="date" value={formData.releaseDate} onChange={(e) => setFormData({ ...formData, releaseDate: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white" />
                 </div>
               </div>
-              <div className="flex gap-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={formData.isNowPlaying} onChange={(e) => setFormData({ ...formData, isNowPlaying: e.target.checked })} className="w-4 h-4 accent-cyan-500" />
-                  <span className="text-sm text-slate-300">Now Playing</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={formData.bookingEnabled} onChange={(e) => setFormData({ ...formData, bookingEnabled: e.target.checked })} className="w-4 h-4 accent-cyan-500" />
-                  <span className="text-sm text-slate-300">Booking Enabled</span>
-                </label>
+              {/* Status toggle */}
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Status</label>
+                <div className="flex gap-2">
+                  {STATUS_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, status: opt.value })}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
+                        formData.status === opt.value
+                          ? opt.color
+                          : 'bg-slate-800 border-slate-700 text-slate-500'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={resetForm} className="flex-1 bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-semibold transition-all">Cancel</button>
@@ -502,6 +543,7 @@ const MoviesAdmin = () => {
         </div>
       )}
 
+      {/* Showtime Manager Modal */}
       {showtimeMovie && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -530,7 +572,11 @@ const MoviesAdmin = () => {
                     required
                   >
                     <option value="">Select Theater</option>
-                    {theaters.map((t) => <option key={t._id} value={t._id}>{t.name} — {t.location}</option>)}
+                    {theaters.map((t) => (
+                      <option key={t._id} value={t._id}>
+                        {t.name}{t.city?.name ? ` (${t.city.name})` : ''} -- {t.location}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>

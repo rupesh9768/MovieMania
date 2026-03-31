@@ -23,8 +23,9 @@ const normalizeBackendMovie = (movie) => ({
   runtime: movie.runtime,
   releaseDate: movie.releaseDate,
   year: movie.releaseDate ? new Date(movie.releaseDate).getFullYear().toString() : '',
-  isNowPlaying: movie.isNowPlaying || false,
-  bookingEnabled: movie.bookingEnabled || false,
+  status: movie.status || (movie.isNowPlaying ? 'now_playing' : 'coming_soon'),
+  isNowPlaying: movie.status === 'now_playing' || movie.isNowPlaying || false,
+  bookingEnabled: movie.status === 'now_playing' || movie.bookingEnabled || false,
   interestedCount: movie.interestedCount || 0,
   interestedUsers: movie.interestedUsers || [],
   _raw: movie
@@ -212,12 +213,46 @@ export const getAdminBookings = async () => {
 };
 
 // ====================================
+// City API
+// ====================================
+
+// Get all cities
+export const getCities = async () => {
+  const response = await api.get('/cities');
+  if (response.data?.success) return response.data.data;
+  return [];
+};
+
+// Admin: Create city
+export const createCity = async (name) => {
+  const response = await api.post('/cities', { name });
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to create city');
+};
+
+// Admin: Update city
+export const updateCity = async (id, name) => {
+  const response = await api.put(`/cities/${id}`, { name });
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to update city');
+};
+
+// Admin: Delete city
+export const deleteCity = async (id) => {
+  const response = await api.delete(`/cities/${id}`);
+  if (response.data?.success) return true;
+  throw new Error('Failed to delete city');
+};
+
+// ====================================
 // Theater API
 // ====================================
 
 // Get all theaters
-export const getTheaters = async (activeOnly = false) => {
-  const params = activeOnly ? { active: 'true' } : {};
+export const getTheaters = async (activeOnly = false, cityId = null) => {
+  const params = {};
+  if (activeOnly) params.active = 'true';
+  if (cityId) params.city = cityId;
   const response = await api.get('/theaters', { params });
   if (response.data?.success) return response.data.data;
   return [];
@@ -265,6 +300,20 @@ export const removeHallFromTheater = async (theaterId, hallId) => {
   throw new Error('Failed to remove hall');
 };
 
+// Admin: Save seat layout for a hall
+export const saveHallLayout = async (theaterId, hallId, layoutData) => {
+  const response = await api.put(`/theaters/${theaterId}/halls/${hallId}/layout`, layoutData);
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to save seat layout');
+};
+
+// Get seat layout for a hall
+export const getHallLayout = async (theaterId, hallId) => {
+  const response = await api.get(`/theaters/${theaterId}/halls/${hallId}/layout`);
+  if (response.data?.success) return response.data.data;
+  return null;
+};
+
 // Toggle interest on an upcoming movie
 export const toggleMovieInterest = async (movieId) => {
   const response = await api.post(`/movies/${movieId}/interest`);
@@ -286,6 +335,29 @@ export const getMostInterestedMovies = async () => {
   }
 };
 
+// Admin: Get all users with booking stats
+export const getAdminUsers = async () => {
+  const response = await api.get('/admin/users');
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to fetch users');
+};
+
+// Admin: Get per-hall analytics
+export const getHallAnalytics = async (params = {}) => {
+  const response = await api.get('/admin/hall-analytics', { params });
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to fetch hall analytics');
+};
+
+// Admin: Get showtime seat map
+export const getShowtimeSeatMap = async (movieId, showtimeId) => {
+  const response = await api.get('/admin/showtime-seats', {
+    params: { movieId, showtimeId }
+  });
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to fetch seat map');
+};
+
 // Export all functions
 export default {
   getBackendMovies,
@@ -304,11 +376,20 @@ export default {
   removeShowtime,
   getAdminDashboardAnalytics,
   getAdminBookings,
+  getAdminUsers,
+  getHallAnalytics,
+  getShowtimeSeatMap,
+  getCities,
+  createCity,
+  updateCity,
+  deleteCity,
   getTheaters,
   getTheaterById,
   createTheater,
   updateTheater,
   deleteTheater,
   addHallToTheater,
-  removeHallFromTheater
+  removeHallFromTheater,
+  saveHallLayout,
+  getHallLayout
 };

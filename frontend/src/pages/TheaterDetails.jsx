@@ -86,7 +86,8 @@ const TheaterDetails = () => {
         date: dates[selectedDate].toISOString(),
         time: selected.time,
         hall: selected.hall,
-        price: selected.price
+        price: selected.price,
+        theaterId: selected.theater || null
       }
     });
   };
