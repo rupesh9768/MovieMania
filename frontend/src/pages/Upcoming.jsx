@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUpcomingBigMovies, getGenres } from '../api/movieService';
-import { getUpcomingMovies as getBackendUpcoming, toggleMovieInterest } from '../api/backendService';
+import { getUpcomingMovies as getBackendUpcoming, toggleMovieInterest, toggleTmdbMovieInterest } from '../api/backendService';
 import { useAuth } from '../context/AuthContext';
 
 const Upcoming = () => {
@@ -16,7 +16,7 @@ const Upcoming = () => {
   const [displayCount, setDisplayCount] = useState(30); // Show 30 initially
   const [selectedLanguage, setSelectedLanguage] = useState('all'); // all, English, Hindi, Nepali
   const [selectedFilter, setSelectedFilter] = useState('all'); // all, thisMonth, nextMonth, interested
-  const [sortBy, setSortBy] = useState('popularity'); // popularity, date, title
+  const [sortBy, setSortBy] = useState('interest'); // interest, popularity, date, title
   
   // Interested movies - backend movie IDs user is interested in
   const [interestedMovies, setInterestedMovies] = useState([]);
@@ -96,7 +96,9 @@ const Upcoming = () => {
     }
     
     // Sort
-    if (sortBy === 'popularity') {
+    if (sortBy === 'interest') {
+      filtered.sort((a, b) => (b.interestedCount || 0) - (a.interestedCount || 0) || (b.popularity || 0) - (a.popularity || 0));
+    } else if (sortBy === 'popularity') {
       filtered.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
     } else if (sortBy === 'date') {
       filtered.sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate));
@@ -123,9 +125,6 @@ const Upcoming = () => {
   }, [movies]);
 
   const toggleInterested = async (movie) => {
-    // Only backend upcoming movies can be marked as interested
-    if (!movie.isBackend) return;
-    
     if (!isAuthenticated) {
       alert('Please login to mark interest');
       navigate('/login');
@@ -133,19 +132,34 @@ const Upcoming = () => {
     }
     
     try {
-      const result = await toggleMovieInterest(movie.id);
+      let result;
+      if (movie.isBackend) {
+        result = await toggleMovieInterest(movie.id);
+      } else {
+        // TMDB movie — auto-create in DB via tmdb-interest endpoint
+        result = await toggleTmdbMovieInterest({
+          tmdbId: movie.id,
+          title: movie.title,
+          poster: movie.poster || movie.image,
+          backdrop: movie.backdrop,
+          releaseDate: movie.releaseDate,
+          language: movie.language || movie.original_language
+        });
+      }
+
+      const movieKey = movie.isBackend ? movie.id : (result.movieId || movie.id);
       
       setInterestedMovies(prev => {
         if (result.interested) {
-          return [...prev, movie.id];
+          return [...prev, movieKey];
         }
-        return prev.filter(mid => mid !== movie.id);
+        return prev.filter(mid => mid !== movieKey);
       });
       
-      // Update the movie's interestedCount in the local state
+      // Update the movie's interestedCount and mark as backend in local state
       setMovies(prev => prev.map(m => 
         m.id === movie.id 
-          ? { ...m, interestedCount: result.interestedCount }
+          ? { ...m, interestedCount: result.interestedCount, isBackend: true, id: result.movieId || m.id }
           : m
       ));
     } catch (error) {
@@ -173,9 +187,9 @@ const Upcoming = () => {
     
     if (diffDays < 0) return { text: 'Released!', color: 'text-green-400', bg: 'bg-green-500/20' };
     if (diffDays === 0) return { text: 'TODAY!', color: 'text-yellow-400', bg: 'bg-yellow-500/20' };
-    if (diffDays === 1) return { text: 'Tomorrow!', color: 'text-cyan-400', bg: 'bg-cyan-500/20' };
-    if (diffDays <= 7) return { text: `${diffDays}d left`, color: 'text-cyan-400', bg: 'bg-cyan-500/20' };
-    if (diffDays <= 30) return { text: `${diffDays}d`, color: 'text-cyan-400', bg: 'bg-cyan-500/20' };
+    if (diffDays === 1) return { text: 'Tomorrow!', color: 'text-red-400', bg: 'bg-red-500/20' };
+    if (diffDays <= 7) return { text: `${diffDays}d left`, color: 'text-red-400', bg: 'bg-red-500/20' };
+    if (diffDays <= 30) return { text: `${diffDays}d`, color: 'text-red-400', bg: 'bg-red-500/20' };
     if (diffDays <= 60) return { text: `${Math.ceil(diffDays / 7)}w`, color: 'text-slate-400', bg: 'bg-slate-500/20' };
     return { text: `${Math.ceil(diffDays / 30)}mo`, color: 'text-slate-500', bg: 'bg-slate-600/20' };
   };
@@ -183,7 +197,7 @@ const Upcoming = () => {
   const getLanguageBadge = (language) => {
     switch(language) {
       case 'English': return { color: 'bg-blue-500' };
-      case 'Hindi': return { color: 'bg-cyan-500' };
+      case 'Hindi': return { color: 'bg-amber-500' };
       case 'Nepali': return { color: 'bg-red-500' };
       default: return { color: 'bg-slate-500' };
     }
@@ -200,14 +214,13 @@ const Upcoming = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
         <div className="text-center">
-          <div className="relative w-24 h-24 mx-auto mb-6">
-            <div className="absolute inset-0 rounded-full border-4 border-cyan-500/30"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-cyan-500 animate-spin"></div>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-red-500/20"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-red-500 animate-spin"></div>
           </div>
-          <p className="text-slate-400 text-lg">Loading upcoming blockbusters...</p>
-          <p className="text-slate-600 text-sm mt-2">Hollywood | Bollywood | Nepali</p>
+          <p className="text-slate-400 text-sm">Loading upcoming movies...</p>
         </div>
       </div>
     );
@@ -215,14 +228,14 @@ const Upcoming = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
         <div className="text-center max-w-md px-4">
           <div className="text-5xl mb-4 text-red-400 font-bold">!</div>
           <h2 className="text-xl font-bold text-red-400 mb-2">Oops!</h2>
           <p className="text-slate-400 mb-6">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-3 px-8 rounded-full transition-all cursor-pointer"
+            className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-full transition-all cursor-pointer"
           >
             Try Again
           </button>
@@ -232,15 +245,15 @@ const Upcoming = () => {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg text-white">
+    <div className="min-h-screen bg-[#0a0a0f] text-white">
       {/* Hero Section */}
-      <div className="relative bg-linear-to-b from-cyan-900/40 via-cyan-900/10 to-transparent py-10">
+      <div className="relative bg-linear-to-b from-red-900/30 via-red-900/10 to-transparent py-10">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-4xl md:text-5xl font-black">
-                  Upcoming <span className="text-cyan-400">Blockbusters</span>
+                  Upcoming <span className="text-red-500">Movies</span>
                 </h1>
               </div>
               <p className="text-slate-400 text-lg flex items-center gap-3 flex-wrap">
@@ -258,8 +271,8 @@ const Upcoming = () => {
                 <p className="text-2xl font-black text-white">{filteredMovies.length}</p>
                 <p className="text-xs text-slate-500 uppercase tracking-wider">Movies</p>
               </div>
-              <div className="text-center px-4 py-2 bg-orange-500/10 rounded-xl border border-orange-500/30">
-                <p className="text-2xl font-black text-orange-400">{interestedMovies.length}</p>
+              <div className="text-center px-4 py-2 bg-red-500/10 rounded-xl border border-red-500/30">
+                <p className="text-2xl font-black text-red-400">{interestedMovies.length}</p>
                 <p className="text-xs text-slate-500 uppercase tracking-wider">Interested</p>
               </div>
             </div>
@@ -327,6 +340,7 @@ const Upcoming = () => {
               onChange={(e) => setSortBy(e.target.value)}
               className="bg-[#181818] border border-[#2a2a2a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#4a4a4a] cursor-pointer"
             >
+              <option value="interest">Most Interested</option>
               <option value="popularity">Most Popular</option>
               <option value="date">Release Date</option>
               <option value="title">Title A-Z</option>
@@ -351,7 +365,7 @@ const Upcoming = () => {
                   <div key={movie.id} className="group">
                     {/* Card */}
                     <div 
-                      className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-cyan-500/50 shadow-lg transition-all duration-300 cursor-pointer"
+                      className="relative aspect-2/3 rounded-xl overflow-hidden mb-3 border-2 border-slate-800 group-hover:border-red-500/40 shadow-lg transition-all duration-300 cursor-pointer"
                       onClick={() => navigate(movie.isBackend ? `/movie/backend/${movie.id}` : `/details/movie/${movie.id}`)}
                     >
                       {movie.image ? (
@@ -366,7 +380,7 @@ const Upcoming = () => {
                           }}
                         />
                       ) : (
-                        <div className="w-full h-full bg-linear-to-br from-cyan-900/50 to-slate-900 flex items-center justify-center">
+                        <div className="w-full h-full bg-linear-to-br from-red-900/50 to-slate-900 flex items-center justify-center">
                           <span className="text-sm text-slate-500">Coming Soon</span>
                         </div>
                       )}
@@ -381,25 +395,21 @@ const Upcoming = () => {
                           <span className="sm:inline">{movie.language}</span>
                         </div>
                         
-                        {/* Interest Button - only for backend upcoming movies */}
-                        {movie.isBackend ? (
-                          <button
+                        {/* Interest Button */}
+                        <button
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleInterested(movie);
                             }}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer text-base ${
+                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                               isInterested(movie.id)
-                                ? 'bg-orange-500/90 scale-110'
-                                : 'bg-black/60 hover:bg-orange-500/80 hover:scale-110'
+                                ? 'bg-red-500 scale-110'
+                                : 'bg-black/60 hover:bg-red-500/80 hover:scale-110'
                             }`}
                             title={isInterested(movie.id) ? 'Remove interest' : 'Mark as interested'}
                           >
-                            🔥
-                          </button>
-                        ) : (
-                          <div className="w-8 h-8" />
-                        )}
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-white" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" /></svg>
+                        </button>
                       </div>
                       
                       {/* Countdown Badge (bottom left) */}
@@ -413,9 +423,12 @@ const Upcoming = () => {
                       <div className="absolute bottom-0 left-0 right-0 p-3">
                         <p className="text-white font-bold text-sm truncate">{movie.title}</p>
                         <div className="flex items-center justify-between">
-                          <p className="text-cyan-300 text-xs">{formatDate(movie.releaseDate)}</p>
-                          {movie.isBackend && movie.interestedCount > 0 && (
-                            <span className="text-orange-400 text-xs font-bold">🔥 {movie.interestedCount}</span>
+                          <p className="text-red-300 text-xs">{formatDate(movie.releaseDate)}</p>
+                          {movie.interestedCount > 0 && (
+                            <span className="text-red-400 text-xs font-bold flex items-center gap-0.5">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" /></svg>
+                              {movie.interestedCount}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -423,7 +436,7 @@ const Upcoming = () => {
                     
                     {/* Title below card */}
                     <h3 
-                      className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors cursor-pointer"
+                      className="font-semibold text-sm truncate group-hover:text-red-400 transition-colors cursor-pointer"
                       onClick={() => navigate(movie.isBackend ? `/movie/backend/${movie.id}` : `/details/movie/${movie.id}`)}
                     >
                       {movie.title}
@@ -443,7 +456,7 @@ const Upcoming = () => {
               <div className="text-center mt-10">
                 <button
                   onClick={loadMore}
-                  className="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-xl transition-all cursor-pointer shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50"
+                  className="px-8 py-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-all cursor-pointer shadow-lg shadow-red-500/20 hover:shadow-red-500/30"
                 >
                   Load More Movies ({filteredMovies.length - displayCount} remaining)
                 </button>
@@ -460,7 +473,7 @@ const Upcoming = () => {
                 setSelectedLanguage('all');
                 setSelectedFilter('all');
               }}
-              className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-full transition-all cursor-pointer"
+              className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-full transition-all cursor-pointer"
             >
               Reset Filters
             </button>
@@ -469,11 +482,11 @@ const Upcoming = () => {
 
         {/* Watchlist Summary */}
         {interestedMovies.length > 0 && selectedFilter !== 'interested' && (
-          <div className="mt-12 p-5 bg-linear-to-r from-orange-500/10 via-orange-500/10 to-orange-500/10 border border-orange-500/30 rounded-2xl">
+          <div className="mt-12 p-5 bg-linear-to-r from-red-500/10 via-red-500/10 to-red-500/10 border border-red-500/30 rounded-2xl">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
-                  <span className="text-lg">🔥</span>
+                <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" /></svg>
                 </div>
                 <div>
                   <p className="text-white font-bold">
@@ -484,7 +497,7 @@ const Upcoming = () => {
               </div>
               <button
                 onClick={() => setSelectedFilter('interested')}
-                className="px-5 py-2.5 bg-orange-500 hover:bg-orange-400 text-black font-bold rounded-xl transition-all cursor-pointer"
+                className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-all cursor-pointer"
               >
                 View Interested
               </button>

@@ -22,6 +22,7 @@ import theaterRoutes from './routes/theater.routes.js';
 import cityRoutes from './routes/city.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import ratingRoutes from './routes/rating.routes.js';
 
 // Create Express app
 const app = express();
@@ -94,6 +95,9 @@ app.use('/api/cities', cityRoutes);
 // Admin analytics API
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+
+// Ratings API
+app.use('/api/ratings', ratingRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

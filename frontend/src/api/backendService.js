@@ -136,6 +136,22 @@ export const getBackendMovieById = async (id) => {
 };
 
 /**
+ * Find a backend movie by its TMDB ID (scans upcoming list)
+ */
+export const getBackendMovieByTmdbId = async (tmdbId) => {
+  try {
+    const response = await api.get('/movies/upcoming');
+    if (response.data?.success) {
+      const match = response.data.data.find(m => m.tmdbId === Number(tmdbId));
+      return match ? normalizeBackendMovie(match) : null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+/**
  * Check if backend is available
  */
 export const checkBackendHealth = async () => {
@@ -314,9 +330,18 @@ export const getHallLayout = async (theaterId, hallId) => {
   return null;
 };
 
-// Toggle interest on an upcoming movie
+// Toggle interest on an upcoming movie (backend movie with MongoDB _id)
 export const toggleMovieInterest = async (movieId) => {
   const response = await api.post(`/movies/${movieId}/interest`);
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to toggle interest');
+};
+
+// Toggle interest on a TMDB upcoming movie (find-or-create by tmdbId)
+export const toggleTmdbMovieInterest = async ({ tmdbId, title, poster, backdrop, releaseDate, language }) => {
+  const response = await api.post('/movies/tmdb-interest', {
+    tmdbId, title, poster, backdrop, releaseDate, language
+  });
   if (response.data?.success) return response.data.data;
   throw new Error('Failed to toggle interest');
 };
@@ -367,6 +392,7 @@ export default {
   getBackendMovieById,
   checkBackendHealth,
   toggleMovieInterest,
+  toggleTmdbMovieInterest,
   getMostInterestedMovies,
   createMovie,
   updateMovie,

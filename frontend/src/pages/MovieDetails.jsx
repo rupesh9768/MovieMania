@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { getBackendMovieById } from '../api/backendService';
-import { toggleMovieInterest } from '../api/backendService';
+import { getBackendMovieById, getBackendMovieByTmdbId } from '../api/backendService';
+import { toggleMovieInterest, toggleTmdbMovieInterest } from '../api/backendService';
 import { 
   checkItemInLists, 
   addToWatchlist, 
@@ -10,6 +10,8 @@ import {
   removeFromFavorites 
 } from '../api/userService';
 import { useAuth } from '../context/AuthContext';
+import MovieRatingSection from '../components/MovieRatingSection';
+import { getMovieRatings } from '../api/ratingService';
 
 // TMDB API Config
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -60,9 +62,30 @@ const MovieDetails = () => {
   const [interestedCount, setInterestedCount] = useState(0);
   const [interestLoading, setInterestLoading] = useState(false);
 
+  // Platform rating state
+  const [platformRating, setPlatformRating] = useState({ averageRating: 0, totalRatings: 0 });
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id, mediaType]);
+
+  // Fetch platform rating
+  const getRatingMovieId = () => {
+    if (isBackendMovieRoute) return id;
+    if (location.pathname.startsWith('/anime/')) return `anime_${id}`;
+    if (location.pathname.startsWith('/tv/')) return `tv_${id}`;
+    return `tmdb_${id}`;
+  };
+
+  useEffect(() => {
+    const fetchRating = async () => {
+      try {
+        const data = await getMovieRatings(getRatingMovieId());
+        setPlatformRating({ averageRating: data.averageRating, totalRatings: data.totalRatings });
+      } catch { /* no ratings yet */ }
+    };
+    if (id) fetchRating();
+  }, [id, isBackendMovieRoute]);
 
   useEffect(() => {
     const checkLists = async () => {
@@ -351,6 +374,20 @@ const MovieDetails = () => {
           const providers = providersData.results?.US || providersData.results?.IN || Object.values(providersData.results || {})[0];
           setWatchProviders(providers);
         }
+
+        // Check if this TMDB movie has interest data in backend (by tmdbId)
+        if (user && data.id) {
+          const backendMatch = await getBackendMovieByTmdbId(data.id);
+          if (backendMatch) {
+            setInterestedCount(backendMatch.interestedCount || 0);
+            const userId = user._id || user.id;
+            if (backendMatch.interestedUsers?.length > 0) {
+              setIsInterested(backendMatch.interestedUsers.some(
+                (uid) => uid.toString() === userId?.toString()
+              ));
+            }
+          }
+        }
         
       } catch (err) {
         console.error('Failed to fetch:', err);
@@ -390,12 +427,26 @@ const MovieDetails = () => {
       navigate('/login');
       return;
     }
-    if (!item?.isBackend || item?.isNowPlaying) return;
+    // Block if it's a now-playing backend movie
+    if (item?.isBackend && item?.isNowPlaying) return;
 
     setInterestLoading(true);
     try {
-      const movieId = item._id || item.id;
-      const result = await toggleMovieInterest(movieId);
+      let result;
+      if (item?.isBackend) {
+        const movieId = item._id || item.id;
+        result = await toggleMovieInterest(movieId);
+      } else {
+        // TMDB movie — auto-create in DB
+        result = await toggleTmdbMovieInterest({
+          tmdbId: item.id,
+          title: item.title,
+          poster: item.poster,
+          backdrop: item.backdrop,
+          releaseDate: item.releaseDate,
+          language: item.original_language || item.language
+        });
+      }
       setIsInterested(result.interested);
       setInterestedCount(result.interestedCount);
     } catch (error) {
@@ -548,7 +599,21 @@ const MovieDetails = () => {
               <h1 className="text-2xl md:text-4xl font-black mb-2 leading-tight">
                 {item.title}
               </h1>
-              
+
+              {/* Platform Rating Badge */}
+              {platformRating.totalRatings > 0 && (
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-1.5 bg-yellow-400/10 border border-yellow-400/30 rounded-full px-3 py-1">
+                    <span className="text-yellow-400 text-sm">★</span>
+                    <span className="text-yellow-300 font-bold text-sm">{platformRating.averageRating}</span>
+                    <span className="text-slate-400 text-xs">/ 5</span>
+                  </div>
+                  <span className="text-slate-500 text-xs">
+                    {platformRating.totalRatings} {platformRating.totalRatings === 1 ? 'rating' : 'ratings'} on MovieMania
+                  </span>
+                </div>
+              )}
+
               {item.tagline && (
                 <p className="text-slate-400 italic text-sm mb-3">"{item.tagline}"</p>
               )}
@@ -610,31 +675,33 @@ const MovieDetails = () => {
                   )}
                 </button>
 
-                {/* Interest Button (only for upcoming backend movies) */}
-                {item.isBackend && !item.isNowPlaying && (
+                {/* Interest Button (for upcoming movies — backend or TMDB with future release) */}
+                {(item.isBackend ? !item.isNowPlaying : (item.releaseDate && new Date(item.releaseDate) > new Date())) && (
                   <button 
                     onClick={handleInterestToggle}
                     disabled={interestLoading}
                     className={`font-semibold py-2.5 px-5 rounded-full transition-all duration-200 text-sm border cursor-pointer flex items-center gap-2 active:scale-95 ${
                       isInterested 
-                        ? 'bg-orange-500/20 text-orange-300 border-orange-400/60 shadow-[0_0_0_1px_rgba(251,146,60,0.35)]'
+                        ? 'bg-red-500/20 text-red-300 border-red-400/60 shadow-[0_0_0_1px_rgba(239,68,68,0.35)]'
                         : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
                     } ${interestLoading ? 'opacity-60 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
                   >
                     {interestLoading ? (
                       <span className="animate-spin text-xs">...</span>
-                    ) : isInterested ? (
-                      <>🔥 Interested</>
                     ) : (
-                      <>🔥 Mark Interested</>
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" /></svg>
+                        {isInterested ? 'Interested' : 'Mark Interested'}
+                      </>
                     )}
                   </button>
                 )}
 
-                {/* Interest Count (for backend movies) */}
-                {item.isBackend && interestedCount > 0 && (
-                  <span className="text-sm text-orange-400 font-medium flex items-center gap-1 ml-1">
-                    🔥 {interestedCount} {interestedCount === 1 ? 'person' : 'people'} interested
+                {/* Interest Count */}
+                {interestedCount > 0 && (
+                  <span className="text-sm text-red-400 font-medium flex items-center gap-1 ml-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" /></svg>
+                    {interestedCount} {interestedCount === 1 ? 'person' : 'people'} interested
                   </span>
                 )}
 
@@ -731,6 +798,15 @@ const MovieDetails = () => {
                   ))}
                 </div>
               </section>
+            )}
+
+            {/* User Rating Section */}
+            {!(item.isBackend ? !item.isNowPlaying : (item.releaseDate && new Date(item.releaseDate) > new Date())) && (
+              <MovieRatingSection
+                movieId={item.isBackend ? (item._id || item.id) : item.isAnime ? `anime_${item.id}` : item.mediaType === 'tv' ? `tv_${item.id}` : `tmdb_${item.id}`}
+                isAuthenticated={isAuthenticated}
+                onRatingChange={(data) => setPlatformRating({ averageRating: data.averageRating, totalRatings: data.totalRatings })}
+              />
             )}
           </div>
 

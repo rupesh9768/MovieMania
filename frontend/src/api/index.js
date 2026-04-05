@@ -29,6 +29,9 @@ export { default as userApi } from './userService';
 export * from './authService';
 export { default as authApi } from './authService';
 
+// Rating API Service
+export * from './ratingService';
+
 // Discussion API Service
 export * from './discussionService';
 export { default as discussionApi } from './discussionService';
