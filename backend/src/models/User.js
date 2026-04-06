@@ -92,8 +92,20 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'admin'],
+    enum: ['user', 'admin', 'super_admin', 'theater_admin'],
     default: 'user'
+  },
+  // Theater admin: assigned city
+  assignedCity: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'City',
+    default: null
+  },
+  // Theater admin: assigned theater (location)
+  assignedTheater: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Theater',
+    default: null
   },
   avatar: {
     type: String,

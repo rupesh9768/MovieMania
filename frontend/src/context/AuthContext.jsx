@@ -96,13 +96,17 @@ export const AuthProvider = ({ children }) => {
 
 
   const isAuthenticated = !!user;
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'theater_admin';
+  const isSuperAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isTheaterAdmin = user?.role === 'theater_admin';
 
   const value = {
     user,
     loading,
     isAuthenticated,
     isAdmin,
+    isSuperAdmin,
+    isTheaterAdmin,
     login,
     register,
     logout,

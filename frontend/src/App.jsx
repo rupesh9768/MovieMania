@@ -27,6 +27,7 @@ import BookingsAdmin from './pages/admin/BookingsAdmin';
 import AnalyticsAdmin from './pages/admin/AnalyticsAdmin';
 import UsersAdmin from './pages/admin/UsersAdmin';
 import TheatersAdmin from './pages/admin/TheatersAdmin';
+import TheaterAdminsAdmin from './pages/admin/TheaterAdminsAdmin';
 import Booking from './pages/Booking';
 import BookingHistory from './pages/BookingHistory';
 import Theater from './pages/Theater';
@@ -163,6 +164,7 @@ function App() {
                 <Route path="theaters" element={<TheatersAdmin />} />
                 <Route path="bookings" element={<BookingsAdmin />} />
                 <Route path="users" element={<UsersAdmin />} />
+                <Route path="theater-admins" element={<TheaterAdminsAdmin />} />
                 <Route path="analytics" element={<AnalyticsAdmin />} />
               </Route>
               

@@ -1,13 +1,15 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-const menuItems = [
-  { key: 'dashboard', label: 'Dashboard', to: '/admin/dashboard' },
-  { key: 'movies', label: 'Movies Management', to: '/admin/movies' },
-  { key: 'theaters', label: 'Theaters', to: '/admin/theaters' },
-  { key: 'bookings', label: 'Bookings', to: '/admin/bookings' },
-  { key: 'users', label: 'Users', to: '/admin/users' },
-  { key: 'analytics', label: 'Analytics', to: '/admin/analytics' }
+const allMenuItems = [
+  { key: 'dashboard', label: 'Dashboard', to: '/admin/dashboard', roles: ['admin', 'super_admin', 'theater_admin'] },
+  { key: 'movies', label: 'Movies Management', to: '/admin/movies', roles: ['admin', 'super_admin', 'theater_admin'] },
+  { key: 'theaters', label: 'Theaters', to: '/admin/theaters', roles: ['admin', 'super_admin', 'theater_admin'] },
+  { key: 'bookings', label: 'Bookings', to: '/admin/bookings', roles: ['admin', 'super_admin', 'theater_admin'] },
+  { key: 'users', label: 'Users', to: '/admin/users', roles: ['admin', 'super_admin'] },
+  { key: 'theater-admins', label: 'Theater Admins', to: '/admin/theater-admins', roles: ['admin', 'super_admin'] },
+  { key: 'analytics', label: 'Analytics', to: '/admin/analytics', roles: ['admin', 'super_admin', 'theater_admin'] }
 ];
 
 const Icon = ({ type }) => {
@@ -54,6 +56,17 @@ const Icon = ({ type }) => {
     );
   }
 
+  if (type === 'theater-admins') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    );
+  }
+
   return (
     <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="2">
       <path d="M4 19h16M4 15l4-4 3 3 5-6 4 4" />
@@ -62,11 +75,16 @@ const Icon = ({ type }) => {
 };
 
 const AdminDashboard = () => {
+  const { user } = useAuth();
+  const userRole = user?.role || 'user';
+  const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
+  const panelTitle = userRole === 'theater_admin' ? 'Theater Admin' : 'Admin Panel';
+
   return (
     <div className="flex min-h-screen bg-slate-950 text-white">
       <aside className="w-64 shrink-0 border-r border-slate-800 bg-slate-900/90 px-4 py-6 sticky top-0 h-screen">
         <div className="mb-8 px-2">
-          <h1 className="text-xl font-black tracking-wide">Admin Panel</h1>
+          <h1 className="text-xl font-black tracking-wide">{panelTitle}</h1>
           <p className="text-xs text-slate-400 mt-1">MovieMania Control Center</p>
         </div>
 

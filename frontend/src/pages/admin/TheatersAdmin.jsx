@@ -19,7 +19,7 @@ const TheatersAdmin = () => {
   // Theater form
   const [showForm, setShowForm] = useState(false);
   const [editingTheater, setEditingTheater] = useState(null);
-  const [formData, setFormData] = useState({ name: '', city: '', location: '', address: '', phone: '', isActive: true });
+  const [formData, setFormData] = useState({ name: '', city: '', location: '', phone: '', isActive: true });
   const [saving, setSaving] = useState(false);
 
   // Hall form
@@ -102,7 +102,7 @@ const TheatersAdmin = () => {
 
   // --- Theater handlers ---
   const resetForm = () => {
-    setFormData({ name: '', city: '', location: '', address: '', phone: '', isActive: true });
+    setFormData({ name: '', city: '', location: '', phone: '', isActive: true });
     setShowForm(false);
     setEditingTheater(null);
   };
@@ -119,7 +119,6 @@ const TheatersAdmin = () => {
       name: theater.name || '',
       city: theater.city?._id || theater.city || '',
       location: theater.location || '',
-      address: theater.address || '',
       phone: theater.phone || '',
       isActive: theater.isActive !== false
     });
@@ -337,7 +336,6 @@ const TheatersAdmin = () => {
                     )}
                     <span>{theater.location}</span>
                   </div>
-                  {theater.address && <p className="text-xs text-slate-500 mt-1">{theater.address}</p>}
                   {theater.phone && <p className="text-xs text-slate-500">{theater.phone}</p>}
                 </div>
                 <div className="flex gap-2">
@@ -408,10 +406,6 @@ const TheatersAdmin = () => {
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Area / Location *</label>
                 <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:border-cyan-500 focus:outline-none" required placeholder="e.g. Sundhara, Kathmandu" />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Address</label>
-                <input type="text" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white" placeholder="e.g. New Baneshwor Road" />
               </div>
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Phone</label>

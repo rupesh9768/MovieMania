@@ -51,11 +51,13 @@ const normalizeGlobalMovie = (movie) => ({
 
 /**
  * Get all movies from backend
- * GET /api/movies
+ * GET /api/movies?city=cityId
  */
-export const getBackendMovies = async () => {
+export const getBackendMovies = async (cityId = null) => {
   try {
-    const response = await api.get('/movies');
+    const params = {};
+    if (cityId) params.city = cityId;
+    const response = await api.get('/movies', { params });
     if (response.data?.success) {
       return response.data.data.map(normalizeBackendMovie);
     }
@@ -69,11 +71,13 @@ export const getBackendMovies = async () => {
 
 /**
  * Get now playing movies from backend
- * GET /api/movies/now-playing
+ * GET /api/movies/now-playing?city=cityId
  */
-export const getBackendNowPlaying = async () => {
+export const getBackendNowPlaying = async (cityId = null) => {
   try {
-    const response = await api.get('/movies/now-playing');
+    const params = {};
+    if (cityId) params.city = cityId;
+    const response = await api.get('/movies/now-playing', { params });
     if (response.data?.success) {
       return response.data.data.map(normalizeBackendMovie);
     }
@@ -383,6 +387,34 @@ export const getShowtimeSeatMap = async (movieId, showtimeId) => {
   throw new Error('Failed to fetch seat map');
 };
 
+// ====================================
+// Theater Admin Management (Super Admin)
+// ====================================
+
+export const getTheaterAdmins = async () => {
+  const response = await api.get('/admin/theater-admins');
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to fetch theater admins');
+};
+
+export const createTheaterAdmin = async (data) => {
+  const response = await api.post('/admin/create-theater-admin', data);
+  if (response.data?.success) return response.data.data;
+  throw new Error(response.data?.message || 'Failed to create theater admin');
+};
+
+export const updateTheaterAdmin = async (id, data) => {
+  const response = await api.put(`/admin/theater-admins/${id}`, data);
+  if (response.data?.success) return response.data.data;
+  throw new Error('Failed to update theater admin');
+};
+
+export const deleteTheaterAdmin = async (id) => {
+  const response = await api.delete(`/admin/theater-admins/${id}`);
+  if (response.data?.success) return true;
+  throw new Error('Failed to delete theater admin');
+};
+
 // Export all functions
 export default {
   getBackendMovies,
@@ -417,5 +449,9 @@ export default {
   addHallToTheater,
   removeHallFromTheater,
   saveHallLayout,
-  getHallLayout
+  getHallLayout,
+  getTheaterAdmins,
+  createTheaterAdmin,
+  updateTheaterAdmin,
+  deleteTheaterAdmin
 };
