@@ -93,101 +93,63 @@ const Theater = () => {
 
   return (
     <div className="min-h-screen bg-dark-bg text-white">
-      
-      {/* Hero Banner */}
-      <section className="relative py-16 overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-linear-to-b from-red-900/20 via-dark-bg to-dark-bg"></div>
-        
-        <div className="relative max-w-6xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 bg-red-500/20 border border-red-500/30 px-4 py-1.5 rounded-full mb-4">
-            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-            <span className="text-red-400 text-sm font-semibold uppercase tracking-wide">Now Showing</span>
-          </div>
-          
-          <h1 className="text-4xl md:text-5xl font-black mb-4">
-            Our Theater
+
+      {/* Top bar with filters */}
+      <div className="sticky top-0 z-30 bg-dark-bg/90 backdrop-blur-xl border-b border-slate-800/60">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center gap-4">
+          <h1 className="text-xl font-black tracking-tight mr-auto">
+            <span className="text-red-500">Now</span> Showing
           </h1>
-          
-          <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-            Book your tickets for movies currently playing in our halls. 
-            Experience cinema like never before!
-          </p>
+
+          {/* City dropdown */}
+          {cities.length > 0 && (
+            <div className="relative">
+              <select
+                value={selectedCityId}
+                onChange={(e) => handleCityChange(e.target.value)}
+                className="appearance-none bg-slate-900 border border-slate-700 hover:border-slate-500 rounded-xl pl-4 pr-9 py-2.5 text-sm font-semibold text-white focus:border-red-500 focus:outline-none cursor-pointer transition-colors"
+              >
+                <option value="all">All Cities</option>
+                {cities.map((city) => (
+                  <option key={city._id} value={city._id}>{city.name}</option>
+                ))}
+              </select>
+              <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+            </div>
+          )}
+
+          {/* Theater dropdown */}
+          {filteredTheaters.length > 0 && (
+            <div className="relative">
+              <select
+                value={selectedTheaterId}
+                onChange={(e) => setSelectedTheaterId(e.target.value)}
+                className="appearance-none bg-slate-900 border border-slate-700 hover:border-slate-500 rounded-xl pl-4 pr-9 py-2.5 text-sm font-semibold text-white focus:border-red-500 focus:outline-none cursor-pointer transition-colors"
+              >
+                <option value="all">All Theaters</option>
+                {filteredTheaters.map((theater) => (
+                  <option key={theater._id} value={theater._id}>{theater.name} — {theater.location}</option>
+                ))}
+              </select>
+              <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+            </div>
+          )}
+
+          {/* Movie count pill */}
+          <span className="text-xs text-slate-500 bg-slate-800/80 px-3 py-1.5 rounded-full font-semibold">
+            {filteredMovies.length} {filteredMovies.length === 1 ? 'movie' : 'movies'}
+          </span>
         </div>
-      </section>
+      </div>
 
-      {/* Movies Grid */}
-      <section className="max-w-6xl mx-auto px-6 pb-16">
+      {/* Main content */}
+      <section className="max-w-7xl mx-auto px-6 pt-8 pb-20">
 
-        {/* City & Theater Selector */}
-        {cities.length > 0 && (
-          <div className="mb-4">
-            <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Select City</h2>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => handleCityChange('all')}
-                className={`py-2.5 px-5 rounded-xl text-sm font-semibold transition-all border ${
-                  selectedCityId === 'all'
-                    ? 'bg-red-600 border-red-500 text-white'
-                    : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
-                }`}
-              >
-                All Cities
-              </button>
-              {cities.map((city) => (
-                <button
-                  key={city._id}
-                  onClick={() => handleCityChange(city._id)}
-                  className={`py-2.5 px-5 rounded-xl text-sm font-semibold transition-all border ${
-                    selectedCityId === city._id
-                      ? 'bg-red-600 border-red-500 text-white'
-                      : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
-                  }`}
-                >
-                  {city.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {filteredTheaters.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Select Theater</h2>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => setSelectedTheaterId('all')}
-                className={`py-2.5 px-5 rounded-xl text-sm font-semibold transition-all border ${
-                  selectedTheaterId === 'all'
-                    ? 'bg-red-600 border-red-500 text-white'
-                    : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
-                }`}
-              >
-                All Theaters
-              </button>
-              {filteredTheaters.map((theater) => (
-                <button
-                  key={theater._id}
-                  onClick={() => setSelectedTheaterId(theater._id)}
-                  className={`py-2.5 px-5 rounded-xl text-sm font-semibold transition-all border ${
-                    selectedTheaterId === theater._id
-                      ? 'bg-red-600 border-red-500 text-white'
-                      : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
-                  }`}
-                >
-                  <span>{theater.name}</span>
-                  <span className="block text-xs opacity-70">{theater.location}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        
         {/* Error State */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center mb-8">
             <p className="text-red-400">{error}</p>
-            <button 
+            <button
               onClick={() => window.location.reload()}
               className="mt-3 text-sm text-red-300 hover:text-red-200 underline"
             >
@@ -196,109 +158,80 @@ const Theater = () => {
           </div>
         )}
 
-        {/* No Movies */}
+        {/* Empty State */}
         {!error && filteredMovies.length === 0 && (
-          <div className="text-center py-20">
-            <div className="text-5xl mb-4 text-slate-600">Film</div>
-            <h2 className="text-2xl font-bold mb-2">{selectedTheaterId !== 'all' ? 'No Movies at This Theater' : 'No Movies Currently Showing'}</h2>
-            <p className="text-slate-400 mb-6">{selectedTheaterId !== 'all' ? 'Try selecting a different theater or check back later.' : 'Check back later for new releases!'}</p>
+          <div className="text-center py-24">
+            <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-slate-800/60 flex items-center justify-center">
+              <svg className="w-10 h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold mb-2">{selectedTheaterId !== 'all' ? 'No movies at this theater' : 'No movies showing right now'}</h2>
+            <p className="text-slate-500 text-sm">{selectedTheaterId !== 'all' ? 'Try a different theater or check back later.' : 'New releases coming soon!'}</p>
           </div>
         )}
 
-        {/* Movies Grid */}
+        {/* Movie Grid */}
         {filteredMovies.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
             {filteredMovies.map((movie) => (
-              <div 
-                key={movie.id} 
-                className="group relative bg-slate-900/50 rounded-xl overflow-hidden border border-slate-800/50 hover:border-red-500/50 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-red-500/10"
+              <div
+                key={movie.id}
+                onClick={() => handleBookNow(movie)}
+                className="group cursor-pointer"
               >
                 {/* Poster */}
-                <div className="aspect-2/3 relative overflow-hidden">
+                <div className="aspect-2/3 relative rounded-xl overflow-hidden mb-3 ring-1 ring-slate-800 group-hover:ring-red-500/60 transition-all duration-300">
                   {movie.poster ? (
-                    <img 
-                      src={movie.poster} 
+                    <img
+                      src={movie.poster}
                       alt={movie.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full bg-linear-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-                      <span className="text-4xl text-slate-600">Film</span>
+                    <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                      <svg className="w-12 h-12 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                      </svg>
                     </div>
                   )}
-                  
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                    <button 
-                      onClick={() => handleBookNow(movie)}
-                      className="bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-4 rounded-full text-sm w-full transition-all"
-                    >
+
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                  {/* Book button on hover */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                    <div className="bg-red-600 text-white text-xs font-bold py-2 rounded-lg text-center">
                       Book Now
-                    </button>
+                    </div>
                   </div>
-                  
-                  {/* Now Playing Badge */}
-                  <div className="absolute top-2 left-2">
-                    <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                      LIVE
-                    </span>
-                  </div>
-                  
-                  {/* Rating Badge */}
+
+                  {/* Rating */}
                   {movie.rating > 0 && (
-                    <div className="absolute top-2 right-2">
-                      <span className="bg-yellow-500/90 text-black text-xs font-bold px-2 py-1 rounded-full">
-                        ★ {movie.rating.toFixed(1)}
-                      </span>
+                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-yellow-400 text-[11px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <span>★</span> {movie.rating.toFixed(1)}
                     </div>
                   )}
                 </div>
-                
-                {/* Movie Info */}
-                <div className="p-3">
-                  <h3 className="font-bold text-sm truncate mb-1">{movie.title}</h3>
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>{movie.language?.toUpperCase() || 'NE'}</span>
-                    {movie.runtime > 0 && <span>{Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>}
-                  </div>
-                  {movie.genres?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {movie.genres.slice(0, 2).map((genre, idx) => (
-                        <span key={idx} className="bg-slate-800 text-slate-400 text-[10px] px-2 py-0.5 rounded-full">
-                          {genre}
-                        </span>
-                      ))}
-                    </div>
+
+                {/* Info */}
+                <h3 className="font-bold text-sm leading-tight truncate group-hover:text-red-400 transition-colors">{movie.title}</h3>
+                <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
+                  {movie.language && <span className="uppercase">{movie.language}</span>}
+                  {movie.runtime > 0 && (
+                    <>
+                      <span className="w-1 h-1 rounded-full bg-slate-700"></span>
+                      <span>{Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
+                    </>
                   )}
                 </div>
+                {movie.genres?.length > 0 && (
+                  <p className="text-[10px] text-slate-600 mt-1 truncate">{movie.genres.slice(0, 3).join(' · ')}</p>
+                )}
               </div>
             ))}
           </div>
         )}
-      </section>
-
-      {/* Info Section */}
-      <section className="bg-slate-900/30 border-t border-slate-800/50 py-12">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            <div className="p-6">
-              <div className="text-4xl mb-3 text-cyan-400">Premium</div>
-              <h3 className="font-bold text-lg mb-2">Premium Experience</h3>
-              <p className="text-slate-400 text-sm">Dolby Atmos sound, 4K projection, and luxury seating</p>
-            </div>
-            <div className="p-6">
-              <div className="text-4xl mb-3 text-cyan-400">Tickets</div>
-              <h3 className="font-bold text-lg mb-2">Easy Booking</h3>
-              <p className="text-slate-400 text-sm">Select your seats, pay online, and get instant confirmation</p>
-            </div>
-            <div className="p-6">
-              <div className="text-4xl mb-3 text-cyan-400">Rewards</div>
-              <h3 className="font-bold text-lg mb-2">Member Rewards</h3>
-              <p className="text-slate-400 text-sm">Earn points on every booking and get exclusive discounts</p>
-            </div>
-          </div>
-        </div>
       </section>
     </div>
   );

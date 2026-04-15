@@ -52,6 +52,7 @@ function Booking() {
     time: state?.time || '',
     date: state?.date || '',
     price: state?.price || 350,
+    premiumPrice: state?.premiumPrice || null,
     theaterId: state?.theaterId || null
   });
 
@@ -289,6 +290,7 @@ function Booking() {
         <SeatSelection
           onNext={handleReserveSeats}
           basePrice={movieMeta.price || 350}
+          premiumPrice={movieMeta.premiumPrice}
           movieId={movieId}
           showtimeId={showtimeId}
           theaterId={movieMeta.theaterId}

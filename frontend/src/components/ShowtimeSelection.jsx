@@ -67,6 +67,7 @@ const ShowtimeSelection = () => {
           time: selectedHall.time,
           hall: selectedHall.hall,
           price: selectedHall.price,
+          premiumPrice: selectedHall.premiumPrice || null,
           date: dates[selectedDate].full,
           theaterId: selectedHall.theater || null
         } 
@@ -101,6 +102,27 @@ const ShowtimeSelection = () => {
           </button>
           <h1 className="text-3xl font-black mb-2">{movie?.title || 'Select Showtime'}</h1>
           <p className="text-slate-400">Choose your preferred date and time</p>
+          {movie?.advanceBookingDays > 0 && movie?.releaseDate && (() => {
+            const release = new Date(movie.releaseDate);
+            const opensAt = new Date(release);
+            opensAt.setDate(opensAt.getDate() - movie.advanceBookingDays);
+            opensAt.setHours(0,0,0,0);
+            const now = new Date();
+            if (now < opensAt) {
+              return (
+                <div className="mt-2 inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-3 py-1.5 rounded-lg">
+                  <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                  Advance booking opens {opensAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
+              );
+            }
+            return (
+              <div className="mt-2 inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-1.5 rounded-lg">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                Advance booking open!
+              </div>
+            );
+          })()}
         </div>
 
         {/* Date Selection */}
@@ -161,6 +183,9 @@ const ShowtimeSelection = () => {
                     <div>
                       <p className="text-xs text-slate-400">Price</p>
                       <p className="text-xl font-black text-cyan-400">NPR {show.price}</p>
+                      {show.premiumPrice && show.premiumPrice !== show.price && (
+                        <p className="text-xs text-amber-400">Premium: NPR {show.premiumPrice}</p>
+                      )}
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                       selectedShowtime === show._id 

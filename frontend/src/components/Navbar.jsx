@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import NotificationPanel from './NotificationPanel';
+import Logo from './Logo';
 
 const BACKEND_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
 
@@ -71,11 +72,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl font-black tracking-tighter">
-              MOVIE<span className="text-[#E50914]">MANIA</span>
-            </span>
-          </Link>
+          <Logo size="md" linkToHome />
           
           {/* Desktop Navigation */}
           <ul className="hidden md:flex items-center gap-8">

@@ -5,16 +5,14 @@ const DEFAULT_COLS = 14;
 const MAX_ROWS = 30;
 const MAX_COLS = 40;
 
-const CELL_TYPES = ['empty', 'seat', 'vip', 'premium', 'wheelchair', 'aisle'];
-const CELL_CYCLE = { empty: 'seat', seat: 'vip', vip: 'premium', premium: 'wheelchair', wheelchair: 'aisle', aisle: 'empty' };
+const CELL_TYPES = ['empty', 'seat', 'premium', 'aisle'];
+const CELL_CYCLE = { empty: 'seat', seat: 'premium', premium: 'aisle', aisle: 'empty' };
 
 const CELL_CONFIG = {
-  empty:      { bg: 'bg-slate-800/60', border: 'border-slate-700', text: 'text-slate-600', label: 'Empty', icon: null },
-  seat:       { bg: 'bg-emerald-500/30', border: 'border-emerald-400/50', text: 'text-emerald-300', label: 'Standard', icon: null },
-  vip:        { bg: 'bg-amber-500/30', border: 'border-amber-400/50', text: 'text-amber-300', label: 'VIP', icon: null },
-  premium:    { bg: 'bg-purple-500/30', border: 'border-purple-400/50', text: 'text-purple-300', label: 'Premium', icon: null },
-  wheelchair: { bg: 'bg-blue-500/30', border: 'border-blue-400/50', text: 'text-blue-300', label: 'Wheelchair', icon: '\u267F' },
-  aisle:      { bg: 'bg-transparent', border: 'border-dashed border-slate-700/50', text: 'text-slate-700', label: 'Aisle', icon: null }
+  empty:   { bg: 'bg-slate-800/60', border: 'border-slate-700', text: 'text-slate-600', label: 'Empty', icon: null },
+  seat:    { bg: 'bg-emerald-500/30', border: 'border-emerald-400/50', text: 'text-emerald-300', label: 'Normal', icon: null },
+  premium: { bg: 'bg-amber-500/30', border: 'border-amber-400/50', text: 'text-amber-300', label: 'Premium', icon: '★' },
+  aisle:   { bg: 'bg-transparent', border: 'border-dashed border-slate-700/50', text: 'text-slate-700', label: 'Aisle', icon: null }
 };
 
 const rowLabel = (r) => {
@@ -31,8 +29,8 @@ const gridToLayout = (grid) => {
   const layout = [];
   grid.forEach((row, r) => {
     row.forEach((cell, c) => {
-      const seatTypes = ['seat', 'vip', 'premium', 'wheelchair'];
-      const label = seatTypes.includes(cell.type) ? `${rowLabel(r)}${c + 1}` : '';
+      const isSeat = cell.type === 'seat' || cell.type === 'premium';
+      const label = isSeat ? `${rowLabel(r)}${c + 1}` : '';
       layout.push({ row: r, col: c, type: cell.type, label });
     });
   });
@@ -43,7 +41,9 @@ const layoutToGrid = (seatLayout, rows, cols) => {
   const grid = buildEmptyGrid(rows, cols);
   seatLayout.forEach((cell) => {
     if (cell.row < rows && cell.col < cols) {
-      grid[cell.row][cell.col] = { type: cell.type || 'empty' };
+      let type = cell.type || 'empty';
+      if (type === 'vip' || type === 'wheelchair') type = 'seat';
+      grid[cell.row][cell.col] = { type };
     }
   });
   return grid;
@@ -138,25 +138,21 @@ const SeatLayoutBuilder = ({ existingLayout, layoutRows, layoutCols, onSave, sav
     });
   };
 
-  const addAisleAfterCol = (c) => {
-    if (cols >= MAX_COLS) return;
-    const newCols = cols + 1;
-    setCols(newCols);
+  const markRowPremium = (r) => {
     setGrid((prev) => {
-      return prev.map((row) => {
-        const newRow = [...row];
-        newRow.splice(c + 1, 0, { type: 'aisle' });
-        return newRow;
+      const next = prev.map((row) => row.map((cell) => ({ ...cell })));
+      next[r] = next[r].map((cell) => {
+        if (cell.type === 'seat' || cell.type === 'premium') return { type: 'premium' };
+        return cell;
       });
+      return next;
     });
   };
 
-  const seatTypes = ['seat', 'vip', 'premium', 'wheelchair'];
+  const seatTypes = ['seat', 'premium'];
   const seatCount = grid.flat().filter((c) => seatTypes.includes(c.type)).length;
-  const vipCount = grid.flat().filter((c) => c.type === 'vip').length;
   const premiumCount = grid.flat().filter((c) => c.type === 'premium').length;
-  const wheelchairCount = grid.flat().filter((c) => c.type === 'wheelchair').length;
-  const standardCount = seatCount - vipCount - premiumCount - wheelchairCount;
+  const normalCount = seatCount - premiumCount;
 
   const cellSize = Math.max(24, Math.min(36, Math.floor(36 * zoom)));
   const fontSize = Math.max(7, Math.floor(9 * zoom));
@@ -166,7 +162,6 @@ const SeatLayoutBuilder = ({ existingLayout, layoutRows, layoutCols, onSave, sav
     onSave({ seatLayout: layout, layoutRows: rows, layoutCols: cols, totalSeats: seatCount });
   };
 
-  // Quick presets
   const applyPreset = (preset) => {
     if (preset === 'standard') {
       setRows(12);
@@ -175,7 +170,7 @@ const SeatLayoutBuilder = ({ existingLayout, layoutRows, layoutCols, onSave, sav
       for (let r = 0; r < 12; r++) {
         for (let c = 0; c < 16; c++) {
           if (c === 4 || c === 11) g[r][c] = { type: 'aisle' };
-          else if (r >= 10) g[r][c] = { type: 'vip' };
+          else if (r >= 10) g[r][c] = { type: 'premium' };
           else g[r][c] = { type: 'seat' };
         }
       }
@@ -187,8 +182,7 @@ const SeatLayoutBuilder = ({ existingLayout, layoutRows, layoutCols, onSave, sav
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 12; c++) {
           if (c === 3 || c === 8) g[r][c] = { type: 'aisle' };
-          else if (r >= 6) g[r][c] = { type: 'premium' };
-          else if (r >= 4) g[r][c] = { type: 'vip' };
+          else if (r >= 5) g[r][c] = { type: 'premium' };
           else g[r][c] = { type: 'seat' };
         }
       }
@@ -200,15 +194,11 @@ const SeatLayoutBuilder = ({ existingLayout, layoutRows, layoutCols, onSave, sav
       for (let r = 0; r < 20; r++) {
         for (let c = 0; c < 24; c++) {
           if (c === 6 || c === 17) g[r][c] = { type: 'aisle' };
-          else if (r >= 18) g[r][c] = { type: 'premium' };
-          else if (r >= 15) g[r][c] = { type: 'vip' };
+          else if (r >= 17) g[r][c] = { type: 'premium' };
           else if (r === 0 && (c <= 2 || c >= 21)) g[r][c] = { type: 'empty' };
           else g[r][c] = { type: 'seat' };
         }
       }
-      // Add wheelchair spots
-      g[0][3] = { type: 'wheelchair' };
-      g[0][20] = { type: 'wheelchair' };
       setGrid(g);
     }
   };
@@ -255,7 +245,7 @@ const SeatLayoutBuilder = ({ existingLayout, layoutRows, layoutCols, onSave, sav
 
         <div className="flex gap-1.5">
           <button onClick={() => fillAll('seat')} className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-emerald-500/30 transition-all">
-            Fill Seats
+            Fill All Seats
           </button>
           <button onClick={() => fillAll('empty')} className="bg-slate-700/50 hover:bg-slate-700 text-slate-400 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-slate-600 transition-all">
             Clear All
@@ -264,17 +254,16 @@ const SeatLayoutBuilder = ({ existingLayout, layoutRows, layoutCols, onSave, sav
 
         <div className="h-8 w-px bg-slate-700" />
 
-        {/* Quick presets */}
         <div>
           <label className="block text-[10px] uppercase tracking-wider text-slate-500 mb-1">Presets</label>
           <div className="flex gap-1.5">
             <button onClick={() => applyPreset('standard')} className="bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 px-2 py-1.5 rounded-lg text-[11px] font-semibold border border-cyan-500/25 transition-all">
               Standard
             </button>
-            <button onClick={() => applyPreset('premium-hall')} className="bg-purple-500/15 hover:bg-purple-500/25 text-purple-400 px-2 py-1.5 rounded-lg text-[11px] font-semibold border border-purple-500/25 transition-all">
+            <button onClick={() => applyPreset('premium-hall')} className="bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 px-2 py-1.5 rounded-lg text-[11px] font-semibold border border-amber-500/25 transition-all">
               Premium
             </button>
-            <button onClick={() => applyPreset('large')} className="bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 px-2 py-1.5 rounded-lg text-[11px] font-semibold border border-amber-500/25 transition-all">
+            <button onClick={() => applyPreset('large')} className="bg-purple-500/15 hover:bg-purple-500/25 text-purple-400 px-2 py-1.5 rounded-lg text-[11px] font-semibold border border-purple-500/25 transition-all">
               Large
             </button>
           </div>
@@ -310,8 +299,14 @@ const SeatLayoutBuilder = ({ existingLayout, layoutRows, layoutCols, onSave, sav
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Grid with SCREEN AT TOP */}
       <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 overflow-auto select-none" style={{ maxHeight: '60vh' }}>
+        {/* Screen indicator at TOP */}
+        <div className="mb-4" style={{ marginLeft: `${cellSize + 4}px`, marginRight: `${cellSize + 4}px` }}>
+          <div className="h-2 bg-linear-to-r from-cyan-500/10 via-cyan-500/40 to-cyan-500/10 rounded-full border border-cyan-500/20"></div>
+          <p className="text-center text-[10px] text-cyan-500/50 mt-1 uppercase tracking-[0.25em] font-bold">Screen</p>
+        </div>
+
         {/* Column numbers */}
         <div className="flex gap-px mb-px" style={{ marginLeft: `${cellSize + 4}px` }}>
           {Array.from({ length: cols }, (_, c) => (
@@ -329,7 +324,6 @@ const SeatLayoutBuilder = ({ existingLayout, layoutRows, layoutCols, onSave, sav
 
         {grid.map((row, r) => (
           <div key={r} className="flex gap-px mb-px items-center">
-            {/* Row label (clickable to fill row) */}
             <button
               onClick={() => fillRow(r, paintMode || 'seat')}
               className="flex items-center justify-center text-cyan-300/70 hover:text-cyan-300 font-bold cursor-pointer transition-colors shrink-0"
@@ -360,21 +354,23 @@ const SeatLayoutBuilder = ({ existingLayout, layoutRows, layoutCols, onSave, sav
               );
             })}
 
-            {/* Right row label */}
-            <div
-              className="flex items-center justify-center text-cyan-300/40 font-bold shrink-0"
-              style={{ width: `${cellSize}px`, height: `${cellSize}px`, fontSize: `${Math.max(8, fontSize)}px` }}
-            >
-              {rowLabel(r)}
+            <div className="flex items-center gap-1 shrink-0">
+              <div
+                className="flex items-center justify-center text-cyan-300/40 font-bold"
+                style={{ width: `${cellSize}px`, height: `${cellSize}px`, fontSize: `${Math.max(8, fontSize)}px` }}
+              >
+                {rowLabel(r)}
+              </div>
+              <button
+                onClick={() => markRowPremium(r)}
+                className="text-[9px] text-amber-400/50 hover:text-amber-400 px-1 py-0.5 rounded transition-colors"
+                title={`Mark row ${rowLabel(r)} as premium`}
+              >
+                ★
+              </button>
             </div>
           </div>
         ))}
-
-        {/* Screen indicator */}
-        <div className="mt-4" style={{ marginLeft: `${cellSize + 4}px`, marginRight: `${cellSize + 4}px` }}>
-          <div className="h-2 bg-gradient-to-r from-cyan-500/10 via-cyan-500/40 to-cyan-500/10 rounded-full border border-cyan-500/20"></div>
-          <p className="text-center text-[10px] text-cyan-500/50 mt-1 uppercase tracking-[0.25em] font-bold">Screen</p>
-        </div>
       </div>
 
       {/* Legend + stats */}
@@ -391,10 +387,8 @@ const SeatLayoutBuilder = ({ existingLayout, layoutRows, layoutCols, onSave, sav
             ))}
           </div>
           <div className="flex flex-wrap gap-3 text-xs text-slate-400">
-            <span><span className="text-emerald-400 font-bold">{standardCount}</span> standard</span>
-            <span><span className="text-amber-400 font-bold">{vipCount}</span> VIP</span>
-            <span><span className="text-purple-400 font-bold">{premiumCount}</span> premium</span>
-            <span><span className="text-blue-400 font-bold">{wheelchairCount}</span> wheelchair</span>
+            <span><span className="text-emerald-400 font-bold">{normalCount}</span> normal</span>
+            <span><span className="text-amber-400 font-bold">{premiumCount}</span> premium</span>
             <span className="text-white font-bold">{seatCount} total</span>
           </div>
         </div>

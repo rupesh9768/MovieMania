@@ -16,7 +16,7 @@ const rowLabel = (r) => {
  * - theaterId: optional — theater ObjectId to fetch layout
  * - hallName: optional — hall name string (e.g. "Hall A - Standard")
  */
-const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId, theaterId, hallName }) => {
+const SeatSelection = ({ onNext, basePrice = 350, premiumPrice, movieId, showtimeId, theaterId, hallName }) => {
 
   // Default grid config (fallback when no custom layout)
   const DEFAULT_ROWS = 10;
@@ -92,24 +92,23 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId, theaterId
   }, [movieId, showtimeId]);
 
   // Build the grid from custom layout or default
-  const { grid, gridRows, gridCols, hasVip, hasPremium, hasWheelchair } = useMemo(() => {
+  const { grid, gridRows, gridCols, hasPremium } = useMemo(() => {
     if (customLayout) {
       const { seatLayout, layoutRows, layoutCols } = customLayout;
       const g = Array.from({ length: layoutRows }, () =>
         Array.from({ length: layoutCols }, () => ({ type: 'empty', label: '' }))
       );
-      let vipFound = false;
       let premFound = false;
-      let wcFound = false;
       seatLayout.forEach((cell) => {
         if (cell.row < layoutRows && cell.col < layoutCols) {
-          g[cell.row][cell.col] = { type: cell.type, label: cell.label || '' };
-          if (cell.type === 'vip') vipFound = true;
-          if (cell.type === 'premium') premFound = true;
-          if (cell.type === 'wheelchair') wcFound = true;
+          let type = cell.type || 'empty';
+          // Map legacy types to 'seat'
+          if (type === 'vip' || type === 'wheelchair') type = 'seat';
+          g[cell.row][cell.col] = { type, label: cell.label || '' };
+          if (type === 'premium') premFound = true;
         }
       });
-      return { grid: g, gridRows: layoutRows, gridCols: layoutCols, hasVip: vipFound, hasPremium: premFound, hasWheelchair: wcFound };
+      return { grid: g, gridRows: layoutRows, gridCols: layoutCols, hasPremium: premFound };
     }
 
     // Default grid
@@ -119,7 +118,7 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId, theaterId
         label: `${rowLabel(r)}${c + 1}`
       }))
     );
-    return { grid: defaultRows, gridRows: DEFAULT_ROWS, gridCols: DEFAULT_COLS, hasVip: false, hasPremium: false, hasWheelchair: false };
+    return { grid: defaultRows, gridRows: DEFAULT_ROWS, gridCols: DEFAULT_COLS, hasPremium: false };
   }, [customLayout]);
 
   const toggleSeat = (label) => {
@@ -133,12 +132,27 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId, theaterId
   const allSeatLabels = useMemo(() => {
     const labels = [];
     grid.forEach((row) => row.forEach((cell) => {
-      if (['seat', 'vip', 'premium', 'wheelchair'].includes(cell.type) && cell.label) labels.push(cell.label);
+      if (['seat', 'premium'].includes(cell.type) && cell.label) labels.push(cell.label);
     }));
     return labels;
   }, [grid]);
 
-  const totalPrice = selectedSeats.length * basePrice;
+  // Build a map of seat label -> type for pricing
+  const seatTypeMap = useMemo(() => {
+    const map = {};
+    grid.forEach((row) => row.forEach((cell) => {
+      if (cell.label && ['seat', 'premium'].includes(cell.type)) {
+        map[cell.label] = cell.type;
+      }
+    }));
+    return map;
+  }, [grid]);
+
+  const effectivePremiumPrice = premiumPrice || basePrice;
+  const totalPrice = selectedSeats.reduce((sum, seatId) => {
+    const type = seatTypeMap[seatId];
+    return sum + (type === 'premium' ? effectivePremiumPrice : basePrice);
+  }, 0);
   const unavailableSeats = [...new Set([...bookedSeats, ...reservedSeats])];
   const availableCount = allSeatLabels.filter((l) => !unavailableSeats.includes(l)).length;
   const sortedSelectedSeats = [...selectedSeats].sort();
@@ -182,7 +196,12 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId, theaterId
         <div className="h-16 w-full border-t-[6px] border-cyan-300/70 rounded-[50%] shadow-[0_-10px_40px_rgba(34,211,238,0.4)] bg-linear-to-b from-cyan-500/15 to-transparent"></div>
         <div className="text-center mt-4">
           <p className="text-cyan-400/50 tracking-[0.8em] text-[10px] font-bold uppercase">Cinema Screen</p>
-          <p className="text-slate-400 text-xs mt-1">Ticket Price: NPR {basePrice}</p>
+          <p className="text-slate-400 text-xs mt-1">
+            Normal: NPR {basePrice}
+            {hasPremium && effectivePremiumPrice !== basePrice && (
+              <span className="ml-2 text-amber-400">• Premium: NPR {effectivePremiumPrice}</span>
+            )}
+          </p>
         </div>
       </div>
 
@@ -209,19 +228,15 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId, theaterId
                   const isBooked = bookedSeats.includes(seatId);
                   const isReserved = reservedSeats.includes(seatId);
                   const isSelected = selectedSeats.includes(seatId);
-                  const isVip = cell.type === 'vip';
                   const isPremium = cell.type === 'premium';
-                  const isWheelchair = cell.type === 'wheelchair';
 
                   let seatStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-400/30 hover:bg-emerald-500/30 hover:text-emerald-200";
-                  if (isVip) seatStyle = "bg-amber-500/20 text-amber-300 border-amber-400/30 hover:bg-amber-500/30 hover:text-amber-200";
-                  if (isPremium) seatStyle = "bg-purple-500/20 text-purple-300 border-purple-400/30 hover:bg-purple-500/30 hover:text-purple-200";
-                  if (isWheelchair) seatStyle = "bg-blue-500/20 text-blue-300 border-blue-400/30 hover:bg-blue-500/30 hover:text-blue-200";
+                  if (isPremium) seatStyle = "bg-amber-500/20 text-amber-300 border-amber-400/30 hover:bg-amber-500/30 hover:text-amber-200";
                   if (isSelected) seatStyle = "bg-sky-500 text-slate-950 border-sky-300 shadow-[0_0_18px_rgba(56,189,248,0.8)] scale-105 -translate-y-0.5 font-bold";
                   if (isReserved) seatStyle = "bg-amber-400/25 text-amber-200 border-amber-300/40 cursor-not-allowed";
                   if (isBooked) seatStyle = "bg-red-500/25 text-red-200/70 border-red-400/40 cursor-not-allowed line-through";
 
-                  const typeLabel = isVip ? ' (VIP)' : isPremium ? ' (Premium)' : isWheelchair ? ' (Wheelchair)' : '';
+                  const typeLabel = isPremium ? ' (Premium)' : '';
 
                   return (
                     <button
@@ -248,24 +263,12 @@ const SeatSelection = ({ onNext, basePrice = 350, movieId, showtimeId, theaterId
       <div className="flex flex-wrap justify-center gap-4 text-[11px] text-slate-200 mb-6 z-10 bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-emerald-500/30 border border-emerald-400/40"></div>
-          <span>Available</span>
+          <span>Normal</span>
         </div>
-        {hasVip && (
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-amber-500/30 border border-amber-400/40"></div>
-            <span className="text-amber-300">VIP</span>
-          </div>
-        )}
         {hasPremium && (
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-purple-500/30 border border-purple-400/40"></div>
-            <span className="text-purple-300">Premium</span>
-          </div>
-        )}
-        {hasWheelchair && (
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-blue-500/30 border border-blue-400/40"></div>
-            <span className="text-blue-300">Wheelchair</span>
+            <div className="w-4 h-4 rounded bg-amber-500/30 border border-amber-400/40"></div>
+            <span className="text-amber-300">Premium</span>
           </div>
         )}
         <div className="flex items-center gap-2">

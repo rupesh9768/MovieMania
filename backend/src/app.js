@@ -23,6 +23,7 @@ import cityRoutes from './routes/city.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import ratingRoutes from './routes/rating.routes.js';
+import chatRoutes from './routes/chat.routes.js';
 
 // Create Express app
 const app = express();
@@ -98,6 +99,9 @@ app.use('/api/notifications', notificationRoutes);
 
 // Ratings API
 app.use('/api/ratings', ratingRoutes);
+
+// Chat API
+app.use('/api/chat', chatRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

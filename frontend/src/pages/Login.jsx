@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 
 // Floating movie poster data for the animated left panel
 const POSTER_URLS = [
@@ -116,6 +117,10 @@ const Login = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0b1121] pointer-events-none"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-[#0b1121] via-transparent to-[#0b1121]/60 pointer-events-none"></div>
 
+        {/* Logo overlay on left panel */}
+        <div className="absolute bottom-10 left-10 z-10">
+          <Logo size="xl" showTagline />
+        </div>
 
       </div>
 
@@ -127,10 +132,8 @@ const Login = () => {
 
         <div className="w-full max-w-md relative z-10">
           {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-8">
-            <h2 className="text-3xl font-black tracking-tighter">
-              MOVIE<span className="text-cyan-400">MANIA</span>
-            </h2>
+          <div className="lg:hidden flex justify-center mb-8">
+            <Logo size="lg" />
           </div>
 
           {/* Header */}

@@ -40,5 +40,8 @@ export { default as discussionApi } from './discussionService';
 export * from './profileService';
 export { default as profileApi } from './profileService';
 
+// Chat API Service
+export * from './chatService';
+
 // Axios instance (for custom requests)
 export { default as api } from './axios';

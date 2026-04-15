@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 
 // Floating movie poster data for the animated left panel
 const POSTER_URLS = [
@@ -131,6 +132,10 @@ const Register = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0b1121] pointer-events-none"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-[#0b1121] via-transparent to-[#0b1121]/60 pointer-events-none"></div>
 
+        {/* Logo overlay on left panel */}
+        <div className="absolute bottom-10 left-10 z-10">
+          <Logo size="xl" showTagline />
+        </div>
 
       </div>
 
@@ -142,10 +147,8 @@ const Register = () => {
 
         <div className="w-full max-w-md relative z-10">
           {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-8">
-            <h2 className="text-3xl font-black tracking-tighter">
-              MOVIE<span className="text-cyan-400">MANIA</span>
-            </h2>
+          <div className="lg:hidden flex justify-center mb-8">
+            <Logo size="lg" />
           </div>
 
           {/* Header */}
@@ -175,7 +178,7 @@ const Register = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  placeholder="John Doe"
+                  placeholder="Put your username"
                   className="w-full bg-slate-900/50 border border-slate-800 rounded-xl pl-12 pr-4 py-3.5 text-white focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 focus:bg-slate-900 transition-all placeholder:text-slate-600"
                   required
                 />

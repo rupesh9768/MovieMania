@@ -1,8 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { backendApi } from '../../api';
 import SeatLayoutBuilder from '../../components/SeatLayoutBuilder';
+import LiveSeatStatus from '../../components/LiveSeatStatus';
+import { useAuth } from '../../context/AuthContext';
+
+const TABS = [
+  { id: 'theaters', label: 'Theaters & Halls' },
+  { id: 'live-seats', label: 'Live Seat Status' }
+];
 
 const TheatersAdmin = () => {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('theaters');
   const [theaters, setTheaters] = useState([]);
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -238,6 +247,26 @@ const TheatersAdmin = () => {
 
   return (
     <div className="space-y-6">
+      {/* Tab Navigation */}
+      <div className="flex gap-1 bg-slate-900/60 border border-slate-800 rounded-xl p-1 w-fit">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              activeTab === tab.id
+                ? 'bg-cyan-500 text-black'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'live-seats' && <LiveSeatStatus user={user} />}
+
+      {activeTab === 'theaters' && (<>
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-black">Theater Management</h2>
@@ -510,6 +539,7 @@ const TheatersAdmin = () => {
           </div>
         </div>
       )}
+      </>)}
     </div>
   );
 };

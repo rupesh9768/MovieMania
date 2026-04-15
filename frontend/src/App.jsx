@@ -28,6 +28,7 @@ import AnalyticsAdmin from './pages/admin/AnalyticsAdmin';
 import UsersAdmin from './pages/admin/UsersAdmin';
 import TheatersAdmin from './pages/admin/TheatersAdmin';
 import TheaterAdminsAdmin from './pages/admin/TheaterAdminsAdmin';
+import ChatAdmin from './pages/admin/ChatAdmin';
 import Booking from './pages/Booking';
 import BookingHistory from './pages/BookingHistory';
 import Theater from './pages/Theater';
@@ -45,6 +46,7 @@ import Payment from './components/Payment';
 // Import Layout Components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ChatPopup from './components/ChatPopup';
 
 // Import Route Guards
 import ProtectedRoute from './components/ProtectedRoute';
@@ -166,6 +168,7 @@ function App() {
                 <Route path="users" element={<UsersAdmin />} />
                 <Route path="theater-admins" element={<TheaterAdminsAdmin />} />
                 <Route path="analytics" element={<AnalyticsAdmin />} />
+                <Route path="chat" element={<ChatAdmin />} />
               </Route>
               
               {/* 404 Fallback */}
@@ -182,6 +185,7 @@ function App() {
           </main>
 
           <Footer />
+          <ChatPopup />
           
         </div>
         </SocketProvider>
