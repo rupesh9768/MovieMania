@@ -9,6 +9,7 @@ const MovieCard = ({ movie, showBooking = false }) => {
 
   const movieStatus = movie.status || (movie.isNowPlaying ? 'now_playing' : (movie.source === 'theatre' ? 'coming_soon' : null));
   const canBook = showBooking || movie.source === 'theatre' || movieStatus === 'now_playing' || movie.isNowPlaying;
+  const displayRating = movie.siteRating != null ? Number(movie.siteRating).toFixed(1) : '0.0';
 
   return (
     <div className="group cursor-pointer" onClick={() => navigate(`/details/movie/${movie.id}`)}>
@@ -22,6 +23,12 @@ const MovieCard = ({ movie, showBooking = false }) => {
         
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/20 to-transparent opacity-60 group-hover:opacity-85 transition-opacity duration-150"></div>
+
+        {/* Rating Badge */}
+        <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
+          <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+          <span className="text-[11px] font-bold text-white">{displayRating}</span>
+        </div>
 
         {/* Status Badge */}
         {movieStatus === 'now_playing' && (
@@ -53,7 +60,13 @@ const MovieCard = ({ movie, showBooking = false }) => {
       </div>
 
       <h3 className="font-semibold text-sm truncate text-white transition-colors">{movie.title}</h3>
-      <p className="text-xs text-[#b3b3b3] mt-0.5">{movie.genre || movie.year}</p>
+      <div className="flex items-center gap-2 mt-0.5">
+        <p className="text-xs text-[#b3b3b3]">{movie.genre || movie.year}</p>
+        <span className="text-xs text-[#b3b3b3] flex items-center gap-0.5">
+          <svg className="w-2.5 h-2.5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+          {displayRating}
+        </span>
+      </div>
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { getNepaliMovies, getIndianMovies, getUpcomingBigMovies, getTrendingMovi
 import { getTrendingTV } from '../api/tvService';
 import { getTopAnime } from '../api/animeService';
 import { getBackendNowPlaying, getGlobalShowingMovies, getMostInterestedMovies } from '../api/backendService';
+import { getBatchRatings } from '../api/ratingService';
 import TrendingDiscussions from '../components/TrendingDiscussions';
 import HeroSlider from '../components/HeroSlider';
 import { NO_POSTER_IMAGE, handleImageError } from '../utils/imageFallback';
@@ -27,6 +28,7 @@ const Home = () => {
   const [trendingTVShows, setTrendingTVShows] = useState([]);
   const [trendingAnime, setTrendingAnime] = useState([]);
   const [mostInterested, setMostInterested] = useState([]);
+  const [siteRatings, setSiteRatings] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -211,6 +213,25 @@ const Home = () => {
         
         // Most Interested = upcoming movies sorted by interest count from backend
         setMostInterested(mostInterestedData.slice(0, 15));
+
+        // Fetch site ratings for all displayed movies
+        try {
+          const allMovies = [
+            ...backendNowPlaying.slice(0, 15),
+            ...curatedNepali,
+            ...indian.slice(0, 15),
+            ...(globalPool.length > 0 ? globalPool : dedupeById(trending)),
+            ...mostInterestedData.slice(0, 15),
+            ...trending,
+          ];
+          const allIds = [...new Set(allMovies.map(m => String(m._id || m.id)).filter(Boolean))];
+          if (allIds.length > 0) {
+            const ratingsMap = await getBatchRatings(allIds);
+            setSiteRatings(ratingsMap);
+          }
+        } catch (e) {
+          console.error('Failed to fetch site ratings:', e);
+        }
         
       } catch (err) {
         console.error('Failed to load homepage data:', err);
@@ -255,7 +276,9 @@ const Home = () => {
   };
 
   // Reusable movie card with fire emoji
-  const MovieCardRow = ({ movie, rank, sectionBadge, showRating = false }) => {
+  const MovieCardRow = ({ movie, rank, sectionBadge }) => {
+    const movieId = String(movie._id || movie.id);
+    const displayRating = siteRatings[movieId]?.averageRating > 0 ? siteRatings[movieId].averageRating.toFixed(1) : '0.0';
     return (
       <div 
         key={movie.id} 
@@ -271,13 +294,11 @@ const Home = () => {
           />
           <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-150"></div>
 
-          {/* Interested count badge */}
-          {movie.interestedCount > 0 && (
-            <div className="absolute top-2 right-2 bg-red-500/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold text-white flex items-center gap-1">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" /></svg>
-              {movie.interestedCount}
-            </div>
-          )}
+          {/* Rating Badge */}
+          <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
+            <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+            <span className="text-[11px] font-bold text-white">{displayRating}</span>
+          </div>
 
           {sectionBadge && (
             <div className="absolute top-2 left-2 bg-black/65 border border-white/25 px-2 py-1 rounded-lg text-[11px] font-bold text-white backdrop-blur-sm">
@@ -295,15 +316,21 @@ const Home = () => {
         <h3 className="font-semibold text-sm truncate text-white transition-colors">
           {movie.title}
         </h3>
-        <p className="text-xs text-[#b3b3b3]">{movie.year}</p>
-        {showRating && (
-          <p className="text-xs text-[#b3b3b3] mt-1">⭐ {Number(movie.rating || 0).toFixed(1)}</p>
-        )}
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className="text-xs text-[#b3b3b3]">{movie.year}</p>
+          <span className="text-xs text-[#b3b3b3] flex items-center gap-0.5">
+            <svg className="w-2.5 h-2.5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+            {displayRating}
+          </span>
+        </div>
       </div>
     );
   };
 
-  const MediaCardRow = ({ item, onClick, sectionBadge, showRating = false }) => (
+  const MediaCardRow = ({ item, onClick, sectionBadge }) => {
+    const itemId = String(item._id || item.id);
+    const displayRating = siteRatings[itemId]?.averageRating > 0 ? siteRatings[itemId].averageRating.toFixed(1) : '0.0';
+    return (
     <div
       key={item.id}
       className="shrink-0 w-48 cursor-pointer group"
@@ -318,6 +345,12 @@ const Home = () => {
         />
         <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-150"></div>
 
+        {/* Rating Badge */}
+        <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
+          <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+          <span className="text-[11px] font-bold text-white">{displayRating}</span>
+        </div>
+
         {sectionBadge && (
           <div className="absolute top-2 left-2 bg-black/65 border border-white/25 px-2 py-1 rounded-lg text-[11px] font-bold text-white backdrop-blur-sm">
             {sectionBadge}
@@ -325,12 +358,16 @@ const Home = () => {
         )}
       </div>
       <h3 className="font-semibold text-sm truncate text-white transition-colors">{item.title}</h3>
-      <p className="text-xs text-[#b3b3b3]">{item.year || 'N/A'}</p>
-      {showRating && (
-        <p className="text-xs text-[#b3b3b3] mt-1">⭐ {Number(item.rating || 0).toFixed(1)}</p>
-      )}
+      <div className="flex items-center gap-2 mt-0.5">
+        <p className="text-xs text-[#b3b3b3]">{item.year || 'N/A'}</p>
+        <span className="text-xs text-[#b3b3b3] flex items-center gap-0.5">
+          <svg className="w-2.5 h-2.5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+          {displayRating}
+        </span>
+      </div>
     </div>
-  );
+    );
+  };
 
   // Section header component
   const SectionHeader = ({ title, badge, subtitle, scrollRef }) => (

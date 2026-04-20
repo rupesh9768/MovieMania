@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import BrowseSidebarFilters from '../components/BrowseSidebarFilters';
 import { NO_POSTER_IMAGE, handleImageError } from '../utils/imageFallback';
+import { getBatchRatings } from '../api/ratingService';
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
@@ -166,9 +167,22 @@ const Movies = () => {
           poster_path: m.poster_path,
           overview: m.overview,
           year: m.release_date?.slice(0, 4) || '',
-          rating: m.vote_average ? m.vote_average.toFixed(1) : null,
+          rating: '0.0',
           genre_ids: m.genre_ids || [],
         }));
+
+        // Fetch site ratings
+        try {
+          const movieIds = normalized.map(m => m.id);
+          const ratingsMap = await getBatchRatings(movieIds);
+          normalized.forEach(m => {
+            const r = ratingsMap[String(m.id)];
+            if (r) m.rating = r.averageRating > 0 ? r.averageRating.toFixed(1) : '0.0';
+          });
+        } catch (e) {
+          console.error('Failed to fetch site ratings:', e);
+        }
+
         setMovies(normalized);
         setTotalPages(Math.min(response.data.total_pages || 1, 20));
         setTotalResults(response.data.total_results || 0);
@@ -327,14 +341,12 @@ const Movies = () => {
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-300"></div>
                           
                           {/* Rating badge */}
-                          {movie.rating && parseFloat(movie.rating) > 0 && (
-                            <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
-                              <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                              </svg>
-                              <span className="text-[11px] font-bold text-white">{movie.rating}</span>
-                            </div>
-                          )}
+                          <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
+                            <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                            <span className="text-[11px] font-bold text-white">{movie.rating}</span>
+                          </div>
 
                           {/* Hover overlay */}
                           <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
@@ -351,12 +363,10 @@ const Movies = () => {
                         <h3 className="font-semibold text-sm truncate group-hover:text-red-400 transition-colors">{movie.title}</h3>
                         <div className="flex items-center gap-2 mt-0.5">
                           <p className="text-xs text-slate-500">{movie.year}</p>
-                          {movie.rating && parseFloat(movie.rating) > 0 && (
-                            <span className="text-xs text-slate-600 flex items-center gap-0.5">
-                              <svg className="w-2.5 h-2.5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
-                              {movie.rating}
-                            </span>
-                          )}
+                          <span className="text-xs text-slate-600 flex items-center gap-0.5">
+                            <svg className="w-2.5 h-2.5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                            {movie.rating}
+                          </span>
                         </div>
                       </div>
                     );

@@ -631,7 +631,7 @@ const MovieDetails = () => {
 
                 {/* Discussion Button (primary CTA) */}
                 <button
-                  onClick={() => navigate(`/discussion/${mediaType}/${id}`)}
+                  onClick={() => navigate(`/discussion/${isBackendMovieRoute ? 'theater' : mediaType}/${id}`)}
                   className="bg-slate-100 hover:bg-white text-slate-900 font-extrabold py-2.5 px-6 rounded-full transition-all duration-200 text-sm border border-white/80 cursor-pointer flex items-center gap-2 shadow-lg shadow-black/25 hover:shadow-black/35 hover:-translate-y-0.5 active:scale-95"
                 >
                   💬 Join Discussion

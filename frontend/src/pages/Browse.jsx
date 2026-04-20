@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import BrowseSidebarFilters from '../components/BrowseSidebarFilters';
 import { NO_POSTER_IMAGE, handleImageError } from '../utils/imageFallback';
+import { getBatchRatings } from '../api/ratingService';
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
@@ -211,8 +212,20 @@ const Browse = () => {
           poster_path: item.poster_path,
           year: (item.release_date || item.first_air_date || '').slice(0, 4),
           mediaType: item.mediaType,
-          rating: item.vote_average ? item.vote_average.toFixed(1) : null,
+          rating: '0.0',
         }));
+
+        // Fetch site ratings
+        try {
+          const movieIds = normalized.map(m => m.id);
+          const ratingsMap = await getBatchRatings(movieIds);
+          normalized.forEach(m => {
+            const r = ratingsMap[String(m.id)];
+            if (r) m.rating = r.averageRating > 0 ? r.averageRating.toFixed(1) : '0.0';
+          });
+        } catch (e) {
+          console.error('Failed to fetch site ratings:', e);
+        }
 
         setContent(normalized);
       } catch (err) {
@@ -409,14 +422,12 @@ const Browse = () => {
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-300"></div>
 
                           {/* Rating badge */}
-                          {item.rating && parseFloat(item.rating) > 0 && (
-                            <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
-                              <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                              </svg>
-                              <span className="text-[11px] font-bold text-white">{item.rating}</span>
-                            </div>
-                          )}
+                          <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
+                            <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                            <span className="text-[11px] font-bold text-white">{item.rating}</span>
+                          </div>
 
                           {/* Media Type Badge */}
                           <div className={`absolute top-2.5 right-2.5 px-2 py-0.5 rounded-lg text-[10px] font-bold backdrop-blur-sm ${
@@ -440,12 +451,10 @@ const Browse = () => {
                         <h3 className="font-semibold text-sm truncate group-hover:text-red-400 transition-colors">{item.title}</h3>
                         <div className="flex items-center gap-2 mt-0.5">
                           <p className="text-xs text-slate-500">{item.year}</p>
-                          {item.rating && parseFloat(item.rating) > 0 && (
-                            <span className="text-xs text-slate-600 flex items-center gap-0.5">
-                              <svg className="w-2.5 h-2.5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
-                              {item.rating}
-                            </span>
-                          )}
+                          <span className="text-xs text-slate-600 flex items-center gap-0.5">
+                            <svg className="w-2.5 h-2.5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                            {item.rating}
+                          </span>
                           <span className={`text-[10px] ml-auto font-medium ${item.mediaType === 'movie' ? 'text-red-400/60' : 'text-blue-400/60'}`}>
                             {item.mediaType === 'movie' ? 'Movie' : 'TV'}
                           </span>

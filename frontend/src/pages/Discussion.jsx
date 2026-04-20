@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getDiscussion } from '../api/discussionService';
+import { getBackendMovieById } from '../api/backendService';
 import CommentSection from '../components/CommentSection';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -42,11 +43,23 @@ const Discussion = () => {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showAllImages, setShowAllImages] = useState(false);
 
-  // Fetch content metadata from TMDB/Jikan
+  // Fetch content metadata from TMDB/Jikan/Backend
   useEffect(() => {
     const fetchMeta = async () => {
       try {
-        if (type === 'anime') {
+        if (type === 'theater') {
+          // Backend movie — fetch from our API
+          try {
+            const movie = await getBackendMovieById(id);
+            if (movie) {
+              setContentTitle(movie.title || '');
+              setContentPoster(movie.poster || movie.image || '');
+              setContentYear(movie.year || '');
+            }
+          } catch (err) {
+            console.error('Failed to fetch backend movie meta:', err);
+          }
+        } else if (type === 'anime') {
           const res = await fetch(`${JIKAN_BASE}/anime/${id}`);
           if (res.ok) {
             const data = await res.json();
@@ -144,7 +157,7 @@ const Discussion = () => {
         <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
           <button
             onClick={() => {
-              const detailPath = type === 'anime' ? `/details/anime/${id}` : type === 'theater' ? `/theater/${id}` : `/${type}/${id}`;
+              const detailPath = type === 'anime' ? `/details/anime/${id}` : type === 'theater' ? `/movie/backend/${id}` : `/${type}/${id}`;
               navigate(detailPath);
             }}
             className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm cursor-pointer group"

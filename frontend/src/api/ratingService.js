@@ -11,3 +11,9 @@ export const getMovieRatings = async (movieId) => {
   if (response.data?.success) return response.data.data;
   throw new Error(response.data?.message || 'Failed to fetch ratings');
 };
+
+export const getBatchRatings = async (movieIds) => {
+  const response = await api.post('/ratings/batch', { movieIds: movieIds.map(String) });
+  if (response.data?.success) return response.data.data;
+  throw new Error(response.data?.message || 'Failed to fetch batch ratings');
+};

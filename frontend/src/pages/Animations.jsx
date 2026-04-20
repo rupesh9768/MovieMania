@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BrowseSidebarFilters from '../components/BrowseSidebarFilters';
 import { NO_POSTER_IMAGE, handleImageError } from '../utils/imageFallback';
+import { getBatchRatings } from '../api/ratingService';
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
@@ -113,6 +114,7 @@ const Animations = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
+  const [siteRatings, setSiteRatings] = useState({});
 
   useEffect(() => {
     const fetchAnimations = async () => {
@@ -180,6 +182,17 @@ const Animations = () => {
         setItems(results);
         setTotalPages(Math.min(pages, 20));
         setTotalResults(total);
+
+        // Fetch site ratings
+        try {
+          const movieIds = results.map(r => r.id);
+          if (movieIds.length > 0) {
+            const ratingsMap = await getBatchRatings(movieIds);
+            setSiteRatings(ratingsMap);
+          }
+        } catch (e) {
+          console.error('Failed to fetch site ratings:', e);
+        }
       } catch (err) {
         console.error('Failed to fetch animations:', err);
         setItems([]);
@@ -335,7 +348,7 @@ const Animations = () => {
                     const isMovie = item.media_type === 'movie' || item.title !== undefined;
                     const title = isMovie ? item.title : item.name;
                     const year = isMovie ? item.release_date?.slice(0, 4) : item.first_air_date?.slice(0, 4);
-                    const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
+                    const rating = siteRatings[String(item.id)]?.averageRating > 0 ? siteRatings[String(item.id)].averageRating.toFixed(1) : '0.0';
                     return (
                       <div key={`${item.media_type || 'item'}-${item.id}`} onClick={() => navigate(`/details/animation/${item.id}`)} className="group cursor-pointer">
                         <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2.5 border border-slate-800/50 group-hover:border-green-500/40 shadow-lg shadow-black/30 group-hover:shadow-green-500/10 transition-all duration-300 group-hover:-translate-y-1">
@@ -348,12 +361,10 @@ const Animations = () => {
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-300"></div>
                           
-                          {rating && parseFloat(rating) > 0 && (
-                            <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
-                              <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
-                              <span className="text-[11px] font-bold text-white">{rating}</span>
-                            </div>
-                          )}
+                          <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
+                            <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                            <span className="text-[11px] font-bold text-white">{rating}</span>
+                          </div>
 
                           <div className="absolute top-2.5 right-2.5 bg-green-500/90 backdrop-blur-sm px-2 py-0.5 rounded-lg text-[10px] font-bold text-white">
                             {isMovie ? 'Movie' : 'TV'}
@@ -370,12 +381,10 @@ const Animations = () => {
                         <h3 className="font-semibold text-sm truncate group-hover:text-green-400 transition-colors">{title}</h3>
                         <div className="flex items-center gap-2 mt-0.5">
                           <p className="text-xs text-slate-500">{year || 'TBA'}</p>
-                          {rating && parseFloat(rating) > 0 && (
-                            <span className="text-xs text-slate-600 flex items-center gap-0.5">
-                              <svg className="w-2.5 h-2.5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
-                              {rating}
-                            </span>
-                          )}
+                          <span className="text-xs text-slate-600 flex items-center gap-0.5">
+                            <svg className="w-2.5 h-2.5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                            {rating}
+                          </span>
                         </div>
                       </div>
                     );
