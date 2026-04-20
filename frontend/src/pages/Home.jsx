@@ -224,7 +224,13 @@ const Home = () => {
             ...mostInterestedData.slice(0, 15),
             ...trending,
           ];
-          const allIds = [...new Set(allMovies.map(m => String(m._id || m.id)).filter(Boolean))];
+          const tvIds = trendingTV.slice(0, 12).map(s => 'tv_' + String(s.id));
+          const animeIds = topAnime.slice(0, 12).map(a => 'anime_' + String(a.mal_id));
+          const allIds = [...new Set([
+            ...allMovies.map(m => m._id ? String(m._id) : 'tmdb_' + String(m.id)),
+            ...tvIds,
+            ...animeIds,
+          ].filter(Boolean))];
           if (allIds.length > 0) {
             const ratingsMap = await getBatchRatings(allIds);
             setSiteRatings(ratingsMap);
@@ -277,7 +283,7 @@ const Home = () => {
 
   // Reusable movie card with fire emoji
   const MovieCardRow = ({ movie, rank, sectionBadge }) => {
-    const movieId = String(movie._id || movie.id);
+    const movieId = movie._id ? String(movie._id) : 'tmdb_' + String(movie.id);
     const displayRating = siteRatings[movieId]?.averageRating > 0 ? siteRatings[movieId].averageRating.toFixed(1) : '0.0';
     return (
       <div 
@@ -327,8 +333,8 @@ const Home = () => {
     );
   };
 
-  const MediaCardRow = ({ item, onClick, sectionBadge }) => {
-    const itemId = String(item._id || item.id);
+  const MediaCardRow = ({ item, type, onClick, sectionBadge }) => {
+    const itemId = item._id ? String(item._id) : (type === 'tv' ? 'tv_' : type === 'anime' ? 'anime_' : 'tmdb_') + String(item.id);
     const displayRating = siteRatings[itemId]?.averageRating > 0 ? siteRatings[itemId].averageRating.toFixed(1) : '0.0';
     return (
     <div
@@ -543,6 +549,7 @@ const Home = () => {
                 <MediaCardRow
                   key={show.id}
                   item={show}
+                  type="tv"
                   sectionBadge="TV"
                   onClick={() => navigate(`/details/tv/${show.id}`)}
                   showRating
@@ -571,6 +578,7 @@ const Home = () => {
                 <MediaCardRow
                   key={anime.id}
                   item={anime}
+                  type="anime"
                   sectionBadge="Anime"
                   onClick={() => navigate(`/details/anime/${anime.id}`)}
                   showRating

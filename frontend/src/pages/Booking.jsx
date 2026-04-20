@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import SeatSelection from '../components/SeatSelection';
+import BookingTicket from '../components/BookingTicket';
 import { cancelBooking, confirmBooking, reserveBooking, initiateKhaltiPayment } from '../api/bookingService';
 import { backendApi } from '../api';
 
@@ -325,26 +326,12 @@ function Booking() {
 
               <div className="mt-6 border-t border-slate-800 pt-5">
                 <label className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Payment Method</label>
-                <div className="grid sm:grid-cols-2 gap-3 mt-3">
+                <div className="mt-3">
                   <button
                     onClick={() => setBookingData((prev) => ({ ...prev, paymentMethod: 'khalti' }))}
-                    className={`p-3 rounded-xl border text-sm font-semibold transition-all ${
-                      bookingData.paymentMethod === 'khalti'
-                        ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300'
-                        : 'border-slate-700 text-slate-300 hover:border-slate-500'
-                    }`}
+                    className="p-3 rounded-xl border text-sm font-semibold transition-all border-cyan-500 bg-cyan-500/10 text-cyan-300 w-full"
                   >
                     Khalti
-                  </button>
-                  <button
-                    onClick={() => setBookingData((prev) => ({ ...prev, paymentMethod: 'esewa' }))}
-                    className={`p-3 rounded-xl border text-sm font-semibold transition-all ${
-                      bookingData.paymentMethod === 'esewa'
-                        ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300'
-                        : 'border-slate-700 text-slate-300 hover:border-slate-500'
-                    }`}
-                  >
-                    eSewa
                   </button>
                 </div>
               </div>
@@ -382,62 +369,36 @@ function Booking() {
       )}
 
       {currentPage === 'success' && (
-        <div className="max-w-3xl mx-auto px-4 py-12">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center">
-            <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mb-6 mx-auto shadow-[0_0_40px_rgba(34,197,94,0.4)]">
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="max-w-xl mx-auto px-4 py-10">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-[0_0_40px_rgba(34,197,94,0.4)]">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
               </svg>
             </div>
+            <h1 className="text-3xl font-black text-white">Booking Confirmed!</h1>
+            <p className="text-slate-400 mt-1">Your ticket is ready below.</p>
+          </div>
 
-            <h1 className="text-4xl font-black text-white mb-2">Booking Confirmed!</h1>
-            <p className="text-slate-400 mb-8 text-lg">Your cinema seats are successfully booked.</p>
+          <BookingTicket
+            bookingResult={bookingResult}
+            movieMeta={movieMeta}
+            showtimeLabel={showtimeLabel}
+          />
 
-            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6 max-w-xl mx-auto text-left">
-              <div className="flex gap-4 mb-4">
-                <div className="w-20 h-28 rounded-lg overflow-hidden border border-slate-700 bg-slate-800 shrink-0">
-                  {movieMeta.poster ? (
-                    <img src={getPosterUrl(movieMeta.poster)} alt={movieMeta.title} className="w-full h-full object-cover" />
-                  ) : null}
-                </div>
-
-                <div className="flex-1">
-                  <h3 className="font-bold text-xl mb-1">{movieMeta.title}</h3>
-                  <p className="text-sm text-slate-400">{movieMeta.hall}</p>
-                  <p className="text-sm text-slate-400">{showtimeLabel}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Seats</span>
-                  <span className="font-semibold text-cyan-400">{(bookingResult?.seats || bookingData.seats).slice().sort().join(', ')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Status</span>
-                  <span className="font-semibold text-green-400">{bookingResult?.status || 'booked'}</span>
-                </div>
-                <div className="border-t border-slate-700 pt-3 mt-3 flex justify-between items-center">
-                  <span className="text-slate-400">Total Paid</span>
-                  <span className="font-black text-xl text-green-400">NPR {bookingResult?.totalPrice || bookingData.price}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-4 justify-center mt-8">
-              <button
-                onClick={() => navigate('/booking-history')}
-                className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-3 px-8 rounded-full transition-all"
-              >
-                View Booking History
-              </button>
-              <button
-                onClick={() => navigate('/')}
-                className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-full transition-all"
-              >
-                Go Home
-              </button>
-            </div>
+          <div className="flex gap-4 justify-center mt-8">
+            <button
+              onClick={() => navigate('/booking-history')}
+              className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-3 px-8 rounded-full transition-all"
+            >
+              View Booking History
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-full transition-all"
+            >
+              Go Home
+            </button>
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMyBookings, cancelBooking } from '../api/bookingService';
 import { useAuth } from '../context/AuthContext';
+import BookingTicket from '../components/BookingTicket';
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
@@ -20,6 +21,7 @@ const BookingHistory = () => {
   const [error, setError] = useState('');
   const [cancellingId, setCancellingId] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -250,6 +252,17 @@ const BookingHistory = () => {
                     {/* Price & Cancel */}
                     <div className="shrink-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2">
                       <span className="text-xl font-bold text-white">NPR {booking.totalPrice}</span>
+                      {booking.status === 'booked' && (
+                        <button
+                          onClick={() => setSelectedTicket(booking)}
+                          className="text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 px-3 py-1.5 rounded-lg hover:bg-cyan-500/10 transition-all cursor-pointer flex items-center gap-1"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                          </svg>
+                          Ticket
+                        </button>
+                      )}
                       {(booking.status === 'booked' || booking.status === 'reserved') && booking.canCancel && (
                         <button
                           onClick={() => handleCancel(booking._id)}
@@ -267,6 +280,45 @@ const BookingHistory = () => {
           </div>
         )}
       </div>
+
+      {/* Ticket Modal */}
+      {selectedTicket && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+          onClick={() => setSelectedTicket(null)}
+        >
+          <div
+            className="relative w-full max-w-md max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setSelectedTicket(null)}
+              className="absolute -top-10 right-0 text-slate-400 hover:text-white transition-colors z-10"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <BookingTicket
+              bookingResult={selectedTicket}
+              movieMeta={{
+                title: selectedTicket.movieTitle,
+                poster: selectedTicket.moviePoster || '',
+                hall: selectedTicket.hall,
+              }}
+              showtimeLabel={(() => {
+                const d = new Date(selectedTicket.date);
+                const dateLabel = isNaN(d.getTime())
+                  ? (selectedTicket.date || '')
+                  : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                return `${dateLabel} • ${selectedTicket.time || ''}`;
+              })()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

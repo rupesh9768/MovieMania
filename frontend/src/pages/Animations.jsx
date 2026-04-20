@@ -185,7 +185,7 @@ const Animations = () => {
 
         // Fetch site ratings
         try {
-          const movieIds = results.map(r => r.id);
+          const movieIds = results.map(r => 'tmdb_' + String(r.id));
           if (movieIds.length > 0) {
             const ratingsMap = await getBatchRatings(movieIds);
             setSiteRatings(ratingsMap);
@@ -348,7 +348,7 @@ const Animations = () => {
                     const isMovie = item.media_type === 'movie' || item.title !== undefined;
                     const title = isMovie ? item.title : item.name;
                     const year = isMovie ? item.release_date?.slice(0, 4) : item.first_air_date?.slice(0, 4);
-                    const rating = siteRatings[String(item.id)]?.averageRating > 0 ? siteRatings[String(item.id)].averageRating.toFixed(1) : '0.0';
+                    const rating = siteRatings['tmdb_' + String(item.id)]?.averageRating > 0 ? siteRatings['tmdb_' + String(item.id)].averageRating.toFixed(1) : '0.0';
                     return (
                       <div key={`${item.media_type || 'item'}-${item.id}`} onClick={() => navigate(`/details/animation/${item.id}`)} className="group cursor-pointer">
                         <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2.5 border border-slate-800/50 group-hover:border-green-500/40 shadow-lg shadow-black/30 group-hover:shadow-green-500/10 transition-all duration-300 group-hover:-translate-y-1">

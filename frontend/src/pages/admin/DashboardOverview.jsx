@@ -83,6 +83,7 @@ const DashboardOverview = () => {
   const [selectedHall, setSelectedHall] = useState('');
   const [hallStats, setHallStats] = useState(null);
   const [hallLoading, setHallLoading] = useState(false);
+  const [hallError, setHallError] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -120,16 +121,20 @@ const DashboardOverview = () => {
     const loadHallStats = async () => {
       if (!selectedTheater) {
         setHallStats(null);
+        setHallError('');
         return;
       }
       setHallLoading(true);
+      setHallError('');
+      setHallStats(null);
       try {
         const params = { theaterId: selectedTheater, days: 30 };
         if (selectedHall) params.hallName = selectedHall;
         const data = await backendApi.getHallAnalytics(params);
         setHallStats(data);
-      } catch {
-        setHallStats(null);
+      } catch (err) {
+        const msg = err.response?.data?.message || err.message || 'Failed to load hall analytics';
+        setHallError(msg);
       } finally {
         setHallLoading(false);
       }
@@ -230,7 +235,7 @@ const DashboardOverview = () => {
         <div className="flex flex-wrap items-center gap-3 mb-5">
           <select
             value={selectedTheater}
-            onChange={(e) => { setSelectedTheater(e.target.value); setSelectedHall(''); }}
+            onChange={(e) => { setSelectedTheater(e.target.value); setSelectedHall(''); setHallError(''); }}
             className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white min-w-[200px]"
           >
             <option value="">Select Theater</option>
@@ -254,7 +259,16 @@ const DashboardOverview = () => {
         </div>
 
         {hallLoading ? (
-          <div className="h-48 flex items-center justify-center text-slate-500">Loading hall data...</div>
+          <div className="h-48 flex items-center justify-center text-slate-500">
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+              Loading hall data...
+            </div>
+          </div>
+        ) : hallError ? (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm">
+            {hallError}
+          </div>
         ) : hallStats ? (
           <div className="space-y-5">
             {/* Hall summary cards */}
@@ -272,6 +286,13 @@ const DashboardOverview = () => {
                 <p className="text-2xl font-black text-amber-300">{Number(hallStats.totalTickets || 0).toLocaleString()}</p>
               </div>
             </div>
+
+            {/* No data message */}
+            {hallStats.totalBookings === 0 && !hallStats.revenueByHall?.length && (
+              <div className="text-center py-6 text-slate-500 text-sm border border-dashed border-slate-700 rounded-xl">
+                No booking data found for this {selectedHall ? 'hall' : 'theater'} in the last 30 days.
+              </div>
+            )}
 
             {/* Revenue by Hall bar chart */}
             {hallStats.revenueByHall?.length > 0 && !selectedHall && (
@@ -321,7 +342,7 @@ const DashboardOverview = () => {
           </div>
         ) : (
           <div className="text-center py-10 text-slate-500 text-sm">
-            Select a theater above to view hall-level analytics
+            {selectedTheater ? 'Loading...' : 'Select a theater above to view hall-level analytics'}
           </div>
         )}
       </div>

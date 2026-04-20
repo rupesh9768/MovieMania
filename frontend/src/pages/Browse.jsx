@@ -217,10 +217,11 @@ const Browse = () => {
 
         // Fetch site ratings
         try {
-          const movieIds = normalized.map(m => m.id);
+          const movieIds = normalized.map(m => m.mediaType === 'tv' ? 'tv_' + String(m.id) : 'tmdb_' + String(m.id));
           const ratingsMap = await getBatchRatings(movieIds);
           normalized.forEach(m => {
-            const r = ratingsMap[String(m.id)];
+            const key = m.mediaType === 'tv' ? 'tv_' + String(m.id) : 'tmdb_' + String(m.id);
+            const r = ratingsMap[key];
             if (r) m.rating = r.averageRating > 0 ? r.averageRating.toFixed(1) : '0.0';
           });
         } catch (e) {

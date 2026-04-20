@@ -136,7 +136,7 @@ const TVShows = () => {
 
         // Fetch site ratings
         try {
-          const ids = results.map(s => s.id);
+          const ids = results.map(s => 'tv_' + String(s.id));
           if (ids.length > 0) {
             const ratingsMap = await getBatchRatings(ids);
             setSiteRatings(ratingsMap);
@@ -277,7 +277,7 @@ const TVShows = () => {
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
                   {shows.map(show => {
-                    const showRating = siteRatings[String(show.id)]?.averageRating > 0 ? siteRatings[String(show.id)].averageRating.toFixed(1) : '0.0';
+                    const showRating = siteRatings['tv_' + String(show.id)]?.averageRating > 0 ? siteRatings['tv_' + String(show.id)].averageRating.toFixed(1) : '0.0';
                     return (
                     <div key={show.id} onClick={() => navigate(`/details/tv/${show.id}`)} className="group cursor-pointer">
                       <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2.5 border border-slate-800/50 group-hover:border-blue-500/40 shadow-lg shadow-black/30 group-hover:shadow-blue-500/10 transition-all duration-300 group-hover:-translate-y-1">

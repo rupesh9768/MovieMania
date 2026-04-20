@@ -50,7 +50,7 @@ const Payment = ({ selectedSeats, totalPrice, onBack, onConfirm, movieTitle }) =
         <h3 className="text-sm uppercase text-slate-500 font-bold mb-3 tracking-wider">Select Payment Method</h3>
         
         <div className="grid gap-3 mb-8">
-          {/* KHALTI BUTTON (Selected) */}
+          {/* KHALTI BUTTON */}
           <button 
             onClick={() => setPaymentMethod('khalti')}
             className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
@@ -65,22 +65,6 @@ const Payment = ({ selectedSeats, totalPrice, onBack, onConfirm, movieTitle }) =
               <span className="font-bold">Khalti Wallet</span>
             </div>
             {paymentMethod === 'khalti' && <div className="w-3 h-3 bg-[#5C2D91] rounded-full shadow-[0_0_8px_#5C2D91]"></div>}
-          </button>
-
-          {/* ESEWA BUTTON (Optional/Disabled for now) */}
-          <button 
-            onClick={() => setPaymentMethod('esewa')}
-            className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
-              paymentMethod === 'esewa' 
-              ? 'bg-green-600/20 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]' 
-              : 'bg-slate-800 border-transparent opacity-60 hover:opacity-100'
-            }`}
-          >
-             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded bg-green-500 flex items-center justify-center text-white font-bold text-xs">e</div>
-              <span className="font-bold">eSewa</span>
-            </div>
-            {paymentMethod === 'esewa' && <div className="w-3 h-3 bg-green-500 rounded-full"></div>}
           </button>
         </div>
 

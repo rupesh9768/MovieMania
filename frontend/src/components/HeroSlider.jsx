@@ -164,8 +164,10 @@ function HeroSlider() {
         const rows = Array.isArray(response.data?.data) ? response.data.data : [];
 
         // Include theater movies that are now_playing or have active showtimes.
+        // Explicitly exclude upcoming/coming_soon movies from the hero slider.
+        const UPCOMING_STATUSES = new Set(['upcoming', 'coming_soon']);
         const active = rows
-          .filter((movie) => hasActiveShowtime(movie) || movie?.status === 'now_playing' || movie?.isNowPlaying || movie?.bookingEnabled)
+          .filter((movie) => !UPCOMING_STATUSES.has(movie?.status) && (hasActiveShowtime(movie) || movie?.status === 'now_playing' || movie?.isNowPlaying || movie?.bookingEnabled))
           .sort((a, b) => {
             const aActive = hasActiveShowtime(a) ? 1 : 0;
             const bActive = hasActiveShowtime(b) ? 1 : 0;

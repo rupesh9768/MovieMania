@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { verifyKhaltiPayment } from '../api/bookingService';
+import BookingTicket from '../components/BookingTicket';
 
 function KhaltiCallback() {
   const [searchParams] = useSearchParams();
@@ -8,6 +9,7 @@ function KhaltiCallback() {
   const [status, setStatus] = useState('verifying'); // verifying | success | failed
   const [message, setMessage] = useState('Verifying your payment...');
   const [bookingResult, setBookingResult] = useState(null);
+  const [bookingContext, setBookingContext] = useState(null);
 
   useEffect(() => {
     const verify = async () => {
@@ -16,9 +18,10 @@ function KhaltiCallback() {
 
       // Retrieve stored booking context
       const stored = sessionStorage.getItem('khalti_booking');
-      const bookingContext = stored ? JSON.parse(stored) : null;
+      const bookingCtx = stored ? JSON.parse(stored) : null;
+      setBookingContext(bookingCtx);
 
-      if (!pidx || !bookingContext?.reservationId) {
+      if (!pidx || !bookingCtx?.reservationId) {
         setStatus('failed');
         setMessage('Missing payment information. Please try booking again.');
         return;
@@ -31,7 +34,7 @@ function KhaltiCallback() {
       }
 
       try {
-        const booking = await verifyKhaltiPayment(pidx, bookingContext.reservationId);
+        const booking = await verifyKhaltiPayment(pidx, bookingCtx.reservationId);
         setBookingResult(booking);
         setStatus('success');
         setMessage('Payment successful! Your booking is confirmed.');
@@ -48,7 +51,7 @@ function KhaltiCallback() {
 
   return (
     <div className="min-h-screen bg-dark-bg text-white flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center">
+      <div className="max-w-lg w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center">
         {status === 'verifying' && (
           <>
             <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
@@ -68,27 +71,18 @@ function KhaltiCallback() {
             <p className="text-slate-400 mb-6">{message}</p>
 
             {bookingResult && (
-              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 mb-6 text-left text-sm space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Movie</span>
-                  <span className="font-semibold">{bookingResult.movieTitle}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Seats</span>
-                  <span className="font-semibold text-cyan-400">{bookingResult.seats?.join(', ')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Status</span>
-                  <span className="font-semibold text-green-400">{bookingResult.status}</span>
-                </div>
-                <div className="border-t border-slate-700 pt-2 mt-2 flex justify-between">
-                  <span className="text-slate-400">Total Paid</span>
-                  <span className="font-black text-lg text-green-400">NPR {bookingResult.totalPrice}</span>
-                </div>
-              </div>
+              <BookingTicket
+                bookingResult={bookingResult}
+                movieMeta={bookingContext?.movieMeta || {}}
+                showtimeLabel={
+                  bookingContext?.movieMeta
+                    ? `${new Date(bookingContext.movieMeta.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • ${bookingContext.movieMeta.time || ''}`
+                    : null
+                }
+              />
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={() => navigate('/booking-history')}
                 className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-3 rounded-full transition-all"
