@@ -1,5 +1,3 @@
-// TV Shows API Service
-// TODO: Replace with backend API when backend is ready
 import axios from 'axios';
 
 // TMDB Configuration (temporary until backend is ready)

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTrendingDiscussions } from '../api/discussionService';
+import { getBackendMovieById } from '../api/backendService';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const TMDB_BASE = 'https://api.themoviedb.org/3';
@@ -27,6 +28,11 @@ const TrendingDiscussions = () => {
                   if (res.ok) {
                     const d = await res.json();
                     return { ...item, title: d.data?.title, poster: d.data?.images?.jpg?.small_image_url };
+                  }
+                } else if (item.contentType === 'theater') {
+                  const movie = await getBackendMovieById(item.contentId);
+                  if (movie) {
+                    return { ...item, title: movie.title, poster: movie.poster || movie.image || null };
                   }
                 } else {
                   const endpoint = item.contentType === 'tv' ? 'tv' : 'movie';

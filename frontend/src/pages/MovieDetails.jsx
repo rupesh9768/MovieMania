@@ -174,7 +174,7 @@ const MovieDetails = () => {
       setLoading(true);
       
       try {
-        // ========== BACKEND MOVIE (MongoDB API) ==========
+        // backend movie
         if (isBackendMovieRoute) {
           const backendMovie = await getBackendMovieById(id);
           if (!backendMovie) throw new Error('Backend movie not found');
@@ -209,7 +209,7 @@ const MovieDetails = () => {
           return;
         }
 
-        // ========== ANIME (Jikan API) ==========
+        // anime
         if (mediaType === 'anime') {
           const [animeRes, charsRes] = await Promise.all([
             fetch(`${JIKAN_BASE}/anime/${id}/full`),
@@ -264,7 +264,7 @@ const MovieDetails = () => {
           return;
         }
         
-        // ========== MOVIES / TV / ANIMATIONS (TMDB API) ==========
+        // TMDB (movies / tv / animations)
         const endpoint = mediaType === 'tv' ? 'tv' : 'movie';
         
         // Fetch details, credits, videos, and providers in parallel

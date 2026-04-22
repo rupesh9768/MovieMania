@@ -1,11 +1,9 @@
 import React from 'react';
 import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigationType } from 'react-router-dom';
 
-// Providers
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 
-// Import Pages
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -38,17 +36,14 @@ import Discussion from './pages/Discussion';
 import PersonDetails from './pages/PersonDetails';
 import KhaltiCallback from './pages/KhaltiCallback';
 
-// Import Components (used as pages)
 import ShowtimeSelection from './components/ShowtimeSelection';
 import SeatSelection from './components/SeatSelection';
 import Payment from './components/Payment';
 
-// Import Layout Components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ChatPopup from './components/ChatPopup';
 
-// Import Route Guards
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 
@@ -84,12 +79,10 @@ function App() {
       <AuthProvider>
         <SocketProvider>
         <ScrollManager />
-        {/* Wrapper to ensure footer pushes to bottom if content is short */}
         <div className="App min-h-screen font-sans flex flex-col bg-dark-bg text-white">
           
           <Navbar /> 
 
-          {/* 'grow' ensures this section takes up all available space */}
           <main className="grow">
             <Routes>
               {/* Public Routes */}
@@ -119,7 +112,6 @@ function App() {
               <Route path="/details/:mediaType/:id" element={<MovieDetails />} />
               <Route path="/person/:id" element={<PersonDetails />} />
               <Route path="/movie/backend/:id" element={<MovieDetails />} />
-              {/* Legacy routes for backwards compatibility */}
               <Route path="/movie/:id" element={<MovieDetails />} />
               <Route path="/tv/:id" element={<MovieDetails />} />
               
@@ -127,7 +119,6 @@ function App() {
               <Route path="/discussion/:type/:id" element={<Discussion />} />
               
               {/* Booking Flow Routes (Protected) */}
-              {/* TODO: Add booking ownership validation */}
               <Route path="/showtimes/:movieId" element={
                 <ProtectedRoute><ShowtimeSelection /></ProtectedRoute>
               } />
@@ -138,11 +129,9 @@ function App() {
                 <ProtectedRoute><Booking /></ProtectedRoute>
               } />
               
-              {/* Theater Routes - Movies in our halls */}
               <Route path="/theater" element={<Theater />} />
               <Route path="/theater/:id" element={<TheaterDetails />} />
 
-              {/* Khalti Payment Callback */}
               <Route path="/payment/khalti/callback" element={
                 <ProtectedRoute><KhaltiCallback /></ProtectedRoute>
               } />

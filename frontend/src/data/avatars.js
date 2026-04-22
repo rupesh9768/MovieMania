@@ -1,7 +1,4 @@
-// ====================================
-// Predefined Avatar Options
-// ====================================
-// Avatar images are in: frontend/public/avatars/
+// Avatar images are stored in public/avatars/
 
 const AVATARS = [
   { id: 'bahubali', file: 'bahubali.jpg', label: 'Bahubali' },
@@ -23,12 +20,6 @@ const AVATARS = [
   { id: 'zoro', file: 'zoro.jpg', label: 'Zoro' },
 ];
 
-/**
- * Get the full URL path for a predefined avatar filename
- * Encodes spaces in filenames for proper URL resolution
- * @param {string} filename - The avatar filename (e.g., 'JohnWick.jpg')
- * @returns {string} The full path to the avatar image
- */
 export const getAvatarPath = (filename) => `/avatars/${encodeURIComponent(filename)}`;
 
 export default AVATARS;

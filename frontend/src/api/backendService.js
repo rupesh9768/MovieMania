@@ -1,8 +1,4 @@
-// Backend API Service
-// THE ONLY DATA SOURCE FOR MOVIES
-// NO MOCK DATA. NO FALLBACKS.
 import api from './axios';
-
 /**
  * Normalize backend movie data to consistent frontend shape
  */
@@ -16,7 +12,7 @@ const normalizeBackendMovie = (movie) => ({
   rating: movie.rating || 0,
   poster: movie.poster || null,
   backdrop: movie.backdrop || null,
-  image: movie.poster || null, // alias for compatibility
+  image: movie.poster || null,
   language: movie.language,
   country: movie.country,
   genres: movie.genre || [],
@@ -65,7 +61,7 @@ export const getBackendMovies = async (cityId = null) => {
     return [];
   } catch (error) {
     console.error('Backend API error (movies):', error.message);
-    throw error; // Don't silently fail
+    throw error;
   }
 };
 
@@ -232,9 +228,7 @@ export const getAdminBookings = async () => {
   throw new Error('Failed to fetch admin bookings');
 };
 
-// ====================================
 // City API
-// ====================================
 
 // Get all cities
 export const getCities = async () => {
@@ -264,9 +258,7 @@ export const deleteCity = async (id) => {
   throw new Error('Failed to delete city');
 };
 
-// ====================================
 // Theater API
-// ====================================
 
 // Get all theaters
 export const getTheaters = async (activeOnly = false, cityId = null) => {
@@ -387,9 +379,7 @@ export const getShowtimeSeatMap = async (movieId, showtimeId) => {
   throw new Error('Failed to fetch seat map');
 };
 
-// ====================================
-// Theater Admin Management (Super Admin)
-// ====================================
+// Theater Admin Management
 
 export const getTheaterAdmins = async () => {
   const response = await api.get('/admin/theater-admins');
