@@ -109,31 +109,6 @@ moviemania/
 └── README.md
 
 
-Screenshots
-The following pages and interfaces are included in the system:
-•	Login Page
-
- 
-•	Registration Page
- 
-
-•	Movie Browsing Page
- 
-
-
-
-
-
-
-•	Seat Selection Interface
- 
-•	Payment Page
- 
-
-•	Admin Dashboard
- 
-
-
 Future Improvements
 The system can be enhanced with the following features in future development cycles:
 •	Mobile application for Android and iOS
